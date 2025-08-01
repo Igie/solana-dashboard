@@ -159,7 +159,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                 <div className='col-span-2 grid items grid-cols-3'>
                                     <div className="flex items-center justify-center">
                                         <a
-                                            href={`https://app.meteora.ag/dammv2/${pool.poolInfo.publicKey.toBase58()}`}
+                                            href={`https://edge.meteora.ag/dammv2/${pool.poolInfo.publicKey.toBase58()}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded-lg text-white text-sm font-medium"
