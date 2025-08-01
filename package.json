@@ -15,7 +15,7 @@
     "@esbuild-plugins/node-modules-polyfill": "^0.2.2",
     "@jup-ag/api": "^6.0.44",
     "@jup-ag/wallet-adapter": "^0.2.3",
-    "@meteora-ag/cp-amm-sdk": "^1.0.10",
+    "@meteora-ag/cp-amm-sdk": "^1.1.0",
     "@solana/spl-token": "^0.4.13",
     "@solana/wallet-adapter-base": "^0.9.27",
     "@solana/wallet-adapter-react": "^0.15.39",

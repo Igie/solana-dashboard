@@ -9,7 +9,7 @@
         "@esbuild-plugins/node-modules-polyfill": "^0.2.2",
         "@jup-ag/api": "^6.0.44",
         "@jup-ag/wallet-adapter": "^0.2.3",
-        "@meteora-ag/cp-amm-sdk": "^1.0.10",
+        "@meteora-ag/cp-amm-sdk": "^1.1.0",
         "@solana/spl-token": "^0.4.13",
         "@solana/wallet-adapter-base": "^0.9.27",
         "@solana/wallet-adapter-react": "^0.15.39",
@@ -326,7 +326,7 @@
 
     "@lit/reactive-element": ["@lit/reactive-element@2.1.0", "", { "dependencies": { "@lit-labs/ssr-dom-shim": "^1.2.0" } }, "sha512-L2qyoZSQClcBmq0qajBVbhYEcG6iK0XfLn66ifLe/RfC0/ihpc+pl0Wdn8bJ8o+hj38cG0fGXRgSS20MuXn7qA=="],
 
-    "@meteora-ag/cp-amm-sdk": ["@meteora-ag/cp-amm-sdk@1.0.10", "", { "dependencies": { "@coral-xyz/anchor": "^0.31.0", "@solana/spl-token": "^0.4.8", "@solana/web3.js": "^1.95.3", "@types/bn.js": "^5.1.0", "@types/chai": "^4.3.0", "@types/mocha": "^9.0.0", "chai": "^4.3.4", "chain": "^0.4.0", "decimal.js": "^10.4.2", "invariant": "^2.2.4", "mocha": "^9.0.3", "solana-bankrun": "^0.4.0", "ts-mocha": "^10.0.0", "ts-node": "^10.9.2", "tsup": "^8.4.0" } }, "sha512-8VZL/ut+kzDuSdyDdgeFTSBebwwVL0zvwCdCQHJk3sJ2cf1ktL1WP/9E882/bIVXMfwhEM+PWO91UXLYg6nN1A=="],
+    "@meteora-ag/cp-amm-sdk": ["@meteora-ag/cp-amm-sdk@1.1.0", "", { "dependencies": { "@coral-xyz/anchor": "^0.31.0", "@solana/spl-token": "^0.4.8", "@solana/web3.js": "^1.95.3", "@types/bn.js": "^5.1.0", "@types/chai": "^4.3.0", "@types/mocha": "^9.0.0", "chai": "^4.3.4", "chain": "^0.4.0", "decimal.js": "^10.4.2", "invariant": "^2.2.4", "mocha": "^9.0.3", "solana-bankrun": "^0.4.0", "ts-mocha": "^10.0.0", "ts-node": "^10.9.2", "tsup": "^8.4.0" } }, "sha512-CFYSGLgSSTL5oDSrL5bx+oCi51rkvfuFXdMVDEZmnljlnyt2vxbrzRCkCTzxN7ABCYjuCvkLoVrT1JiBh39k2A=="],
 
     "@mobily/ts-belt": ["@mobily/ts-belt@3.13.1", "", {}, "sha512-K5KqIhPI/EoCTbA6CGbrenM9s41OouyK8A03fGJJcla/zKucsgLbz8HNbeseoLarRPgyWJsUyCYqFhI7t3Ra9Q=="],
 

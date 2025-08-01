@@ -302,11 +302,9 @@ const Dammv2PoolCreation: React.FC = () => {
             const reductionPeriod = schedulerReductionPeriod * 60;
             const poolFees = {
                 baseFee: getBaseFeeParams(maxFee * 100, minFee * 100, selectedFeeScheduler, totalDuration.div(new BN(reductionPeriod)).toNumber(), totalDuration.toNumber()),
-
-                protocolFeePercent: 20,
-                partnerFeePercent: 0,
-                referralFeePercent: 20,
+                padding: [],
                 dynamicFee: getDynamicFeeParams(5000, 150),
+                
             };
 
             const positionNft = Keypair.generate();
