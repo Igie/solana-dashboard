@@ -84,7 +84,7 @@ function App() {
   // Configure supported wallets
   const wallets = useMemo(
     () => [
-      //new PhantomWalletAdapter(),
+      new PhantomWalletAdapter(),
       new SolflareWalletAdapter(),
     ],
     []
