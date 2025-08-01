@@ -9,9 +9,6 @@ import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfil
 export default defineConfig({
   server: {
     host: '0.0.0.0',
-    https:{
-      
-    }
   },
   plugins: [react(), tailwindcss()],
   define: {

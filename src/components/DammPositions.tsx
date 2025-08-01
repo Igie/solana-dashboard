@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useConnection, useWallet } from '@solana/wallet-adapter-react'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { RefreshCw, Wallet, ExternalLink, Droplets, TrendingUp } from 'lucide-react'
-import { CpAmm } from '@meteora-ag/cp-amm-sdk'
+import { CpAmm, getTokenProgram } from '@meteora-ag/cp-amm-sdk'
 import { SortType, useDammUserPositions, type PoolPositionInfo } from '../contexts/DammUserPositionsContext'
 import { useTokenAccounts } from '../contexts/TokenAccountsContext'
 import { useTransactionManager } from '../contexts/TransactionManagerContext'
@@ -10,6 +10,7 @@ import { useTransactionManager } from '../contexts/TransactionManagerContext'
 import { getSwapTransaction } from '../JupSwapApi'
 import { SortArrow } from './Simple/SortArrow'
 import { toast } from 'sonner'
+import { BN } from '@coral-xyz/anchor'
 
 interface TwoMints {
     base: string,
@@ -20,6 +21,7 @@ const DammPositions: React.FC = () => {
     const { connection } = useConnection()
     const { publicKey, connected } = useWallet()
     const { sendTxn } = useTransactionManager();
+    const { updatePosition, removePosition } = useDammUserPositions()
 
     //const { tokenAccounts, refreshTokenAccounts } = useTokenAccounts();
     const { positions, totalLiquidityValue, loading, refreshPositions, sortPositionsBy } = useDammUserPositions();
@@ -52,11 +54,28 @@ const DammPositions: React.FC = () => {
     const handleClaimFees = async (position: PoolPositionInfo) => {
         if (position.positionUnclaimedFee <= 0) return;
 
+        const txn = await cpAmm.claimPositionFee2({
+            owner: publicKey!,
+            pool: position.poolAddress,
+            position: position.positionAddress,
+            positionNftAccount: position.positionNftAccount,
+            receiver: publicKey!,
+            tokenAMint: position.poolState.tokenAMint,
+            tokenBMint: position.poolState.tokenBMint,
+            tokenAProgram: getTokenProgram(position.poolState.tokenAFlag),
+            tokenBProgram: getTokenProgram(position.poolState.tokenBFlag),
+            tokenAVault: position.poolState.tokenAVault,
+            tokenBVault: position.poolState.tokenBVault,
+        })
 
-        //const { value } = await connection.simulateTransaction(versionedTx);
-        //console.log(value.logs);
+
         try {
-
+            sendTxn(txn, undefined, {
+                notify: true,
+                onSuccess: () => {
+                    updatePosition(position.positionAddress);
+                }
+            })
 
         } catch (e) {
             console.log(e);
@@ -69,17 +88,29 @@ const DammPositions: React.FC = () => {
             return;
         }
 
+        const txn = await cpAmm.removeAllLiquidityAndClosePosition({
+            owner: publicKey!,
+            position: position.positionAddress,
+            positionNftAccount: position.positionNftAccount,
+            positionState: position.positionState,
+            poolState: position.poolState,
+            tokenAAmountThreshold: new BN(0),
+            tokenBAmountThreshold: new BN(0),
+            vestings: [],
+            currentPoint: new BN(0),
+        });
+
         try {
+            sendTxn(txn, undefined, {
+                notify: true,
+                onSuccess: () => {
+                    removePosition(position.positionAddress);
+                    setExpandedIndex(null);
+                }
+            })
 
         } catch (e) {
             console.log(e);
-        }
-    };
-
-    const handleClosePositionAndSwapToQuote = async (position: PoolPositionInfo) => {
-        if (cpAmm.isLockedPosition(position.positionState)) {
-            toast.error("Cannot close a locked position");
-            return;
         }
     };
 
@@ -112,9 +143,14 @@ const DammPositions: React.FC = () => {
                     }
                 }
             )
-        })
+        }
+
+        )
+
 
     }, [mintToMintSwap])
+
+
     useEffect(() => {
         refreshPositions();
         setSelectedPositions(new Set());
@@ -202,6 +238,9 @@ const DammPositions: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+
+
             {/* Pool Positions */}
             <div className="bg-gray-900 border border-gray-700 rounded-2xl">
                 <div className="p-6 border-b border-gray-700">
@@ -235,8 +274,8 @@ const DammPositions: React.FC = () => {
                             <div className="col-span-2 col-start-1 row-start-2 flex items-center">
                                 <div className='justify-self-start flex items-center gap-1 px-2 py-1 bg-green-900 rounded text-xs font-medium text-white transition-colors"'>
                                     Total Fees ${positions.reduce((sum, pos) => sum + pos.positionUnclaimedFee, 0).toFixed(2)}
-                                    </div>
-   
+                                </div>
+
                                 {SortArrow<SortType>(SortType.PositionUnclaimedFee, sortBy, sortAscending, handleSort)}
                             </div>
                         </div>
@@ -262,59 +301,72 @@ const DammPositions: React.FC = () => {
                         </p>
                     </div>
                 ) : (
+
+
                     <div className="divide-y divide-gray-700">
-                        
-                            <div className="flex items-center justify-between p-4 bg-gray-800 border border-purple-700 rounded-xl mt-4">
-                                <div className="text-purple-300">
-                                   {selectedPositions.size} pool{selectedPositions.size > 1 ? 's' : ''} selected
-                                </div>
-                                <div className="flex gap-2">
-                                    <button
+
+                        <div className="flex items-center justify-between p-4 bg-gray-800 border border-purple-700 rounded-xl mt-4">
+                            <div className="text-purple-300">
+                                {selectedPositions.size} pool{selectedPositions.size > 1 ? 's' : ''} selected
+                            </div>
+                            <div className="flex gap-2">
+                                {/* <button
                                         className="bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded text-white"
                                      onClick={async () => 
                                      {
                                         for (const pos of selectedPositions)
                                         {
+                                            await handleClosePositionAndSwapToQuote(pos);
+                                        }
+                                            await refreshPositions();
+                                            setSelectedPositions(new Set());
+
+                                     }
+                                     }
+                                    >
+                                        Close All and Swap to Quote
+                                    </button> */}
+                                <button
+                                    className="bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded text-white"
+                                    onClick={async () => {
+                                        for (const pos of selectedPositions) {
                                             await handleClosePosition(pos);
                                         }
-                                            await refreshPositions();
-                                            setSelectedPositions(new Set());
+                                        await refreshPositions();
+                                        setSelectedPositions(new Set());
 
-                                     }
-                                     }
-                                    >
-                                        Close All
-                                    </button>
-                                    <button
-                                        className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-white"
-                                     onClick={async () => 
-                                     {
-                                        for (const pos of selectedPositions)
-                                        {
+                                    }
+                                    }
+                                >
+                                    Close All
+                                </button>
+                                <button
+                                    className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-white"
+                                    onClick={async () => {
+                                        for (const pos of selectedPositions) {
                                             await handleClaimFees(pos);
                                         }
-                                            await refreshPositions();
-                                            setSelectedPositions(new Set());
+                                        await refreshPositions();
+                                        setSelectedPositions(new Set());
 
-                                     }}
-                                    >
-                                        Claim Fees
-                                    </button>
-                                </div>
+                                    }}
+                                >
+                                    Claim Fees
+                                </button>
                             </div>
-                        
+                        </div>
+
                         {positions.map((position, index) => (
                             <div key={index} className="px-6 hover:bg-gray-800/50 transition-colors">
                                 <div className="grid grid-cols-12 gap-4 items-center min-h-[96px]">
                                     <div className="col-span-3 flex items-center gap-4">
                                         <input
-                                        className="scale-150 accent-purple-600"
+                                            className="scale-150 accent-purple-600"
                                             type="checkbox"
                                             checked={selectedPositions.has(position)}
                                             onChange={(e) => {
 
-                                                if (lastSelectedPosition !== null && (e.nativeEvent as MouseEvent).shiftKey)
-                                                {
+                                                if (lastSelectedPosition !== null && (e.nativeEvent as MouseEvent).shiftKey) {
                                                     const index1 = positions.indexOf(position);
                                                     const index2 = positions.indexOf(lastSelectedPosition);
                                                     const addedRange = positions.slice(Math.min(index1, index2), Math.max(index1, index2) + 1);
