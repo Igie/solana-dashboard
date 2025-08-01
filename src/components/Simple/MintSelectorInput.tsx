@@ -68,10 +68,6 @@ export const MintSelectorInput: React.FC<Props> = ({
             onChange({ mint, amount: maxValue })
         }
     }
-
-
-
-
     useEffect(() => {
         if (externalAmount !== undefined && externalAmount.toString() !== inputValue) {
             setInputValue(externalAmount.toString())

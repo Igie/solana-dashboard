@@ -224,7 +224,6 @@ const Dammv2PoolCreation: React.FC = () => {
                 image: tokenBMetadata.image || undefined
             }
 
-
             const activationTime = currentTime - (new BN(x.account.activationType === 0
                 ? await connection.getBlockTime(x.account.activationPoint.toNumber()) || 0 :
                 x.account.activationType === 1
@@ -304,7 +303,6 @@ const Dammv2PoolCreation: React.FC = () => {
                 baseFee: getBaseFeeParams(maxFee * 100, minFee * 100, selectedFeeScheduler, totalDuration.div(new BN(reductionPeriod)).toNumber(), totalDuration.toNumber()),
                 padding: [],
                 dynamicFee: getDynamicFeeParams(5000, 150),
-                
             };
 
             const positionNft = Keypair.generate();
@@ -317,7 +315,6 @@ const Dammv2PoolCreation: React.FC = () => {
                 tokenBMint: tokenB,
                 tokenAAmount: tokenAAmount,
                 tokenBAmount: tokenBAmount,
-
                 initSqrtPrice: initSqrtPrice,
                 sqrtMinPrice: MIN_SQRT_PRICE,
                 sqrtMaxPrice: MAX_SQRT_PRICE,
@@ -330,10 +327,7 @@ const Dammv2PoolCreation: React.FC = () => {
                 tokenAProgram: new PublicKey(tokenAMetadata.tokenProgram),
                 tokenBProgram: new PublicKey(tokenBMetadata.tokenProgram),
             });
-            //tx.feePayer = publicKey!;
-
             try {
-
                 await sendTxn(tx, [positionNft],
                     {
                         notify: true,
@@ -346,7 +340,6 @@ const Dammv2PoolCreation: React.FC = () => {
             }
         } catch (err) {
             console.error("Failed to create pool:", err)
-
         }
     }
 
@@ -402,7 +395,6 @@ const Dammv2PoolCreation: React.FC = () => {
                         </div>
                     </div>
                 </div>
-                
             </div>
             <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 space-y-6">
                 <button
@@ -411,7 +403,6 @@ const Dammv2PoolCreation: React.FC = () => {
                 >
                     {showCreateForm ? "Hide Create Pool Form" : "Create New DAMMv2 Pool"}
                 </button>
-
                 {showCreateForm && (
                     <div className="space-y-4">
                         <div className="relative">
@@ -652,13 +643,8 @@ const Dammv2PoolCreation: React.FC = () => {
                 cpAmm={cpAmm}
                 pools={detailedPools}
                 tokenMetadataMap={tokenMetadataMap} />
-
         </div>
     )
 }
-
-
-
-
 
 export default Dammv2PoolCreation

@@ -16,9 +16,6 @@ interface TwoMints {
     quote: string,
 }
 
-
-
-
 const DammPositions: React.FC = () => {
     const { connection } = useConnection()
     const { publicKey, connected } = useWallet()
@@ -66,15 +63,12 @@ const DammPositions: React.FC = () => {
         }
     }
 
-
     const handleClosePosition = async (position: PoolPositionInfo) => {
         if (cpAmm.isLockedPosition(position.positionState)) {
             toast.error("Cannot close a locked position");
             return;
         }
 
-        //const { value } = await connection.simulateTransaction(t);
-        //console.log(value.logs);
         try {
 
         } catch (e) {
@@ -87,11 +81,6 @@ const DammPositions: React.FC = () => {
             toast.error("Cannot close a locked position");
             return;
         }
-
-
-
-        //if (hasSol) closeTxn.instructions.pop();
-
     };
 
     useEffect(() => {
@@ -123,14 +112,9 @@ const DammPositions: React.FC = () => {
                     }
                 }
             )
-        }
-
-        )
-
+        })
 
     }, [mintToMintSwap])
-
-
     useEffect(() => {
         refreshPositions();
         setSelectedPositions(new Set());
@@ -218,9 +202,6 @@ const DammPositions: React.FC = () => {
                     </div>
                 </div>
             </div>
-
-
-
             {/* Pool Positions */}
             <div className="bg-gray-900 border border-gray-700 rounded-2xl">
                 <div className="p-6 border-b border-gray-700">
@@ -281,31 +262,13 @@ const DammPositions: React.FC = () => {
                         </p>
                     </div>
                 ) : (
-
-
                     <div className="divide-y divide-gray-700">
                         
                             <div className="flex items-center justify-between p-4 bg-gray-800 border border-purple-700 rounded-xl mt-4">
                                 <div className="text-purple-300">
-                                    {selectedPositions.size} pool{selectedPositions.size > 1 ? 's' : ''} selected
+                                   {selectedPositions.size} pool{selectedPositions.size > 1 ? 's' : ''} selected
                                 </div>
                                 <div className="flex gap-2">
-                                    <button
-                                        className="bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded text-white"
-                                     onClick={async () => 
-                                     {
-                                        for (const pos of selectedPositions)
-                                        {
-                                            await handleClosePositionAndSwapToQuote(pos);
-                                        }
-                                            await refreshPositions();
-                                            setSelectedPositions(new Set());
-
-                                     }
-                                     }
-                                    >
-                                        Close All and Swap to Quote
-                                    </button>
                                     <button
                                         className="bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded text-white"
                                      onClick={async () => 

@@ -102,7 +102,6 @@ const Portfolio: React.FC = () => {
     }
   }, [])
 
-
   if (!connected) {
     return (
       <div className="text-center py-12">
@@ -113,7 +112,6 @@ const Portfolio: React.FC = () => {
       </div>
     )
   }
-
 
   return (
     <div className="space-y-6">

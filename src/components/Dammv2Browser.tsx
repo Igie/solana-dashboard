@@ -11,9 +11,6 @@ import Decimal from 'decimal.js'
 import { type PoolDetailedInfo, type PoolInfo } from '../constants'
 import Dammv2PoolList from './Simple/Dammv2PoolList'
 
-
-
-
 const Dammv2Browser: React.FC = () => {
     const { connected } = useWallet()
     const { connection } = useConnection()
@@ -250,15 +247,8 @@ const Dammv2Browser: React.FC = () => {
                 cpAmm={cpAmm}
                 pools={detailedPools}
                 tokenMetadataMap={tokenMetadataMap} />
-
-
         </div>
 
     )
 }
-
-
-
-
-
 export default Dammv2Browser

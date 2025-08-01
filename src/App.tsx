@@ -80,8 +80,6 @@ function App() {
 
   const [activeTab, setActiveTab] = useState('dashboard')
 
-
-
   // Configure supported wallets
   const wallets = useMemo(
     () => [
@@ -100,7 +98,6 @@ function App() {
       displayMode: 'modal',
     })
   };
-
 
   return (
     <ConnectionProvider endpoint={endpoint}>
@@ -175,8 +172,6 @@ function App() {
               <main className="max-w-9/10 mx-auto px-4 py-6">
                 <ActiveComponent />
               </main>
-
-
             </div>
           </GlobalProviders>
         </WalletModalProvider>

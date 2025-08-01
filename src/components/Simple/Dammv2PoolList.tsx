@@ -132,26 +132,25 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                 <div>Current Fee</div>
                                 {SortArrow<PoolSortType>(PoolSortType.PoolCurrentFee, sortBy, sortAscending, handleSort)}
                             </div>
-
                         </div>
                         {popoverVisible && (
-                <DepositPopover
-                    cpAmm={cpAmm}
-                    owner={publicKey!}
-                    poolInfo={depositPool}
-                    onClose={() => setPopoverVisible(false)}
-                    position={position}
-                    sendTransaction={async (x, nft) => {
-                        await sendTxn(x, [nft], {
-                            notify: true,
-                            onSuccess: () => {
-                                setPopoverVisible(false);
-                            }
-                        })
+                            <DepositPopover
+                                cpAmm={cpAmm}
+                                owner={publicKey!}
+                                poolInfo={depositPool}
+                                onClose={() => setPopoverVisible(false)}
+                                position={position}
+                                sendTransaction={async (x, nft) => {
+                                    await sendTxn(x, [nft], {
+                                        notify: true,
+                                        onSuccess: () => {
+                                            setPopoverVisible(false);
+                                        }
+                                    })
 
-                    }}
-                />
-            )}
+                                }}
+                            />
+                        )}
                         {pools.slice(0, Math.min(20, pools.length)).map((pool, index) => (
                             <div
                                 key={index}
@@ -245,9 +244,6 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
 
                 </div>
             )}
-
-            
-
         </div>
     )
 }
