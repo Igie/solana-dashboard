@@ -67,8 +67,6 @@ const DammPositions: React.FC = () => {
             tokenAVault: position.poolState.tokenAVault,
             tokenBVault: position.poolState.tokenBVault,
         })
-
-
         try {
             sendTxn(txn, undefined, {
                 notify: true,

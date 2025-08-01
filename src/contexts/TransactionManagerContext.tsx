@@ -1,7 +1,8 @@
 import { createContext, useContext, type ReactNode } from 'react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { Keypair, Transaction, VersionedTransaction } from '@solana/web3.js';
+import { Keypair, SendTransactionError, Transaction, VersionedTransaction } from '@solana/web3.js';
 import { txToast } from '../components/Simple/TxToast';
+import { WalletSendTransactionError } from '@solana/wallet-adapter-base';
 
 type TransactionManagerContextType = {
     sendTxn: (tx: Transaction | VersionedTransaction, signers?: Keypair[], options?: {
@@ -31,7 +32,7 @@ export const TransactionManagerProvider = ({ children }: { children: ReactNode }
         }
 
         try {
-            const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+            const { context: { slot:minContextSlot }, value: { blockhash, lastValidBlockHeight } } = await connection.getLatestBlockhashAndContext();
             if (tx instanceof Transaction) {
                 tx.feePayer = publicKey;
                 tx.recentBlockhash = blockhash;
@@ -43,15 +44,26 @@ export const TransactionManagerProvider = ({ children }: { children: ReactNode }
                 tx.message.recentBlockhash = blockhash;
                 if (signers)
                     tx.sign(signers!)
-
             }
+            if (tx instanceof Transaction) {
+                const r = await connection.simulateTransaction(tx)
+                console.log(r);
+            }
+            let sig = "";
+            try {
+                sig = await sendTransaction(tx, connection, {minContextSlot});
+            } catch (err: any) {
+                if (err instanceof WalletSendTransactionError) {
+                    console.log("transaction error logs:")
 
-
-
-
-
-
-            const sig = await sendTransaction(tx, connection);
+                    console.log(err.error);
+                    console.log(err.message);
+                    console.log(err.name);
+                }
+                if (notify) txToast.error('Error sending transaction');
+                onError?.(err);
+                return null;
+            }
             if (notify) txToast.loading('Transaction sent...');
 
             const confirmation = await connection.confirmTransaction(
@@ -59,8 +71,7 @@ export const TransactionManagerProvider = ({ children }: { children: ReactNode }
                     signature: sig,
                     blockhash: blockhash,
                     lastValidBlockHeight: lastValidBlockHeight
-                },
-                'confirmed');
+                }, 'confirmed');
 
             if (confirmation.value.err) {
                 if (notify) txToast.error('Transaction failed');
@@ -71,14 +82,17 @@ export const TransactionManagerProvider = ({ children }: { children: ReactNode }
             if (notify) txToast.success('Transaction confirmed!', sig);
             onSuccess?.(sig);
             return sig;
-        } catch (err) {
+
+        } catch (err: any) {
+            if (err instanceof SendTransactionError) {
+                console.log(await err.getLogs(connection));
+            }
             console.error('Transaction error:', err);
             if (notify) txToast.error('Error sending transaction');
             onError?.(err);
             return null;
         }
     };
-
     return (
         <TransactionManagerContext.Provider value={{ sendTxn }}>
             {children}

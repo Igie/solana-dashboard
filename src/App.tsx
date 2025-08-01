@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react'
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react'
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui'
-import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets'
+import { PhantomWalletAdapter } from '@solana/wallet-adapter-wallets'
+import { SolflareWalletAdapter } from "@solana/wallet-adapter-solflare";
 import { Home, TrendingUp, ArrowLeftRight, BotIcon, PlayIcon, DnaIcon } from 'lucide-react'
 
 
@@ -83,7 +84,7 @@ function App() {
   // Configure supported wallets
   const wallets = useMemo(
     () => [
-      new PhantomWalletAdapter(),
+      //new PhantomWalletAdapter(),
       new SolflareWalletAdapter(),
     ],
     []
@@ -100,8 +101,10 @@ function App() {
   };
 
   return (
-    <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={wallets} autoConnect>
+    <ConnectionProvider endpoint={endpoint} config={{
+      commitment: 'confirmed',
+    }}>
+      <WalletProvider wallets={wallets} autoConnect={true}>
         <WalletModalProvider>
           <GlobalProviders>
             <Toaster
