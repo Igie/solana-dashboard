@@ -85,8 +85,8 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
     maxAmountTokenA: depositQuote.actualInputAmount,
     maxAmountTokenB: depositQuote.outputAmount,
 
-    tokenAAmountThreshold: depositQuote.actualInputAmount.muln(0.90),
-    tokenBAmountThreshold: depositQuote.outputAmount.muln(0.90),
+    tokenAAmountThreshold: depositQuote.actualInputAmount.muln(1.50),
+    tokenBAmountThreshold: depositQuote.outputAmount.muln(1.50),
     tokenAMint: poolInfo.poolInfo.account.tokenAMint,
     tokenBMint: poolInfo.poolInfo.account.tokenBMint,
     tokenAProgram: getTokenProgram(poolInfo.poolInfo.account.tokenAFlag),
