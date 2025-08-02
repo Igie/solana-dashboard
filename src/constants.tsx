@@ -23,7 +23,8 @@ export interface PoolTokenInfo {
     poolAmount: number
     decimals: number
     price: number
-    image?: string
+    image?: string,
+    totalFees: Decimal
 }
 
 export interface PoolDetailedInfo {
@@ -36,6 +37,7 @@ export interface PoolDetailedInfo {
     price: Decimal
     TVL: number
     lockedTVL: number
+    totalFees: Decimal
 }
 
 export interface PoolDetailedInfoMap {
@@ -46,6 +48,52 @@ export enum PoolSortType {
     PoolActivationTime,
     PoolBaseFee,
     PoolCurrentFee,
+    PoolTokenAFees,
+    PoolTokenBFees,
+    PoolTotalFees,
+}
+
+export const sortPositions = (pools: PoolDetailedInfo[], sortType: PoolSortType, ascending?: boolean) => {
+
+    const p = pools.sort((x, y) => {
+        let r = 0;
+        if (ascending === null) {
+            return (x.activationTime - y.activationTime);
+        }
+        switch (sortType) {
+
+            case PoolSortType.PoolActivationTime:
+                r = (x.activationTime - y.activationTime);
+                break;
+
+            case PoolSortType.PoolBaseFee:
+                r = (x.baseFeeBPS - y.baseFeeBPS);
+                break;
+
+            case PoolSortType.PoolCurrentFee:
+                r = (x.totalFeeBPS - y.totalFeeBPS);
+                break;
+
+            case PoolSortType.PoolTokenAFees:
+                r = (x.tokenA.totalFees.sub(y.tokenA.totalFees).toNumber());
+                break;
+                
+            case PoolSortType.PoolTokenBFees:
+                r = (x.tokenB.totalFees.sub(y.tokenB.totalFees).toNumber());
+                break;
+
+            case PoolSortType.PoolTotalFees:
+                r = (x.totalFees.sub(y.totalFees).toNumber());
+                break;
+        }
+
+        if (!ascending)
+            r = -r;
+        return r;
+    }
+    )
+
+    pools = p;
 }
 
 export const getShortMint = (mint: PublicKey) => {

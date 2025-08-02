@@ -8,7 +8,8 @@ import type { CpAmm } from "@meteora-ag/cp-amm-sdk";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useTransactionManager } from "../../contexts/TransactionManagerContext";
 import type { TokenMetadataMap } from "../../tokenUtils";
-import { getShortMint, PoolSortType, type PoolDetailedInfo } from "../../constants";
+import { getShortMint, PoolSortType, sortPositions, type PoolDetailedInfo } from "../../constants";
+import Decimal from "decimal.js";
 
 interface Dammv2PoolListProps {
     cpAmm: CpAmm
@@ -28,7 +29,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
     const { sendTxn } = useTransactionManager();
     const { refreshTokenAccounts } = useTokenAccounts();
 
-    const [sortBy, setSortBy] = useState<PoolSortType>(PoolSortType.PoolBaseFee);
+    const [sortBy, setSortBy] = useState<PoolSortType>(PoolSortType.PoolActivationTime);
     const [sortAscending, setSortAscending] = useState<boolean | undefined>(true);
 
     const [popoverVisible, setPopoverVisible] = useState(false);
@@ -53,36 +54,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
         return parts.join(' ')
     }
 
-    const sortPositions = (pools: PoolDetailedInfo[], sortType: PoolSortType, ascending?: boolean) => {
 
-        const p = pools.sort((x, y) => {
-            let r = 0;
-            if (ascending === null) {
-                return (x.activationTime - y.activationTime);
-            }
-            switch (sortType) {
-
-                case PoolSortType.PoolActivationTime:
-                    r = (x.activationTime - y.activationTime);
-                    break;
-
-                case PoolSortType.PoolBaseFee:
-                    r = (x.baseFeeBPS - y.baseFeeBPS);
-                    break;
-
-                case PoolSortType.PoolCurrentFee:
-                    r = (x.totalFeeBPS - y.totalFeeBPS);
-                    break;
-            }
-
-            if (!ascending)
-                r = -r;
-            return r;
-        }
-        )
-
-        pools = p;
-    }
     const handleSort = (sortType: PoolSortType, ascending?: boolean) => {
         setSortBy(sortType);
         setSortAscending(ascending);
@@ -110,28 +82,48 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
 
                     <div className="overflow-x-auto">
                         <div className="grid grid-cols-10 gap-4 px-4 py-2 text-sm font-medium text-gray-400 border-b border-gray-700">
-                            <div className='col-span-2 grid grid-cols-3 justify-center'>
+                            <div className='col-span-2 grid grid-cols-3 justify-center gap-x-2'>
                                 <div className='flex justify-center items-center'>Pool</div>
                                 <div className='flex justify-center items-center'>Jup Trade</div>
                                 <div className='flex justify-center items-center'>Deposit</div>
                             </div>
-                            <div className='flex justify-start items-center'>Base Token</div>
-                            <div className='flex justify-start items-center'>Quote Token</div>
-                            <div className='flex justify-start items-center'>
-                                <div>Activation</div>
-                                {SortArrow(PoolSortType.PoolActivationTime, sortBy, sortAscending, handleSort)}
+                            <div className='col-span-3 grid grid-cols-4 justify-center gap-x-2'>
+                                <div className='flex justify-center items-center'>Base Token</div>
+                                <div className='flex justify-center items-center'>Quote Token</div>
+                                <div className='flex justify-center items-center'>Fee Mode</div>
+                                <div className='flex justify-center items-center'>Scheduler</div>
+
                             </div>
-                            <div className='flex justify-start items-center'>Fee Mode</div>
-                            <div className='flex justify-start items-center'>TVL</div>
-                            <div className='flex justify-start items-center'>Scheduler</div>
-                            <div className='flex justify-start items-center'>
-                                <div className='flex justify-start items-center'>Base Fee</div>
-                                {SortArrow<PoolSortType>(PoolSortType.PoolBaseFee, sortBy, sortAscending, handleSort)}
+                            <div className='col-span-3 grid grid-cols-4 justify-center gap-x-2'>
+                                <div className='flex justify-center items-center'>
+                                    <div>Activation</div>
+                                    {SortArrow(PoolSortType.PoolActivationTime, sortBy, sortAscending, handleSort)}
+                                </div>
+                                <div className='flex justify-center items-center'>TVL</div>
+                                <div className='flex justify-center items-center'>
+                                    <div className='flex justify-center items-center'>Base Fee</div>
+                                    {SortArrow<PoolSortType>(PoolSortType.PoolBaseFee, sortBy, sortAscending, handleSort)}
+                                </div>
+                                <div className='flex justify-start items-center'>
+                                    <div>Current Fee</div>
+                                    {SortArrow<PoolSortType>(PoolSortType.PoolCurrentFee, sortBy, sortAscending, handleSort)}
+                                </div>
                             </div>
-                            <div className='flex justify-start items-center'>
-                                <div>Current Fee</div>
-                                {SortArrow<PoolSortType>(PoolSortType.PoolCurrentFee, sortBy, sortAscending, handleSort)}
+                            <div className='col-span-2 grid grid-cols-3 justify-center gap-x-2'>
+                                <div className='flex justify-center items-center'>
+                                    <div>Token A Fees</div>
+                                    {SortArrow<PoolSortType>(PoolSortType.PoolTokenAFees, sortBy, sortAscending, handleSort)}
+                                </div>
+                                <div className='flex justify-center items-center'>
+                                    <div>Token B Fees</div>
+                                    {SortArrow<PoolSortType>(PoolSortType.PoolTokenBFees, sortBy, sortAscending, handleSort)}
+                                </div>
+                                <div className='flex justify-center items-center'>
+                                    <div>Total Fees</div>
+                                    {SortArrow<PoolSortType>(PoolSortType.PoolTotalFees, sortBy, sortAscending, handleSort)}
+                                </div>
                             </div>
+
                         </div>
                         {popoverVisible && (
                             <DepositPopover
@@ -156,19 +148,21 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                 key={index}
                                 className="grid grid-cols-10 gap-4 px-4 py-3 text-sm text-white border-b border-gray-800"
                             >
-                                <div className='col-span-2 grid items grid-cols-3'>
+                                <div className='col-span-2 grid items grid-cols-3 gap-x-2'>
                                     <div className="flex items-center justify-center">
-                                        <a
+
+                                        <button className="w-full h-full bg-purple-600 hover:bg-purple-500 rounded-md text-white text-sm justify-center"
+                                        ><a
                                             href={`https://edge.meteora.ag/dammv2/${pool.poolInfo.publicKey.toBase58()}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded-lg text-white text-sm font-medium"
                                         >
-                                            Pool
-                                        </a>
+                                                Pool
+                                            </a>
+                                        </button>
                                     </div>
                                     <div className="flex items-center justify-center">
-                                        <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                                        <button className="w-full h-full bg-blue-600 hover:bg-blue-700 rounded-md text-white text-sm justify-center"
                                             onClick={() => {
                                                 window.Jupiter.init({
                                                     formProps: {
@@ -184,7 +178,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                         </button>
                                     </div>
                                     <div className="flex items-center justify-center">
-                                        <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                                        <button className="w-full h-full bg-blue-600 hover:bg-blue-700 rounded-md text-white text-sm justify-center"
                                             onClick={(e) => {
                                                 setDepositPool(pool);
                                                 handleDepositClick(e);
@@ -194,48 +188,76 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                         </button>
                                     </div>
                                 </div>
-                                <div className="font-mono grid items-end">
-                                    {tokenMetadataMap[pool.poolInfo.account.tokenAMint.toBase58()]?.name || (pool.poolInfo.account.tokenAMint.toBase58().slice(0, 4) + '...')}
-                                    <button className="bg-gray-600 hover:bg-gray-500 px-2 py-2 rounded-lg text-white font-medium flex items-center gap-1"
-                                        onClick={() => navigator.clipboard.writeText(pool.poolInfo.account.tokenAMint.toBase58())}>
-                                        {getShortMint(pool.poolInfo.account.tokenAMint)}
-                                    </button>
-                                </div>
-                                <div className="font-mono grid items-end">
-                                    {tokenMetadataMap[pool.poolInfo.account.tokenBMint.toBase58()]?.name || pool.poolInfo.account.tokenBMint.toBase58().slice(0, 4) + '...'}
-                                    <button className="bg-gray-600 hover:bg-gray-500 px-2 py-2 rounded-lg text-white font-medium flex items-center gap-1"
-                                        onClick={() => navigator.clipboard.writeText(pool.poolInfo.account.tokenBMint.toBase58())}>
-                                        {getShortMint(pool.poolInfo.account.tokenBMint)}
-                                    </button>
-                                </div>
-                                <div className="text-gray-300">
+                                <div className='col-span-3 grid items grid-cols-4 gap-x-2'>
+                                    <div className="font-mono grid items-center justify-center">
+                                        <div className="truncate">
 
-                                    {formatDuration((pool.activationTime))} ago
-                                </div>
-                                <div className="text-gray-300">
-                                    {(pool.poolInfo.account.collectFeeMode === 0 ? "Both Tokens" :
-                                        pool.poolInfo.account.collectFeeMode === 1 ? "Quote Token" : "Unknown")}
-                                </div>
-                                <div className="text-gray-300">
-                                    ${
-                                        pool.TVL.toFixed(2) || "Unknown"
-                                    }
+                                            {tokenMetadataMap[pool.poolInfo.account.tokenAMint.toBase58()]?.name || (pool.poolInfo.account.tokenAMint.toBase58().slice(0, 4) + '...')}
+                                        </div>
+                                        <button className="bg-gray-600 hover:bg-gray-500 px-1 py-0.5 rounded-md text-white text-sm justify-center"
+                                            onClick={() => navigator.clipboard.writeText(pool.poolInfo.account.tokenAMint.toBase58())}>
+                                            {getShortMint(pool.poolInfo.account.tokenAMint)}
+                                        </button>
+                                    </div>
+                                    <div className="font-mono grid items-center justify-center">
+                                        <div className="truncate">
+                                            {tokenMetadataMap[pool.poolInfo.account.tokenBMint.toBase58()]?.name || pool.poolInfo.account.tokenBMint.toBase58().slice(0, 4) + '...'}
+                                        </div>
+                                        <button className="bg-gray-600 hover:bg-gray-500 px-1 py-0.5 rounded-md text-white text-sm justify-center"
+                                            onClick={() => navigator.clipboard.writeText(pool.poolInfo.account.tokenBMint.toBase58())}>
+                                            {getShortMint(pool.poolInfo.account.tokenBMint)}
+                                        </button>
+                                    </div>
+
+                                    <div className="text-gray-300 grid items-center justify-center">
+                                        {(pool.poolInfo.account.collectFeeMode === 0 ? "Both Tokens" :
+                                            pool.poolInfo.account.collectFeeMode === 1 ? "Quote Token" : "Unknown")}
+                                    </div>
+                                    <div className="text-gray-300 grid items-center justify-center">
+                                        {pool.poolInfo.account.poolFees.baseFee.feeSchedulerMode == 0 ? "Linear" :
+                                            pool.poolInfo.account.poolFees.baseFee.feeSchedulerMode == 1 ? "Exponential" : "Unknown"
+                                        }
+                                    </div>
                                 </div>
 
-                                <div className="text-gray-300">
-                                    {pool.poolInfo.account.poolFees.baseFee.feeSchedulerMode == 0 ? "Linear" :
-                                        pool.poolInfo.account.poolFees.baseFee.feeSchedulerMode == 1 ? "Exponential" : "Unknown"
-                                    }
+                                <div className='col-span-3 grid items grid-cols-4 gap-x-2'>
+                                    <div className="text-gray-300 grid items-center justify-center">
+                                        {formatDuration((pool.activationTime))} ago
+                                    </div>
+                                    <div className="text-gray-300 grid items-center justify-center">
+                                        ${
+                                            pool.TVL.toFixed(2) || "Unknown"
+                                        }
+                                    </div>
+
+
+                                    <div className="text-gray-300 grid items-center justify-center">
+                                        {
+                                            pool.baseFeeBPS / 100 || "Unknown"
+                                        }%
+                                    </div>
+                                    <div className="text-gray-300 grid items-center justify-center">
+                                        {
+                                            pool.totalFeeBPS / 100 || "Unknown"
+                                        }%
+                                    </div>
                                 </div>
-                                <div className="text-gray-300">
-                                    {
-                                        pool.baseFeeBPS / 100 || "Unknown"
-                                    }%
-                                </div>
-                                <div className="text-gray-300">
-                                    {
-                                        pool.totalFeeBPS / 100 || "Unknown"
-                                    }%
+                                <div className='col-span-2 grid items grid-cols-3 gap-x-2'>
+                                    <div className="text-gray-300 grid items-center justify-center">
+                                        {
+                                            "$" + pool.tokenA.totalFees.toFixed(2) || "Unknown"
+                                        }
+                                    </div>
+                                    <div className="text-gray-300 grid items-center justify-center">
+                                        {
+                                            "$" + pool.tokenB.totalFees.toFixed(2) || "Unknown"
+                                        }
+                                    </div>
+                                    <div className="text-gray-300 grid items-center justify-center">
+                                        {
+                                            "$" + pool.totalFees.toFixed(2) || "Unknown"
+                                        }
+                                    </div>
                                 </div>
 
                             </div>
