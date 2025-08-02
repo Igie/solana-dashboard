@@ -5,10 +5,10 @@ import { DepositPopover } from "./Dammv2DepositPopover";
 import { useState } from "react";
 import { useTokenAccounts } from "../../contexts/TokenAccountsContext";
 import type { CpAmm } from "@meteora-ag/cp-amm-sdk";
-import { useWallet } from "@solana/wallet-adapter-react";
 import { useTransactionManager } from "../../contexts/TransactionManagerContext";
 import type { TokenMetadataMap } from "../../tokenUtils";
 import { getShortMint, PoolSortType, sortPositions, type PoolDetailedInfo } from "../../constants";
+import { useWallet } from "@jup-ag/wallet-adapter";
 
 interface Dammv2PoolListProps {
     cpAmm: CpAmm

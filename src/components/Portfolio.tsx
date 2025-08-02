@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useConnection, useWallet } from '@solana/wallet-adapter-react'
+
 import { LAMPORTS_PER_SOL } from '@solana/web3.js'
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
+
 import { Coins, RefreshCw, TrendingUp, Wallet, ExternalLink, AlertCircle } from 'lucide-react'
 import { type TokenAccount } from '../tokenUtils'
 import { useTokenAccounts } from '../contexts/TokenAccountsContext'
+import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-adapter'
 
 const Portfolio: React.FC = () => {
   const { connection } = useConnection()
@@ -108,7 +109,7 @@ const Portfolio: React.FC = () => {
         <Wallet className="w-16 h-16 mx-auto mb-6 text-gray-400" />
         <h2 className="text-2xl font-bold mb-4 text-gray-300">Connect Your Wallet</h2>
         <p className="text-gray-400 mb-6">Connect your Solana wallet to view your portfolio</p>
-        <WalletMultiButton className="!bg-purple-600 hover:!bg-purple-700 !rounded-lg !font-medium !px-8 !py-3" />
+        <UnifiedWalletButton buttonClassName="!bg-purple-600 hover:!bg-purple-700 !rounded-lg !font-medium !px-8 !py-3" />
       </div>
     )
   }

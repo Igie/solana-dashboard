@@ -1,8 +1,8 @@
-import React, { useMemo, useState } from 'react'
-import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react'
+import React, { useState } from 'react'
+
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui'
-import { PhantomWalletAdapter } from '@solana/wallet-adapter-wallets'
-import { SolflareWalletAdapter } from "@solana/wallet-adapter-solflare";
+import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets'
+
 import { Home, TrendingUp, ArrowLeftRight, BotIcon, PlayIcon, DnaIcon } from 'lucide-react'
 
 
@@ -10,9 +10,6 @@ import { Home, TrendingUp, ArrowLeftRight, BotIcon, PlayIcon, DnaIcon } from 'lu
 import Dashboard from './components/Dashboard'
 import Portfolio from './components/Portfolio'
 
-// Import wallet adapter CSS
-
-import '@solana/wallet-adapter-react-ui/styles.css'
 import DammPositions from './components/DammPositions';
 import Dammv2PoolCreation from './components/Dammv2PoolCreation'
 import { DammUserPositionsProvider } from './contexts/DammUserPositionsContext'
@@ -23,23 +20,20 @@ import { TransactionManagerProvider } from './contexts/TransactionManagerContext
 import './App.css'
 import { Toaster } from 'sonner'
 import Dammv2Browser from './components/Dammv2Browser'
+import { ConnectionProvider, UnifiedWalletProvider } from '@jup-ag/wallet-adapter';
 
 const GlobalProviders = ({ children }: { children: React.ReactNode }) => (
 
   <TransactionManagerProvider>
-          
-  <TokenAccountsProvider>
-  <DammUserPositionsProvider>
-    {children}
-  </DammUserPositionsProvider>
-  </TokenAccountsProvider>
+
+    <TokenAccountsProvider>
+      <DammUserPositionsProvider>
+        {children}
+      </DammUserPositionsProvider>
+    </TokenAccountsProvider>
   </TransactionManagerProvider>
 )
 
-
-
-
-// Tab configuration
 const tabs = [
   {
     id: 'dashboard',
@@ -65,13 +59,41 @@ const tabs = [
     icon: PlayIcon,
     component: Dammv2PoolCreation,
   },
-    {
+  {
     id: 'dammv2browser',
     name: 'DAMMv2 Browser',
     icon: DnaIcon,
     component: Dammv2Browser,
   },
 ]
+
+const UnifiedWallet = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <UnifiedWalletProvider
+      wallets={[
+        new PhantomWalletAdapter(),
+        new SolflareWalletAdapter(),
+      ]}
+      config={{
+        autoConnect: true,
+        env: "mainnet-beta",
+        metadata: {
+          name: "Solana Dashboard",
+          description: "Tool to help with your DAMMv2 life on Meteora",
+          url: "http://solana-dashboard-two.vercel.app/",
+          iconUrls: ["http://solana-dashboard-two.vercel.app/favicon.ico"],
+        },
+        walletlistExplanation: {
+          href: "https://station.jup.ag/docs/additional-topics/wallet-list",
+        },
+        theme: "dark",
+        lang: "en",
+      }}
+    >
+      {children}
+    </UnifiedWalletProvider>
+  );
+};
 
 // Main App component with providers and tabs
 function App() {
@@ -80,15 +102,6 @@ function App() {
   const endpoint = network === 'mainnet' ? MAINNET_HELIUS_RPC : DEVNET_HELIUS_RPC
 
   const [activeTab, setActiveTab] = useState('dashboard')
-
-  // Configure supported wallets
-  const wallets = useMemo(
-    () => [
-      new PhantomWalletAdapter(),
-      new SolflareWalletAdapter(),
-    ],
-    []
-  )
 
   const ActiveComponent = tabs.find(tab => tab.id === activeTab)?.component || Dashboard
 
@@ -104,22 +117,22 @@ function App() {
     <ConnectionProvider endpoint={endpoint} config={{
       commitment: 'confirmed',
     }}>
-      <WalletProvider wallets={wallets} autoConnect={true}>
+      <UnifiedWallet>
         <WalletModalProvider>
           <GlobalProviders>
             <Toaster
-        position="bottom-left"
-        richColors
-        closeButton
-        theme="dark"
-        toastOptions={{
-          classNames: {
-            toast: 'max-w-100 rounded-xl shadow-lg border border-gray-800 bg-gray-900 text-white',
-            title: 'font-semibold',
-            description: 'text-sm text-gray-300',
-          },
-        }}
-      />
+              position="bottom-left"
+              richColors
+              closeButton
+              theme="dark"
+              toastOptions={{
+                classNames: {
+                  toast: 'max-w-100 rounded-xl shadow-lg border border-gray-800 bg-gray-900 text-white',
+                  title: 'font-semibold',
+                  description: 'text-sm text-gray-300',
+                },
+              }}
+            />
             <div className="min-h-screen bg-black text-white">
               {/* Header with Navigation */}
               <header className="bg-gray-900 border-b border-gray-700">
@@ -148,10 +161,10 @@ function App() {
                         })}
                       </nav>
                     </div>
-                    
+
                     {/* Swap Button */}
                     <div className="flex items-center space-x-4">
-                      
+
                       <button
                         onClick={handleSwapClick}
                         className="flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-lg font-medium transition-all duration-200 transform hover:scale-105"
@@ -160,12 +173,12 @@ function App() {
                         Swap
                       </button>
                       <button
-                      onClick={() => setNetwork(network === 'mainnet' ? 'devnet' : 'mainnet')}
-                      className="px-3 py-2 border border-gray-600 text-sm rounded-md hover:bg-gray-700 transition"
-                      title="Switch cluster"
-                    >
-                      {network === 'mainnet' ? 'Mainnet 🔒' : 'Devnet 🧪'}
-                    </button>
+                        onClick={() => setNetwork(network === 'mainnet' ? 'devnet' : 'mainnet')}
+                        className="px-3 py-2 border border-gray-600 text-sm rounded-md hover:bg-gray-700 transition"
+                        title="Switch cluster"
+                      >
+                        {network === 'mainnet' ? 'Mainnet 🔒' : 'Devnet 🧪'}
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -178,7 +191,7 @@ function App() {
             </div>
           </GlobalProviders>
         </WalletModalProvider>
-      </WalletProvider>
+      </UnifiedWallet>
     </ConnectionProvider>
   )
 }

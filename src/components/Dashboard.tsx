@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { LAMPORTS_PER_SOL } from '@solana/web3.js'
-import { useConnection, useWallet } from '@solana/wallet-adapter-react'
-import { WalletMultiButton, WalletDisconnectButton } from '@solana/wallet-adapter-react-ui'
 import { Activity, CheckCircle, XCircle, Wallet, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
+import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-adapter'
 
 const Dashboard: React.FC = () => {
   const { connection } = useConnection()
@@ -61,10 +60,16 @@ const Dashboard: React.FC = () => {
           </div>
           
           <div className="flex gap-2">
-            <WalletMultiButton className="!bg-purple-600 hover:!bg-purple-700 !rounded-lg !font-medium !px-6 !py-2" />
-            {connected && (
-              <WalletDisconnectButton className="!bg-red-600 hover:!bg-red-700 !rounded-lg !font-medium !px-4 !py-2" />
-            )}
+            <UnifiedWalletButton 
+            buttonClassName="!bg-purple-600 hover:!bg-purple-700 !rounded-lg !font-medium !px-6 !py-2"
+             currentUserClassName='"!bg-red-600 hover:!bg-red-700 !rounded-lg !font-medium !px-4 !py-2"'
+             >
+              
+              
+             </UnifiedWalletButton>
+            {/* {connected && (
+              <UnifiedWalletButton buttonClassName="!bg-red-600 hover:!bg-red-700 !rounded-lg !font-medium !px-4 !py-2" />
+            )} */}
           </div>
         </div>
       </div>

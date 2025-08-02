@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useConnection, useWallet } from '@solana/wallet-adapter-react'
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { RefreshCw, Wallet, ExternalLink, Droplets, TrendingUp } from 'lucide-react'
 import { CpAmm, getTokenProgram } from '@meteora-ag/cp-amm-sdk'
 import { SortType, useDammUserPositions, type PoolPositionInfo } from '../contexts/DammUserPositionsContext'
@@ -11,6 +9,7 @@ import { getSwapTransaction } from '../JupSwapApi'
 import { SortArrow } from './Simple/SortArrow'
 import { toast } from 'sonner'
 import { BN } from '@coral-xyz/anchor'
+import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-adapter'
 
 interface TwoMints {
     base: string,
@@ -141,13 +140,9 @@ const DammPositions: React.FC = () => {
                     }
                 }
             )
-        }
-
-        )
-
+        })
 
     }, [mintToMintSwap])
-
 
     useEffect(() => {
         refreshPositions();
@@ -175,14 +170,13 @@ const DammPositions: React.FC = () => {
         sortPositionsBy(sortType, ascending)
     };
 
-
     if (!connected) {
         return (
             <div className="text-center py-12">
                 <Wallet className="w-16 h-16 mx-auto mb-6 text-gray-400" />
                 <h2 className="text-2xl font-bold mb-4 text-gray-300">Connect Your Wallet</h2>
                 <p className="text-gray-400 mb-6">Connect your Solana wallet to view your DAMMv2 pool positions</p>
-                <WalletMultiButton className="!bg-purple-600 hover:!bg-purple-700 !rounded-lg !font-medium !px-8 !py-3" />
+                <UnifiedWalletButton buttonClassName="!bg-purple-600 hover:!bg-purple-700 !rounded-lg !font-medium !px-8 !py-3" />
             </div>
         )
     }
@@ -236,8 +230,6 @@ const DammPositions: React.FC = () => {
                     </div>
                 </div>
             </div>
-
-
 
             {/* Pool Positions */}
             <div className="bg-gray-900 border border-gray-700 rounded-2xl">
@@ -592,7 +584,6 @@ const DammPositions: React.FC = () => {
                 )}
             </div>
         </div>
-
     )
 }
 

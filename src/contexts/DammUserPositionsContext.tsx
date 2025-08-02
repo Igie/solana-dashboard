@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useState } from 'react'
-import { useConnection, useWallet } from '@solana/wallet-adapter-react'
 import { PublicKey } from '@solana/web3.js'
 import { CpAmm, feeNumeratorToBps, getBaseFeeNumerator, getFeeNumerator, getUnClaimReward, type PoolState, type PositionState } from '@meteora-ag/cp-amm-sdk'
 import { fetchTokenMetadata } from '../tokenUtils'
 import Decimal from 'decimal.js'
 import { BN } from '@coral-xyz/anchor'
+import { useConnection, useWallet } from '@jup-ag/wallet-adapter'
 
 export interface PoolTokenInfo {
     mint: string

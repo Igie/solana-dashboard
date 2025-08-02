@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { useConnection, useWallet } from '@solana/wallet-adapter-react'
 import { fetchTokenAccounts, type TokenAccount, type TokenMetadata } from '../tokenUtils'
+import { useConnection, useWallet } from '@jup-ag/wallet-adapter'
 
 interface TokenAccountsContextType {
     tokenAccounts: TokenAccount[]

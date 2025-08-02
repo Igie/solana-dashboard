@@ -1,8 +1,6 @@
 import React, { useState } from 'react'
 import { useEffect } from 'react'
-import { useConnection, useWallet } from '@solana/wallet-adapter-react'
 import { Target, RefreshCcw } from 'lucide-react'
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { CpAmm, feeNumeratorToBps, FeeSchedulerMode, getBaseFeeNumerator, getBaseFeeParams, getDynamicFeeParams, getFeeNumerator, getPriceFromSqrtPrice, MAX_SQRT_PRICE, MIN_SQRT_PRICE } from '@meteora-ag/cp-amm-sdk'
 import { Keypair, PublicKey } from '@solana/web3.js'
 import { BN } from '@coral-xyz/anchor'
@@ -15,6 +13,7 @@ import { txToast } from './Simple/TxToast'
 import Dammv2PoolList from './Simple/Dammv2PoolList'
 import type { PoolDetailedInfo, PoolInfo } from '../constants'
 import { toast } from 'sonner'
+import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-adapter'
 
 
 const Dammv2PoolCreation: React.FC = () => {
@@ -363,7 +362,7 @@ const Dammv2PoolCreation: React.FC = () => {
             <div className="text-center py-12">
                 <Target className="w-16 h-16 mx-auto mb-6 text-gray-400" />
                 <h2 className="text-2xl font-bold mb-4 text-gray-300">Connect Your Wallet</h2>
-                <WalletMultiButton className="!bg-purple-600 hover:!bg-purple-700 !rounded-lg !font-medium !px-8 !py-3" />
+                <UnifiedWalletButton buttonClassName="!bg-purple-600 hover:!bg-purple-700 !rounded-lg !font-medium !px-8 !py-3" />
             </div>
         )
     }

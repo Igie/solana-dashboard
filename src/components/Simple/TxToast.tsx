@@ -1,4 +1,3 @@
-// src/utils/txToast.ts
 import { toast } from 'sonner';
 
 const SOLANA_EXPLORER = "https://solscan.io/tx/";

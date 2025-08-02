@@ -1,8 +1,8 @@
 import { createContext, useContext, type ReactNode } from 'react';
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { Keypair, SendTransactionError, Transaction, VersionedTransaction } from '@solana/web3.js';
 import { txToast } from '../components/Simple/TxToast';
 import { WalletSendTransactionError } from '@solana/wallet-adapter-base';
+import { useConnection, useWallet } from '@jup-ag/wallet-adapter';
 
 type TransactionManagerContextType = {
     sendTxn: (tx: Transaction | VersionedTransaction, signers?: Keypair[], options?: {
@@ -15,8 +15,8 @@ type TransactionManagerContextType = {
 const TransactionManagerContext = createContext<TransactionManagerContextType | null>(null);
 
 export const TransactionManagerProvider = ({ children }: { children: ReactNode }) => {
-    const { connection } = useConnection();
     const { sendTransaction, publicKey } = useWallet();
+    const { connection } = useConnection();
 
     const sendTxn = async (
         tx: Transaction | VersionedTransaction, signers?: Keypair[],
