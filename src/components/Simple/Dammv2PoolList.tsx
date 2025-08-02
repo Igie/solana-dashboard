@@ -9,7 +9,6 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useTransactionManager } from "../../contexts/TransactionManagerContext";
 import type { TokenMetadataMap } from "../../tokenUtils";
 import { getShortMint, PoolSortType, sortPositions, type PoolDetailedInfo } from "../../constants";
-import Decimal from "decimal.js";
 
 interface Dammv2PoolListProps {
     cpAmm: CpAmm
