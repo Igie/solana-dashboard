@@ -96,17 +96,17 @@ const Dammv2PoolCreation: React.FC = () => {
 
             const tokenAPrice = data?.[tokenAMint]?.usdPrice;
             const tokenBPrice = data?.[tokenBMint]?.usdPrice;
-            //console.log("token prices", tokenAPrice, tokenBPrice)
+            console.log("token prices", tokenAPrice, tokenBPrice)
             if (tokenAPrice && tokenBPrice) {
                 setInitialPrice(Decimal.div(tokenAPrice, tokenBPrice))
             } else {
-                console.error('No price returned:')
+                toast.error('No price returned:')
                 console.log(`${tokenAMint},${tokenBMint}`)
                 console.log(tokenAPrice, tokenBPrice)
+                setInitialPrice(new Decimal(0));
             }
-        } finally {
-            console.error('Price fetch failed:')
-            toast.error('Failed to fetch current price.')
+        } catch {
+            toast.error('Error while fetching prices.')
             setInitialPrice(new Decimal(0));
         }
     }

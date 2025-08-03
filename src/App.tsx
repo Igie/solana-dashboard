@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui'
 import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets'
-
 import { Home, TrendingUp, ArrowLeftRight, BotIcon, PlayIcon, DnaIcon } from 'lucide-react'
 
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { RefreshCw, Wallet, ExternalLink, Droplets, TrendingUp } from 'lucide-react'
-import { CpAmm, getTokenProgram } from '@meteora-ag/cp-amm-sdk'
+import { CpAmm } from '@meteora-ag/cp-amm-sdk'
 import { SortType, useDammUserPositions, type PoolPositionInfo } from '../contexts/DammUserPositionsContext'
 import { useTokenAccounts } from '../contexts/TokenAccountsContext'
 import { useTransactionManager } from '../contexts/TransactionManagerContext'
@@ -10,6 +10,8 @@ import { SortArrow } from './Simple/SortArrow'
 import { toast } from 'sonner'
 import { BN } from '@coral-xyz/anchor'
 import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-adapter'
+import { PublicKey, Transaction } from '@solana/web3.js'
+
 
 interface TwoMints {
     base: string,
@@ -54,20 +56,26 @@ const DammPositions: React.FC = () => {
         if (position.positionUnclaimedFee <= 0) return;
 
         const txn = await cpAmm.claimPositionFee2({
+            receiver: publicKey!,
+
             owner: publicKey!,
+            feePayer: publicKey!,
             pool: position.poolAddress,
             position: position.positionAddress,
             positionNftAccount: position.positionNftAccount,
-            receiver: publicKey!,
             tokenAMint: position.poolState.tokenAMint,
             tokenBMint: position.poolState.tokenBMint,
-            tokenAProgram: getTokenProgram(position.poolState.tokenAFlag),
-            tokenBProgram: getTokenProgram(position.poolState.tokenBFlag),
+            tokenAProgram: new PublicKey(position.tokenA.tokenProgram),
+            tokenBProgram: new PublicKey(position.tokenA.tokenProgram),
             tokenAVault: position.poolState.tokenAVault,
             tokenBVault: position.poolState.tokenBVault,
         })
+
+        const temp = new Transaction();
+        temp.add(txn);
+
         try {
-            sendTxn(txn, undefined, {
+            sendTxn(temp, undefined, {
                 notify: true,
                 onSuccess: () => {
                     updatePosition(position.positionAddress);
@@ -102,7 +110,8 @@ const DammPositions: React.FC = () => {
                 notify: true,
                 onSuccess: () => {
                     removePosition(position.positionAddress);
-                    setExpandedIndex(null);
+                    if (expandedIndex)
+                        setExpandedIndex(null);
                 }
             })
 
@@ -319,26 +328,23 @@ const DammPositions: React.FC = () => {
                                 <button
                                     className="bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded text-white"
                                     onClick={async () => {
-                                        for (const pos of selectedPositions) {
+                                        const selectedPositionsTemp = [...selectedPositions];
+                                        for (const pos of selectedPositionsTemp) {
                                             await handleClosePosition(pos);
                                         }
-                                        await refreshPositions();
                                         setSelectedPositions(new Set());
-
-                                    }
-                                    }
+                                    }}
                                 >
                                     Close All
                                 </button>
                                 <button
                                     className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-white"
                                     onClick={async () => {
-                                        for (const pos of selectedPositions) {
+                                        const selectedPositionsTemp = [...selectedPositions];
+                                        for (const pos of selectedPositionsTemp) {
                                             await handleClaimFees(pos);
                                         }
-                                        await refreshPositions();
                                         setSelectedPositions(new Set());
-
                                     }}
                                 >
                                     Claim Fees

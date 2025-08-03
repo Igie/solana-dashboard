@@ -23,7 +23,6 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
         tokenMetadataMap,
     }
 ) => {
-
     const { publicKey } = useWallet();
     const { sendTxn } = useTransactionManager();
     const { refreshTokenAccounts } = useTokenAccounts();
@@ -75,8 +74,6 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                     <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                         <TrendingUp className="w-5 h-5 text-purple-400" />
                         DAMMv2 Pools {pools.length > 20 && 'Showing first 20 (total ' + pools.length + ')'}
-
-
                     </h3>
 
                     <div className="overflow-x-auto">
@@ -149,16 +146,14 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                             >
                                 <div className='col-span-2 grid items grid-cols-3 gap-x-2'>
                                     <div className="flex items-center justify-center">
-
-                                        <button className="w-full h-full bg-purple-600 hover:bg-purple-500 rounded-md text-white text-sm justify-center"
-                                        ><a
+                                        <a
+                                            className="w-full h-full bg-purple-600 hover:bg-purple-500 rounded-md text-white text-sm flex items-center justify-center"
                                             href={`https://edge.meteora.ag/dammv2/${pool.poolInfo.publicKey.toBase58()}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                         >
-                                                Pool
-                                            </a>
-                                        </button>
+                                            Pool
+                                        </a>
                                     </div>
                                     <div className="flex items-center justify-center">
                                         <button className="w-full h-full bg-blue-600 hover:bg-blue-700 rounded-md text-white text-sm justify-center"
