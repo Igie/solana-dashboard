@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useEffect } from 'react'
 import { Target, RefreshCcw } from 'lucide-react'
-import { CpAmm, feeNumeratorToBps, FeeSchedulerMode, getBaseFeeNumerator, getBaseFeeParams, getDynamicFeeParams, getFeeNumerator, getPriceFromSqrtPrice, MAX_SQRT_PRICE, MIN_SQRT_PRICE } from '@meteora-ag/cp-amm-sdk'
+import { CollectFeeMode, CpAmm, feeNumeratorToBps, FeeSchedulerMode, getBaseFeeNumerator, getBaseFeeParams, getDynamicFeeParams, getFeeNumerator, getPriceFromSqrtPrice, MAX_SQRT_PRICE, MIN_SQRT_PRICE } from '@meteora-ag/cp-amm-sdk'
 import { Keypair, PublicKey } from '@solana/web3.js'
 import { BN } from '@coral-xyz/anchor'
 import { fetchTokenMetadata, metadataToAccounts, type TokenAccount, type TokenMetadataMap } from '../tokenUtils'
@@ -57,7 +57,10 @@ const Dammv2PoolCreation: React.FC = () => {
     const [schedulerReductionPeriodInput, setSchedulerReductionPeriodInput] = useState("2")
 
     const [selectedFeeScheduler, setSelectedFeeScheduler] = useState<FeeSchedulerMode>(FeeSchedulerMode.Linear)
-    const [dropdownOpen, setDropdownOpen] = useState(false)
+    const [feeSchedulerDropdownOpen, setFeeSchedulerDropdownOpen] = useState(false)
+
+    const [selectedFeeMode, setSelectedFeeMode] = useState<CollectFeeMode>(CollectFeeMode.OnlyB)
+    const [feeModeDropdownOpen, setFeeModeDropdownOpen] = useState(false)
 
 
     const [commonTokens, setCommonTokens] = useState<TokenAccount[]>([]);
@@ -304,7 +307,7 @@ const Dammv2PoolCreation: React.FC = () => {
             };
 
             const positionNft = Keypair.generate();
-            
+
             const { tx, pool } = await cpAmm.createCustomPool({
                 payer: publicKey!,
                 creator: publicKey!,
@@ -319,7 +322,7 @@ const Dammv2PoolCreation: React.FC = () => {
                 liquidityDelta: initPoolLiquidityDelta,
                 poolFees,
                 hasAlphaVault: false,
-                collectFeeMode: 1, // 0: BothToken, 1: onlyB
+                collectFeeMode: selectedFeeMode, // 0: BothToken, 1: onlyB
                 activationPoint: null,
                 activationType: 1, // 0: slot, 1: timestamp
                 tokenAProgram: new PublicKey(tokenAMetadata.tokenProgram),
@@ -347,7 +350,7 @@ const Dammv2PoolCreation: React.FC = () => {
 
     }, [tokenAMint, tokenBMint])
 
-   useEffect(() => {
+    useEffect(() => {
         if (tokenAMint && tokenBMint)
             setTokenQuoteAmount(tokenBaseAmount.mul(initialPrice))
 
@@ -591,7 +594,7 @@ const Dammv2PoolCreation: React.FC = () => {
 
                             <button
                                 type="button"
-                                onClick={() => setDropdownOpen(!dropdownOpen)}
+                                onClick={() => setFeeSchedulerDropdownOpen(!feeSchedulerDropdownOpen)}
                                 className="w-full bg-gray-800 border border-gray-700 rounded-md px-4 py-2 text-white text-left flex justify-between items-center"
                             >
                                 {FeeSchedulerMode[selectedFeeScheduler]} {/* Converts numeric value to string name */}
@@ -600,7 +603,7 @@ const Dammv2PoolCreation: React.FC = () => {
                                 </svg>
                             </button>
 
-                            {dropdownOpen && (
+                            {feeSchedulerDropdownOpen && (
                                 <div className="absolute z-50 mt-1 w-full bg-gray-800 border border-gray-700 rounded-md shadow-lg">
                                     {Object.entries(FeeSchedulerMode)
                                         .filter(([, val]) => !isNaN(Number(val))) // Only numeric entries (skip reverse keys)
@@ -609,7 +612,7 @@ const Dammv2PoolCreation: React.FC = () => {
                                                 key={val}
                                                 onClick={() => {
                                                     setSelectedFeeScheduler(Number(val))
-                                                    setDropdownOpen(false)
+                                                    setFeeSchedulerDropdownOpen(false)
                                                 }}
                                                 className={`px-4 py-2 cursor-pointer hover:bg-gray-700 text-white ${selectedFeeScheduler === Number(val) ? 'bg-gray-700' : ''
                                                     }`}
@@ -619,6 +622,43 @@ const Dammv2PoolCreation: React.FC = () => {
                                         ))}
                                 </div>
                             )}
+                        </div>
+
+                        <div className="relative w-full">
+                            <label className="block text-sm text-gray-400 mb-1">Fee Collection Mode</label>
+
+                            <button
+                                type="button"
+                                onClick={() => setFeeModeDropdownOpen(!feeModeDropdownOpen)}
+                                className="w-full bg-gray-800 border border-gray-700 rounded-md px-4 py-2 text-white text-left flex justify-between items-center"
+                            >
+                                {CollectFeeMode[selectedFeeMode]} {/* Converts numeric value to string name */}
+                                <svg className="w-4 h-4 text-gray-400 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+
+                            {feeModeDropdownOpen && (
+                                <div className="absolute z-50 mt-1 w-full bg-gray-800 border border-gray-700 rounded-md shadow-lg">
+                                    {Object.entries(CollectFeeMode)
+                                        .filter(([, val]) => !isNaN(Number(val))) // Only numeric entries (skip reverse keys)
+                                        .map(([key, val]) => (
+                                            <div
+                                                key={val}
+                                                onClick={() => {
+                                                    setSelectedFeeMode(Number(val))
+                                                    setFeeModeDropdownOpen(false)
+                                                }}
+                                                className={`px-4 py-2 cursor-pointer hover:bg-gray-700 text-white ${selectedFeeMode === Number(val) ? 'bg-gray-700' : ''
+                                                    }`}
+                                            >
+                                                {key}
+                                            </div>
+                                        ))}
+                                </div>
+                            )}
+
+
                         </div>
                         <button
                             className="bg-green-600 hover:bg-green-500 px-4 py-2 rounded-lg text-white font-semibold"
