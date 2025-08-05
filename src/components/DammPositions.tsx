@@ -66,7 +66,7 @@ const DammPositions: React.FC = () => {
             tokenAMint: position.poolState.tokenAMint,
             tokenBMint: position.poolState.tokenBMint,
             tokenAProgram: new PublicKey(position.tokenA.tokenProgram),
-            tokenBProgram: new PublicKey(position.tokenA.tokenProgram),
+            tokenBProgram: new PublicKey(position.tokenB.tokenProgram),
             tokenAVault: position.poolState.tokenAVault,
             tokenBVault: position.poolState.tokenBVault,
         })

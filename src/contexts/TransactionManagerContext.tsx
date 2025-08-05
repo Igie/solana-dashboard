@@ -48,7 +48,7 @@ export const TransactionManagerProvider = ({ children }: { children: ReactNode }
                     tx.lastValidBlockHeight = lastValidBlockHeight;
 
                     if (signers)
-                        tx.sign(...signers!)
+                        tx.partialSign(...signers!)
 
                 } else if (tx instanceof VersionedTransaction) {
                     tx.message.recentBlockhash = blockhash;

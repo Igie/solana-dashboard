@@ -14,7 +14,7 @@ interface DepositPopoverProps {
   poolInfo: PoolDetailedInfo | null;
   onClose: () => void;
   position: { x: number; y: number };
-  sendTransaction: (tx: Transaction, nft:Keypair) => void;
+  sendTransaction: (tx: Transaction, nft: Keypair) => void;
 }
 
 export const DepositPopover: React.FC<DepositPopoverProps> = ({
@@ -32,7 +32,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
   const [tokenA, setTokenA] = useState<TokenAccount | undefined>(undefined);
   const [tokenB, setTokenB] = useState<TokenAccount | undefined>(undefined);
 
-   const [depositQuote, setDepositQuote] = useState<DepositQuote>();
+  const [depositQuote, setDepositQuote] = useState<DepositQuote>();
 
   const { refreshTokenAccounts } = useTokenAccounts()
 
@@ -79,20 +79,20 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
 
     const tx = await cpAmm.createPositionAndAddLiquidity({
       owner: owner,
-    pool: poolInfo.poolInfo.publicKey,
-    positionNft: positionNft.publicKey,
-    liquidityDelta: depositQuote.liquidityDelta,
-    maxAmountTokenA: depositQuote.actualInputAmount,
-    maxAmountTokenB: depositQuote.outputAmount,
+      pool: poolInfo.poolInfo.publicKey,
+      positionNft: positionNft.publicKey,
+      liquidityDelta: depositQuote.liquidityDelta,
+      maxAmountTokenA: depositQuote.actualInputAmount,
+      maxAmountTokenB: depositQuote.outputAmount,
 
-    tokenAAmountThreshold: depositQuote.actualInputAmount.muln(1.50),
-    tokenBAmountThreshold: depositQuote.outputAmount.muln(1.50),
-    tokenAMint: poolInfo.poolInfo.account.tokenAMint,
-    tokenBMint: poolInfo.poolInfo.account.tokenBMint,
-    tokenAProgram: getTokenProgram(poolInfo.poolInfo.account.tokenAFlag),
-    tokenBProgram: getTokenProgram(poolInfo.poolInfo.account.tokenBFlag),
+      tokenAAmountThreshold: depositQuote.actualInputAmount.muln(1.50),
+      tokenBAmountThreshold: depositQuote.outputAmount.muln(1.50),
+      tokenAMint: poolInfo.poolInfo.account.tokenAMint,
+      tokenBMint: poolInfo.poolInfo.account.tokenBMint,
+      tokenAProgram: getTokenProgram(poolInfo.poolInfo.account.tokenAFlag),
+      tokenBProgram: getTokenProgram(poolInfo.poolInfo.account.tokenBFlag),
     });
-    
+
     sendTransaction(tx, positionNft);
 
   };
