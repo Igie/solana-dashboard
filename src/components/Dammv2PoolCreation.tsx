@@ -80,7 +80,6 @@ const Dammv2PoolCreation: React.FC = () => {
     }
 
     useEffect(() => {
-        console.log("token a amount changed")
         if (initialPrice) {
             setTokenQuoteAmount(tokenBaseAmount.mul(initialPrice));
         }
@@ -103,13 +102,10 @@ const Dammv2PoolCreation: React.FC = () => {
 
             const tokenAPrice = data?.[tokenAMint]?.usdPrice;
             const tokenBPrice = data?.[tokenBMint]?.usdPrice;
-            console.log("token prices", tokenAPrice, tokenBPrice)
             if (tokenAPrice && tokenBPrice) {
                 setInitialPrice(Decimal.div(tokenAPrice, tokenBPrice))
             } else {
                 toast.error('No price returned')
-                console.log(`${tokenAMint},${tokenBMint}`)
-                console.log(tokenAPrice, tokenBPrice)
                 setInitialPrice(new Decimal(0));
             }
         } catch {
@@ -119,7 +115,6 @@ const Dammv2PoolCreation: React.FC = () => {
     }
 
     const fetchPools = async () => {
-        console.log('Fetching pools for mint:', searchMint)
         if (!connection) return
         setTokenMetadataMap({});
         setPools([])
@@ -130,8 +125,6 @@ const Dammv2PoolCreation: React.FC = () => {
         let mints: string[] = [];
         try {
             if (searchMint === '') {
-                console.log('No mint provided, returning all pools')
-
                 const pools = await cpAmm.getAllPools();
                 pools.sort((x, y) => y.account.activationPoint.sub(x.account.activationPoint).toNumber())
                 const allPools = (pools).slice(0, 20); // Limit to first 20 pools
@@ -179,7 +172,6 @@ const Dammv2PoolCreation: React.FC = () => {
     }
 
     const mapPools = async (p: PoolInfo[], tm: TokenMetadataMap) => {
-        console.log("Mapping pools")
         const detailedPools: PoolDetailedInfo[] = []
         for (const x of p) {
 
@@ -309,7 +301,6 @@ const Dammv2PoolCreation: React.FC = () => {
             };
 
             const positionNft = Keypair.generate();
-
             const { tx, pool } = await cpAmm.createCustomPool({
                 payer: publicKey!,
                 creator: publicKey!,
@@ -365,7 +356,6 @@ const Dammv2PoolCreation: React.FC = () => {
 
                     promise.then((x) => {
                         setNewPoolAddress(pubKey);
-
                         setNewPoolAddressExists(x);
 
                     });
@@ -386,10 +376,6 @@ const Dammv2PoolCreation: React.FC = () => {
     useEffect(() => {
         if (tokenAMint && tokenBMint)
             setTokenQuoteAmount(tokenBaseAmount.mul(initialPrice))
-        console.log("set new quote amount", tokenBaseAmount.mul(initialPrice).toString())
-         console.log(tokenBaseAmount.toString(),initialPrice.toString() )
-
-
     }, [initialPrice, tokenBaseAmount])
 
     useEffect(() => {

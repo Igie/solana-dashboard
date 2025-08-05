@@ -35,13 +35,10 @@ export const DecimalInput: React.FC<DecimalInputProps> = ({
   const handleBlur = () => {
     try {
       const parsed = new Decimal(localValue);
-
-
       setLocalValue(parsed.toString());
       onChange(parsed.toString());
       onBlur?.(parsed);
     } catch {
-      // Invalid input, treat as null
       setLocalValue('');
       onChange('');
       onBlur?.(new Decimal(0));

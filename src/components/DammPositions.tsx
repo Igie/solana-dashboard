@@ -10,7 +10,7 @@ import { SortArrow } from './Simple/SortArrow'
 import { toast } from 'sonner'
 import { BN } from '@coral-xyz/anchor'
 import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-adapter'
-import { PublicKey, Transaction } from '@solana/web3.js'
+import { PublicKey } from '@solana/web3.js'
 
 
 interface TwoMints {
@@ -71,11 +71,8 @@ const DammPositions: React.FC = () => {
             tokenBVault: position.poolState.tokenBVault,
         })
 
-        const temp = new Transaction();
-        temp.add(txn);
-
         try {
-            sendTxn(temp, undefined, {
+            sendTxn(txn, undefined, {
                 notify: true,
                 onSuccess: () => {
                     updatePosition(position.positionAddress);
@@ -86,6 +83,46 @@ const DammPositions: React.FC = () => {
             console.log(e);
         }
     }
+
+    // const handleClaimAllFees = async () => {
+    //     const txnSignerPairs: TxnSignersPair[] = [];
+
+    //     for (const position of positions) {
+    //         if (position.positionUnclaimedFee > 0) {
+    //             const txn = await cpAmm.claimPositionFee2({
+    //                 receiver: publicKey!,
+
+    //                 owner: publicKey!,
+    //                 feePayer: publicKey!,
+    //                 pool: position.poolAddress,
+    //                 position: position.positionAddress,
+    //                 positionNftAccount: position.positionNftAccount,
+    //                 tokenAMint: position.poolState.tokenAMint,
+    //                 tokenBMint: position.poolState.tokenBMint,
+    //                 tokenAProgram: new PublicKey(position.tokenA.tokenProgram),
+    //                 tokenBProgram: new PublicKey(position.tokenA.tokenProgram),
+    //                 tokenAVault: position.poolState.tokenAVault,
+    //                 tokenBVault: position.poolState.tokenBVault,
+    //             })
+
+    //             txnSignerPairs.push({
+    //                 tx: txn
+    //             })
+    //         }
+    //     }
+    //     if (txnSignerPairs.length == 0) return;
+    //     try {
+    //         sendMultiTxn(txnSignerPairs, {
+    //             notify: true,
+    //             onSuccess: async () => {
+    //                 await refreshPositions();
+    //             }
+    //         })
+
+    //     } catch (e) {
+    //         console.log(e);
+    //     }
+    // }
 
     const handleClosePosition = async (position: PoolPositionInfo) => {
         if (cpAmm.isLockedPosition(position.positionState)) {
@@ -269,7 +306,9 @@ const DammPositions: React.FC = () => {
                                 {SortArrow<SortType>(SortType.PositionValue, sortBy, sortAscending, handleSort)}
                             </div>
                             <div className="col-span-2 col-start-1 row-start-2 flex items-center">
-                                <div className='justify-self-start flex items-center gap-1 px-2 py-1 bg-green-900 rounded text-xs font-medium text-white transition-colors"'>
+                                <div className='justify-self-start flex items-center gap-1 px-2 py-1 bg-green-900 rounded text-xs font-medium text-white transition-colors"'
+                                    //onClick={handleClaimAllFees}
+                                >
                                     Total Fees ${positions.reduce((sum, pos) => sum + pos.positionUnclaimedFee, 0).toFixed(2)}
                                 </div>
 
@@ -586,5 +625,4 @@ const DammPositions: React.FC = () => {
         </div>
     )
 }
-
 export default DammPositions

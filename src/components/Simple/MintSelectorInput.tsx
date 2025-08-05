@@ -22,8 +22,7 @@ export const MintSelectorInput: React.FC<Props> = ({
 }) => {
     const [mintInput, setMintInput] = useState(mint)
 
-    const [amountInput, setAmountInput] = useState(amount.toString())
-
+    const [amountInternalInput, setAmountInternalInput] = useState(amount.toFixed())
 
     const [dropdownOpen, setDropdownOpen] = useState(false)
 
@@ -34,14 +33,14 @@ export const MintSelectorInput: React.FC<Props> = ({
 
     const testDecimal = (value: string) => {
         return /^[0-9]*[.,]?[0-9]*$/.test(value)
-        
+
     }
 
     const handleMax = () => {
         const selected = tokenAccounts.find(t => t.mint === mintInput)
         if (selected) {
-            const maxValue = new Decimal(selected.amount.toString())
-            setAmountInput(maxValue.toString());
+            const maxValue = new Decimal(selected.amount.toFixed())
+            setAmountInternalInput(maxValue.toFixed());
             onAmountChange(maxValue);
         }
     }
@@ -51,9 +50,8 @@ export const MintSelectorInput: React.FC<Props> = ({
     }, [mint]);
 
     useEffect(() => {
-        if (testDecimal(amountInput) && new Decimal(amountInput) !== amount) setAmountInput(amount.toString());
+            setAmountInternalInput(amount.toFixed());
     }, [amount]);
-
 
     // Handle mint input
     const handleMintChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,17 +60,24 @@ export const MintSelectorInput: React.FC<Props> = ({
         onMintChange(value);
     };
 
-    // Handle amount input (with validation)
-    const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
+    const handleAmountInternalChange = (value: string) => {
         if (testDecimal(value)) {
-            setAmountInput(value)
-            const parsed = new Decimal(value);
-        if (!parsed.isNaN()) {
-            onAmountChange(parsed);
+            setAmountInternalInput(value);
         }
-        } 
+    }
+
+    // Handle amount input (with validation)
+
+    const handleAmountOnBlur = (value: string) => {
+
+        if (testDecimal(value)) {
+            const d = new Decimal(value);
+            onAmountChange(d);
+            setAmountInternalInput(d.toFixed());
+        }
     };
+
+
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
@@ -87,7 +92,7 @@ export const MintSelectorInput: React.FC<Props> = ({
         }
         document.addEventListener('mousedown', handleClickOutside)
         return () => document.removeEventListener('mousedown', handleClickOutside)
-    }, [amountInput, mintInput])
+    }, [amountInternalInput, mintInput])
 
 
     const selectedTokenAccount = tokenAccounts.find(x => x.mint === mintInput);
@@ -171,9 +176,9 @@ export const MintSelectorInput: React.FC<Props> = ({
                     step="any"
                     className="flex-1 gap-2 px-3 py-1 bg-gray-800 rounded-md text-sm outline-none"
                     placeholder="0.0"
-                    value={amountInput}
-                    onChange={handleAmountChange}
-                    onBlur={handleAmountChange}
+                    value={amountInternalInput}
+                    onChange={(e) => handleAmountInternalChange(e.target.value)}
+                    onBlur={(e) => handleAmountOnBlur(e.target.value)}
                 />
 
             </div>
