@@ -45,14 +45,10 @@ export const TransactionManagerProvider = ({ children }: { children: ReactNode }
                     if (signers)
                         tx.sign(signers!)
                 }
-                // if (tx instanceof Transaction) {
-                //     const r = await connection.simulateTransaction(tx)
-                //     console.log(r);
-                // }
+
                 let sig = "";
 
                 sig = await sendTransaction(tx, connection, { minContextSlot, preflightCommitment: 'confirmed' }) ?? "";
-                //sig = await sendTransaction(tx, connection, { minContextSlot, skipPreflight: true });
                 const confirmation = await connection.confirmTransaction(
                     {
                         signature: sig,

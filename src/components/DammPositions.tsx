@@ -125,10 +125,8 @@ const DammPositions: React.FC = () => {
 
         const copy = [...mintToMintSwap]
         const pair = copy.pop();
-        console.log(pair);
         if (!pair) return;
         const tokenAccount = tokenAccounts.find(x => x.mint === pair?.base);
-        console.log(tokenAccount);
         if (!tokenAccount) return;
 
         const t = getSwapTransaction({
@@ -373,15 +371,12 @@ const DammPositions: React.FC = () => {
                                                 setLastSelectedPosition(position);
                                                 if (e.target.checked) {
                                                     setSelectedPositions(new Set(selectedPositions.add(position)));
-                                                    console.log("added");
                                                 }
                                                 if (!e.target.checked) {
-
                                                     setSelectedPositions(new Set<PoolPositionInfo>(Array.from(selectedPositions).filter(x => {
                                                         return x !== position
                                                     }
                                                     )));
-                                                    console.log("removed");
                                                 }
                                             }}
                                         />
@@ -550,7 +545,6 @@ const DammPositions: React.FC = () => {
 
                                                 <button
                                                     onClick={() => {
-                                                        // TODO: Add view on explorer logic
                                                         window.open(`https://solscan.io/account/${position.positionAddress.toBase58()}`, '_blank');
                                                     }}
                                                     className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg"
@@ -562,7 +556,7 @@ const DammPositions: React.FC = () => {
                                                 <button
                                                     onClick={() => {
                                                         navigator.clipboard.writeText(position.tokenA.mint);
-                                                        toast.error(`${position.tokenA.symbol} mint copied`);
+                                                        toast.info(`${position.tokenA.symbol} mint copied`);
                                                     }}
                                                     className="bg-gray-700 hover:bg-gray-600 text-white text-sm px-4 py-2 rounded-lg"
                                                 >
@@ -573,7 +567,7 @@ const DammPositions: React.FC = () => {
                                                 <button
                                                     onClick={() => {
                                                         navigator.clipboard.writeText(position.tokenB.mint);
-                                                        toast.error(`${position.tokenB.symbol} mint copied`);
+                                                        toast.info(`${position.tokenB.symbol} mint copied`);
                                                     }}
                                                     className="bg-gray-700 hover:bg-gray-600 text-white text-sm px-4 py-2 rounded-lg"
                                                 >

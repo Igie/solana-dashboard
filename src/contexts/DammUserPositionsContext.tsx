@@ -82,10 +82,6 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
 
     const refreshPositions = async () => {
         if (!publicKey || !connection || loading) return
-
-        console.log("Refreshing positions")
-        console.log("connection and pubKey", connection == null, publicKey === null)
-
         setLoading(true)
         setPositions([]);
         setTotalLiquidityValue(0);
@@ -113,12 +109,9 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                         account: x,
                     }
             });
-            console.log(allPools.length)
-            //await cpAmm.getAllPools();  
             const poolsMap = Object.fromEntries(allPools.map(x => [x!.publicKey.toBase58(), x!.account]))
 
             for (const userPosition of userPositions) {
-                //const pool = await cpAmm.fetchPoolState(userPosition.positionState.pool);
                 const pool = poolsMap[userPosition.positionState.pool.toBase58()]
                 if (pool !== undefined) {
 

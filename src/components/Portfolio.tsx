@@ -52,9 +52,7 @@ const Portfolio: React.FC = () => {
       },
     });
 
-    console.log(window.Jupiter.onSuccess)
     window.Jupiter.onSuccess = async () => await fetchPortfolioData()
-
     setPopupIndex(null)
   }
 
@@ -66,7 +64,6 @@ const Portfolio: React.FC = () => {
   // Calculate total portfolio value
   useEffect(() => {
     let total = 0
-    console.log('test portofio value')
     // Add SOL value
     if (solBalance && solPrice) {
       total += solBalance * solPrice

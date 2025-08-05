@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useEffect } from 'react'
 import { Target, RefreshCcw } from 'lucide-react'
-import { CollectFeeMode, CpAmm, feeNumeratorToBps, FeeSchedulerMode, getBaseFeeNumerator, getBaseFeeParams, getDynamicFeeParams, getFeeNumerator, getPriceFromSqrtPrice, MAX_SQRT_PRICE, MIN_SQRT_PRICE } from '@meteora-ag/cp-amm-sdk'
+import { CollectFeeMode, CpAmm, deriveCustomizablePoolAddress, feeNumeratorToBps, FeeSchedulerMode, getBaseFeeNumerator, getBaseFeeParams, getDynamicFeeParams, getFeeNumerator, getPriceFromSqrtPrice, MAX_SQRT_PRICE, MIN_SQRT_PRICE } from '@meteora-ag/cp-amm-sdk'
 import { Keypair, PublicKey } from '@solana/web3.js'
 import { BN } from '@coral-xyz/anchor'
 import { fetchTokenMetadata, metadataToAccounts, type TokenAccount, type TokenMetadataMap } from '../tokenUtils'
@@ -41,6 +41,9 @@ const Dammv2PoolCreation: React.FC = () => {
     const [tokenQuoteAmount, setTokenQuoteAmount] = useState<Decimal>(new Decimal(0))
 
 
+    const [newPoolAddress, setNewPoolAddress] = useState<PublicKey | null>(null)
+    const [newPoolAddressExists, setNewPoolAddressExists] = useState(false)
+
     const [initialPrice, setInitialPrice] = useState(new Decimal(0))
     const [initialPriceInput, setInitialPriceInput] = useState("0")
 
@@ -77,6 +80,7 @@ const Dammv2PoolCreation: React.FC = () => {
     }
 
     useEffect(() => {
+        console.log("token a amount changed")
         if (initialPrice) {
             setTokenQuoteAmount(tokenBaseAmount.mul(initialPrice));
         }
@@ -103,7 +107,7 @@ const Dammv2PoolCreation: React.FC = () => {
             if (tokenAPrice && tokenBPrice) {
                 setInitialPrice(Decimal.div(tokenAPrice, tokenBPrice))
             } else {
-                toast.error('No price returned:')
+                toast.error('No price returned')
                 console.log(`${tokenAMint},${tokenBMint}`)
                 console.log(tokenAPrice, tokenBPrice)
                 setInitialPrice(new Decimal(0));
@@ -267,8 +271,11 @@ const Dammv2PoolCreation: React.FC = () => {
 
     const handleCreatePool = async () => {
         if (!tokenAMint || !tokenBMint) {
-            console.log("Both token mints are required")
             return
+        }
+
+        if (newPoolAddressExists) {
+            return;
         }
 
         try {
@@ -280,11 +287,8 @@ const Dammv2PoolCreation: React.FC = () => {
             const tokenAMetadata = metadata[tokenAMint];
             const tokenBMetadata = metadata[tokenBMint];
 
-            console.log("token metadatas", tokenAMetadata, tokenBMetadata)
             const tokenAAmount = new BN(tokenBaseAmount.toNumber() * (10 ** tokenAMetadata.decimals));
             const tokenBAmount = new BN(tokenQuoteAmount.toNumber() * (10 ** tokenBMetadata.decimals));
-
-            console.log("token amounts", tokenAAmount.toString(), tokenBAmount.toString())
 
             const { liquidityDelta: initPoolLiquidityDelta, initSqrtPrice } =
                 cpAmm.preparePoolCreationParams({
@@ -293,8 +297,6 @@ const Dammv2PoolCreation: React.FC = () => {
                     minSqrtPrice: MIN_SQRT_PRICE,
                     maxSqrtPrice: MAX_SQRT_PRICE,
                 });
-
-            console.log("pool creation params:", initPoolLiquidityDelta.toString(), initSqrtPrice.toString())
 
             const maxFee = maxBaseFeePercentage.toNumber();
             const minFee = baseFeePercentage.toNumber();
@@ -332,7 +334,12 @@ const Dammv2PoolCreation: React.FC = () => {
                 await sendTxn(tx, [positionNft],
                     {
                         notify: true,
-                        onSuccess: () => txToast.showPool(pool.toBase58()),
+                        onSuccess: async () => {
+                            txToast.showPool(pool.toBase58());
+                            await updateCommonTokens()
+                            setTokenBaseAmount(new Decimal(0));
+                            setNewPoolAddressExists(true);
+                        },
                     }
                 );
 
@@ -345,16 +352,45 @@ const Dammv2PoolCreation: React.FC = () => {
     }
 
     useEffect(() => {
-        if (tokenAMint && tokenBMint)
+        if (tokenAMint && tokenBMint) {
             handleFetchPrice();
+            try {
+                const pubKey = deriveCustomizablePoolAddress(new PublicKey(tokenAMint), new PublicKey(tokenBMint))
+                if (pubKey) {
+                    const promise = cpAmm.isPoolExist(pubKey);
+                    promise.catch(() => {
+                        setNewPoolAddress(null);
+                        setNewPoolAddressExists(false);
+                    });
+
+                    promise.then((x) => {
+                        setNewPoolAddress(pubKey);
+
+                        setNewPoolAddressExists(x);
+
+                    });
+
+                } else {
+                    setNewPoolAddress(null);
+                    setNewPoolAddressExists(false);
+                }
+            } catch {
+                setNewPoolAddress(null);
+                setNewPoolAddressExists(false);
+            }
+        }
+
 
     }, [tokenAMint, tokenBMint])
 
     useEffect(() => {
         if (tokenAMint && tokenBMint)
             setTokenQuoteAmount(tokenBaseAmount.mul(initialPrice))
+        console.log("set new quote amount", tokenBaseAmount.mul(initialPrice).toString())
+         console.log(tokenBaseAmount.toString(),initialPrice.toString() )
 
-    }, [initialPrice])
+
+    }, [initialPrice, tokenBaseAmount])
 
     useEffect(() => {
         updateCommonTokens();
@@ -412,10 +448,8 @@ const Dammv2PoolCreation: React.FC = () => {
                                 tokenAccounts={commonTokens}
                                 mint={tokenAMint}
                                 amount={tokenBaseAmount}
-                                onChange={(e) => {
-                                    setTokenAMint(e.mint);
-                                    setTokenBaseAmount(e.amount)
-                                }}
+                                onMintChange={(e) =>setTokenAMint(e)}
+                                onAmountChange={(e) =>setTokenBaseAmount(e)}
                                 onOpenDropdown={async () => await updateCommonTokens()}
                             />
 
@@ -427,11 +461,8 @@ const Dammv2PoolCreation: React.FC = () => {
                                 tokenAccounts={commonTokens}
                                 mint={tokenBMint}
                                 amount={tokenQuoteAmount}
-                                onChange={(e) => {
-                                    setTokenBMint(e.mint);
-                                    setTokenQuoteAmount(e.amount)
-                                    console.log("on change")
-                                }}
+                                  onMintChange={(e) =>setTokenBMint(e)}
+                                onAmountChange={(e) =>setTokenQuoteAmount(e)}
 
                                 onOpenDropdown={async () => await updateCommonTokens()}
                             />
@@ -660,12 +691,22 @@ const Dammv2PoolCreation: React.FC = () => {
 
 
                         </div>
-                        <button
-                            className="bg-green-600 hover:bg-green-500 px-4 py-2 rounded-lg text-white font-semibold"
-                            onClick={handleCreatePool}
-                        >
-                            Create Pool
-                        </button>
+                        {!newPoolAddressExists ?
+                            <button
+                                className="bg-green-600 hover:bg-green-500 px-4 py-2 rounded-lg text-white font-semibold"
+                                onClick={handleCreatePool}
+                            >
+                                Create Pool
+                            </button>
+                            :
+                            <a
+                                className="h-full bg-red-600 hover:bg-red-500 px-4 py-2 rounded-lg text-white font-semibold text-sm"
+                                href={`https://edge.meteora.ag/dammv2/${newPoolAddress}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                Pool Exists
+                            </a>}
                     </div>
                 )}
             </div>

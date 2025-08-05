@@ -81,7 +81,6 @@ const Dammv2Browser: React.FC = () => {
 
 
         } catch (err) {
-            console.error('Failed to fetch pools:', err)
             setTokenMetadataMap({});
             setPools([])
             mapPools([], {});
@@ -90,8 +89,6 @@ const Dammv2Browser: React.FC = () => {
     }
 
     const mapPools = async (p: PoolInfo[], tm: TokenMetadataMap) => {
-        console.log("Mapping pools")
-        console.log(p.length)
         const detailedPools: PoolDetailedInfo[] = []
         for (const x of p) {
 
@@ -179,7 +176,6 @@ const Dammv2Browser: React.FC = () => {
                 totalFees: poolTokenA.totalFees.add(poolTokenB.totalFees),
             });
         };
-        console.log(detailedPools.length);
         setDetailedPools(detailedPools);
     };
 

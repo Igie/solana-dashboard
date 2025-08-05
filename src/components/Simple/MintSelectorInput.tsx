@@ -7,20 +7,23 @@ type Props = {
     tokenAccounts: TokenAccount[]
     mint: string
     amount: Decimal
-    onChange: (data: { mint: string, amount: Decimal }) => void
+    onMintChange: (mint: string) => void
+    onAmountChange: (amount: Decimal) => void
     onOpenDropdown: () => void
 }
 
 export const MintSelectorInput: React.FC<Props> = ({
     tokenAccounts,
-    mint: externalMint,
-    amount: externalAmount,
-    onChange,
+    mint,
+    amount,
+    onMintChange,
+    onAmountChange,
     onOpenDropdown,
 }) => {
-    const [mint, setMint] = useState('')
+    const [mintInput, setMintInput] = useState(mint)
 
-    const [inputValue, setInputValue] = useState('')
+    const [amountInput, setAmountInput] = useState(amount.toString())
+
 
     const [dropdownOpen, setDropdownOpen] = useState(false)
 
@@ -29,67 +32,47 @@ export const MintSelectorInput: React.FC<Props> = ({
     const inputRef = useRef<HTMLInputElement>(null)
     const dropdownRef = useRef<HTMLDivElement>(null)
 
-
-    const handleMintChange = (newMint: string) => {
-        setMint(newMint);
-        onChange({ mint, amount: externalAmount })
-        triggerAmountChange();
-    }
-
-
-    const triggerAmountChange = () => {
-        const parsed = new Decimal(inputValue.replace(',', '.'))
-        if (!parsed.isNaN()) {
-            onChange({ mint, amount: parsed })
-        }
-    }
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value
-
-        // Allow: digits, dot, comma
-        if (/^[0-9]*[.,]?[0-9]*$/.test(value)) {
-            setInputValue(value)
-        }
-    }
-
-    const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter') {
-            triggerAmountChange()
-            inputRef.current?.blur()
-        }
+    const testDecimal = (value: string) => {
+        return /^[0-9]*[.,]?[0-9]*$/.test(value)
+        
     }
 
     const handleMax = () => {
-        const selected = tokenAccounts.find(t => t.mint === mint)
+        const selected = tokenAccounts.find(t => t.mint === mintInput)
         if (selected) {
             const maxValue = new Decimal(selected.amount.toString())
-            setInputValue(maxValue.toString())
-            onChange({ mint, amount: maxValue })
+            setAmountInput(maxValue.toString());
+            onAmountChange(maxValue);
         }
     }
-    useEffect(() => {
-        if (externalAmount !== undefined && externalAmount.toString() !== inputValue) {
-            setInputValue(externalAmount.toString())
-        }
-    }, [externalAmount])
 
     useEffect(() => {
-        if (externalMint !== mint) {
-            setMint(externalMint)
-        }
-    }, [externalMint])
+        if (mint !== mintInput) setMintInput(mint);
+    }, [mint]);
 
-    // Reset amount to 0 when mint changes (externally or via dropdown)
     useEffect(() => {
-        const amountIsZero = externalAmount?.equals?.(0)
-        if (!amountIsZero) {
-            setInputValue('0')
-            onChange({ mint, amount: new Decimal(0) })
-        } else {
-            setInputValue('0')
+        if (testDecimal(amountInput) && new Decimal(amountInput) !== amount) setAmountInput(amount.toString());
+    }, [amount]);
+
+
+    // Handle mint input
+    const handleMintChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setMintInput(value);
+        onMintChange(value);
+    };
+
+    // Handle amount input (with validation)
+    const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        if (testDecimal(value)) {
+            setAmountInput(value)
+            const parsed = new Decimal(value);
+        if (!parsed.isNaN()) {
+            onAmountChange(parsed);
         }
-    }, [mint])
+        } 
+    };
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
@@ -100,16 +83,14 @@ export const MintSelectorInput: React.FC<Props> = ({
                 !inputRef.current.contains(e.target as Node)
             ) {
                 setDropdownOpen(false)
-                triggerAmountChange()
             }
         }
         document.addEventListener('mousedown', handleClickOutside)
         return () => document.removeEventListener('mousedown', handleClickOutside)
-    }, [inputValue, mint])
+    }, [amountInput, mintInput])
 
-    useEffect(() => { }, [tokenAccounts])
 
-    const selectedTokenAccount = tokenAccounts.find(x => x.mint === mint);
+    const selectedTokenAccount = tokenAccounts.find(x => x.mint === mintInput);
 
     return (
         <div className="relative w-full p-2 bg-gray-900 rounded-lg text-white space-y-2 border border-gray-700">
@@ -137,8 +118,8 @@ export const MintSelectorInput: React.FC<Props> = ({
                     type="text"
                     placeholder="Paste mint address"
                     className="flex-1 px-2 py-1 bg-gray-800 rounded-md text-sm outline-none"
-                    value={mint}
-                    onChange={e => handleMintChange(e.target.value)}
+                    value={mintInput}
+                    onChange={handleMintChange}
                 />
 
             </div>
@@ -160,7 +141,8 @@ export const MintSelectorInput: React.FC<Props> = ({
                                     key={account.mint}
                                     className="w-full flex items-center px-3 py-2 hover:bg-gray-700 text-sm gap-2"
                                     onClick={() => {
-                                        handleMintChange(account.mint)
+                                        setMintInput(account.mint);
+                                        onMintChange(account.mint);
                                         setDropdownOpen(false)
                                     }}
                                 >
@@ -178,26 +160,20 @@ export const MintSelectorInput: React.FC<Props> = ({
                 <button
                     className="min-w-40 gap-2 px-3 py-1 text-xs bg-gray-700 rounded hover:bg-gray-600"
                     onClick={handleMax}
-                    disabled={!mint}
+                    disabled={!mintInput}
                 >
                     Max
                 </button>
 
                 <input
-                    type="decimal"
+                    type="number"
                     min="0"
                     step="any"
                     className="flex-1 gap-2 px-3 py-1 bg-gray-800 rounded-md text-sm outline-none"
                     placeholder="0.0"
-                    value={inputValue}
-                    onChange={handleInputChange}
-                    onBlur={() => {
-                        const amount = new Decimal(inputValue || '0')
-                        if (!amount.equals(externalAmount)) {
-                            onChange({ mint, amount })
-                        }
-                    }}
-                    onKeyDown={handleInputKeyDown}
+                    value={amountInput}
+                    onChange={handleAmountChange}
+                    onBlur={handleAmountChange}
                 />
 
             </div>
