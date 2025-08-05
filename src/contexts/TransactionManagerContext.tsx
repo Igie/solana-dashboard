@@ -46,19 +46,11 @@ export const TransactionManagerProvider = ({ children }: { children: ReactNode }
                     tx.feePayer = publicKey;
                     tx.recentBlockhash = blockhash;
                     tx.lastValidBlockHeight = lastValidBlockHeight;
-
-                    if (signers)
-                        tx.partialSign(...signers!)
-
                 } else if (tx instanceof VersionedTransaction) {
                     tx.message.recentBlockhash = blockhash;
-                    if (signers)
-                        tx.sign(signers!)
                 }
 
-                let sig = "";
-
-                sig = await sendTransaction(tx, connection, { minContextSlot, preflightCommitment: 'confirmed' }) ?? "";
+                const sig = await sendTransaction(tx, connection, { minContextSlot, preflightCommitment: 'confirmed', signers }) ?? "";
                 const confirmation = await connection.confirmTransaction(
                     {
                         signature: sig,
