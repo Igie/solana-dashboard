@@ -50,7 +50,7 @@ export const TransactionManagerProvider = ({ children }: { children: ReactNode }
                     tx.message.recentBlockhash = blockhash;
                 }
 
-                const sig = await sendTransaction(tx, connection, { minContextSlot, preflightCommitment: 'confirmed', signers }) ?? "";
+                const sig = await sendTransaction(tx, connection, { minContextSlot, preflightCommitment: 'confirmed', signers });
                 const confirmation = await connection.confirmTransaction(
                     {
                         signature: sig,

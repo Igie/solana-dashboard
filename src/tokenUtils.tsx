@@ -1,4 +1,4 @@
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token"
+import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { Connection, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js"
 
 
@@ -110,11 +110,16 @@ export const fetchTokenAccounts = async (c: Connection, publicKey: PublicKey): P
 
     // Get all token accounts for the wallet
 
-    const tokenAccounts = await c.getParsedTokenAccountsByOwner(
+    const tokenAccounts = (await c.getParsedTokenAccountsByOwner(
         publicKey,
         { programId: TOKEN_PROGRAM_ID }
-    )
+    )).value
 
+    const tokenAccounts2022 = (await c.getParsedTokenAccountsByOwner(
+        publicKey,
+        { programId: TOKEN_2022_PROGRAM_ID }
+    )).value
+    tokenAccounts.push(...tokenAccounts2022);
     const accounts: TokenAccount[] = []
     const mintAddresses: string[] = ["So11111111111111111111111111111111111111112"]
 
@@ -129,7 +134,7 @@ export const fetchTokenAccounts = async (c: Connection, publicKey: PublicKey): P
                 value: 0
             })
 
-    for (const account of tokenAccounts.value) {
+    for (const account of tokenAccounts) {
         const parsedInfo = account.account.data.parsed.info
         const mintAddress = parsedInfo.mint
         const amount = parsedInfo.tokenAmount.uiAmount

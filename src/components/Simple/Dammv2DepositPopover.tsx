@@ -36,32 +36,64 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
 
   const { refreshTokenAccounts } = useTokenAccounts()
 
-  const refreshTokenAB = async () => {
+  const setTokensAB = async () => {
     if (!poolInfo) return;
     const ta = await refreshTokenAccounts();
     setTokenA(ta.tokenAccounts.find(x => x.mint == poolInfo.poolInfo.account.tokenAMint.toBase58()))
     setTokenB(ta.tokenAccounts.find(x => x.mint == poolInfo.poolInfo.account.tokenBMint.toBase58()))
   }
 
-  const getDepositAmountB = async () => {
+  const refreshPool = async () => {
     if (!poolInfo) return;
-    await refreshTokenAB();
+    poolInfo.poolInfo.account = await cpAmm.fetchPoolState(poolInfo.poolInfo.publicKey);
+  }
+
+  const getDepositAmountB = async (input: Decimal) => {
+    if (!poolInfo) return;
+    await refreshPool();
     if (!tokenA || !tokenB) return;
+
     const depositQuote = cpAmm.getDepositQuote({
       sqrtPrice: poolInfo.poolInfo.account.sqrtPrice,
       minSqrtPrice: poolInfo.poolInfo.account.sqrtMinPrice,
       maxSqrtPrice: poolInfo.poolInfo.account.sqrtMaxPrice,
       isTokenA: true,
-      inAmount: new BN(amountA.mul(Decimal.pow(10, tokenA!.decimals)).toString()),
+      inAmount: new BN(input.mul(Decimal.pow(10, tokenA!.decimals)).toString()),
     })
 
     setDepositQuote(depositQuote);
+    setAmountA(new Decimal(depositQuote.actualInputAmount.toString()).div(Decimal.pow(10, tokenA!.decimals)))
     setAmountB(new Decimal(depositQuote.outputAmount.toString()).div(Decimal.pow(10, tokenB!.decimals)))
   }
 
+  const getDepositAmountA = async (input: Decimal) => {
+    if (!poolInfo) return;
+    await refreshPool();
+    if (!tokenA || !tokenB) return;
+
+    const depositQuote = cpAmm.getDepositQuote({
+      sqrtPrice: poolInfo.poolInfo.account.sqrtPrice,
+      minSqrtPrice: poolInfo.poolInfo.account.sqrtMinPrice,
+      maxSqrtPrice: poolInfo.poolInfo.account.sqrtMaxPrice,
+      isTokenA: false,
+      inAmount: new BN(input.mul(Decimal.pow(10, tokenB!.decimals)).toString()),
+    })
+
+    setDepositQuote(depositQuote);
+    setAmountB(new Decimal(depositQuote.actualInputAmount.toString()).div(Decimal.pow(10, tokenB!.decimals)))
+    setAmountA(new Decimal(depositQuote.outputAmount.toString()).div(Decimal.pow(10, tokenA!.decimals)))
+  }
+
   useEffect(() => {
-    getDepositAmountB();
-  }, [amountA]);
+    if (tokenA) {
+      getDepositAmountB(new Decimal(tokenA!.amount.toString()))
+    }
+  }, [tokenA]);
+
+  useEffect(() => {
+    setTokensAB()
+  }, []);
+
   useEffect(() => {
     const listener = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) {
@@ -73,8 +105,10 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
   }, [onClose]);
 
   const handleDeposit = async () => {
-    if (amountA.lessThanOrEqualTo(0) || amountB.lessThanOrEqualTo(0) || !depositQuote || !poolInfo) return
+    if (amountA.lessThanOrEqualTo(0) || amountB.lessThanOrEqualTo(0) || !depositQuote || !poolInfo || !tokenA || !tokenB) return
 
+    const inputA = new BN(amountA.mul(Decimal.pow(10, tokenA!.decimals)).toString());
+    const inputB = new BN(amountB.mul(Decimal.pow(10, tokenB!.decimals)).toString());
     const positionNft = Keypair.generate();
 
     const tx = await cpAmm.createPositionAndAddLiquidity({
@@ -82,11 +116,11 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
       pool: poolInfo.poolInfo.publicKey,
       positionNft: positionNft.publicKey,
       liquidityDelta: depositQuote.liquidityDelta,
-      maxAmountTokenA: depositQuote.actualInputAmount,
-      maxAmountTokenB: depositQuote.outputAmount,
+      maxAmountTokenA: inputA,
+      maxAmountTokenB: inputB,
 
-      tokenAAmountThreshold: depositQuote.actualInputAmount.muln(1.50),
-      tokenBAmountThreshold: depositQuote.outputAmount.muln(1.50),
+      tokenAAmountThreshold: inputA.muln(1.50),
+      tokenBAmountThreshold: inputB.muln(1.50),
       tokenAMint: poolInfo.poolInfo.account.tokenAMint,
       tokenBMint: poolInfo.poolInfo.account.tokenBMint,
       tokenAProgram: getTokenProgram(poolInfo.poolInfo.account.tokenAFlag),
@@ -134,13 +168,13 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
           <div className="flex">
             <DecimalInput
               className="flex-1 bg-[#1a1e2d] border border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
-              value={amountA.toString()}
+              value={amountA.toFixed(10)}
               onChange={() => { }}
-              onBlur={(v) => setAmountA(v)}
+              onBlur={(v) => getDepositAmountB(v)}
             />
             <button
               className="text-xs px-2 py-1 ml-2 rounded bg-blue-600 hover:bg-blue-700 text-white"
-              onClick={() => setAmountA(new Decimal(tokenA!.amount.toString()))}
+              onClick={() => getDepositAmountB(new Decimal(tokenA!.amount.toString()))}
             >
               Max
             </button>
@@ -153,13 +187,15 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
           <div className="flex">
             <DecimalInput
               className="flex-1 bg-[#1a1e2d] border border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
-              value={amountB.toString()}
+              value={amountB.toFixed(10)}
               onChange={() => { }}
-              onBlur={(v) => setAmountB(v)}
+              onBlur={async (v) => {
+                await getDepositAmountA(v);
+              }}
             />
             <button
               className="text-xs px-2 py-1 ml-2 rounded bg-blue-600 hover:bg-blue-700 text-white"
-              onClick={() => setAmountB(new Decimal(tokenB!.amount.toString()))}
+              onClick={async () => await getDepositAmountA(new Decimal(tokenB!.amount.toString()))}
             >
               Max
             </button>
