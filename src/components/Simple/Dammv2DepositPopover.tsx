@@ -1,13 +1,19 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { getTokenProgram, type CpAmm, type DepositQuote } from '@meteora-ag/cp-amm-sdk';
-import { Keypair, PublicKey, Transaction } from '@solana/web3.js';
+import { Keypair, LAMPORTS_PER_SOL, PublicKey, Transaction } from '@solana/web3.js';
 import Decimal from 'decimal.js';
-import type { TokenAccount } from '../../tokenUtils';
+import { type TokenAccount } from '../../tokenUtils';
 import { DecimalInput } from './DecimalInput';
 import { BN } from '@coral-xyz/anchor';
 import { useTokenAccounts } from '../../contexts/TokenAccountsContext';
 import type { PoolDetailedInfo } from '../../constants';
 import { useDammUserPositions } from '../../contexts/DammUserPositionsContext';
+import { getQuote, getSwapTransactionVersioned } from '../../JupSwapApi';
+import { NATIVE_MINT } from '@solana/spl-token';
+import { useWallet } from '@jup-ag/wallet-adapter';
+import { useTransactionManager } from '../../contexts/TransactionManagerContext';
+import { txToast } from './TxToast';
+
 
 interface DepositPopoverProps {
   cpAmm: CpAmm;
@@ -15,7 +21,7 @@ interface DepositPopoverProps {
   poolInfo: PoolDetailedInfo | null;
   onClose: () => void;
   position: { x: number; y: number };
-  sendTransaction:  (tx: Transaction, nft: Keypair) => Promise<boolean>;
+  sendTransaction: (tx: Transaction, nft: Keypair) => Promise<boolean>;
 }
 
 export const DepositPopover: React.FC<DepositPopoverProps> = ({
@@ -35,8 +41,12 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
 
   const [depositQuote, setDepositQuote] = useState<DepositQuote>();
 
-  const { refreshTokenAccounts } = useTokenAccounts()
-  const { refreshPositions } = useDammUserPositions()
+  const [swapSolAmount, setSwapSolAmount] = useState(new Decimal(0.01));
+
+  const { sendTxn } = useTransactionManager();
+  const { publicKey } = useWallet();
+  const { refreshTokenAccounts } = useTokenAccounts();
+  const { refreshPositions } = useDammUserPositions();
 
   const setTokensAB = async () => {
     if (!poolInfo) return;
@@ -79,11 +89,55 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
       maxSqrtPrice: poolInfo.poolInfo.account.sqrtMaxPrice,
       isTokenA: false,
       inAmount: new BN(input.mul(Decimal.pow(10, tokenB!.decimals)).toString()),
-    })
+    });
 
     setDepositQuote(depositQuote);
     setAmountB(new Decimal(depositQuote.actualInputAmount.toString()).div(Decimal.pow(10, tokenB!.decimals)))
     setAmountA(new Decimal(depositQuote.outputAmount.toString()).div(Decimal.pow(10, tokenA!.decimals)))
+  }
+
+  const swapSOLAndDeposit = async () => {
+    if (!poolInfo) return;
+    if (swapSolAmount.lessThanOrEqualTo(0)) return;
+
+    const quote = await getQuote({
+      inputMint: NATIVE_MINT.toBase58(),
+      outputMint: poolInfo.poolInfo.account.tokenAMint.toBase58(),
+      amount: swapSolAmount.mul(LAMPORTS_PER_SOL).toNumber(),
+      slippageBps: 500,
+    });
+
+    const transaction = await getSwapTransactionVersioned(quote, publicKey!);
+
+    sendTxn(transaction, undefined, {
+      notify: true,
+      onError: () => {
+        txToast.error("Swap failed");
+      },
+      onSuccess: async (x) => {
+        txToast.success("Swap successful", x);
+        //const { tokenAccounts } = await refreshTokenAccounts();
+
+        await setTokensAB();
+
+        // const ta = tokenAccounts.find(x => x.mint == poolInfo.poolInfo.account.tokenAMint.toBase58());
+        // if (!ta) {
+        //   txToast.error("Failed to find token account for token A");
+        //   return;
+        // }
+        // setAmountA(new Decimal(ta.amount))
+
+        // const depositQuote = cpAmm.getDepositQuote({
+        //   sqrtPrice: poolInfo.poolInfo.account.sqrtPrice,
+        //   minSqrtPrice: poolInfo.poolInfo.account.sqrtMinPrice,
+        //   maxSqrtPrice: poolInfo.poolInfo.account.sqrtMaxPrice,
+        //   isTokenA: false,
+        //   inAmount: new BN(new Decimal(ta.amount).mul(Decimal.pow(10, tokenA!.decimals)).toString()),
+        // })
+
+      }
+    });
+    //getQuote()
   }
 
   useEffect(() => {
@@ -135,7 +189,6 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
       await refreshTokenAccounts();
       await refreshPositions();
     }
-
   };
 
   if (!poolInfo) {
@@ -150,74 +203,84 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
     )
   }
 
-  if (!tokenA || !tokenB) {
-    return (
-      <div
-        ref={ref}
-        className="absolute z-50 w-80 bg-[#0d111c] text-gray-100 border border-gray-700 rounded-xl shadow-xl p-4 text-sm"
-        style={{ top: position.y, left: position.x }}
-      >
-        <div className="mb-3 text-sm text-gray-700">Could not find one of tokens</div>
-      </div>
-    )
-  }
-
   return (
+
     <div
       ref={ref}
-      className="absolute z-50 w-80 bg-[#0d111c] text-gray-100 border border-gray-700 rounded-xl shadow-xl p-4 text-sm"
+      className="absolute z-50 w-140 bg-[#0d111c] text-gray-100 border border-gray-700 rounded-xl shadow-xl p-4 text-sm justify-center"
       style={{ top: position.y, left: position.x }}
     >
-      <div className="flex flex-col gap-2">
-        {/* Token A */}
-        <div>
-          <div className="mb-1 text-sm text-gray-400">{tokenA!.symbol} Balance: {tokenA!.amount}</div>
-          <div className="flex">
-            <DecimalInput
-              className="flex-1 bg-[#1a1e2d] border border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
-              value={amountA.toFixed(10)}
-              onChange={() => { }}
-              onBlur={(v) => getDepositAmountB(v)}
-            />
-            <button
-              className="text-xs px-2 py-1 ml-2 rounded bg-blue-600 hover:bg-blue-700 text-white"
-              onClick={() => getDepositAmountB(new Decimal(tokenA!.amount.toString()))}
-            >
-              Max
-            </button>
-          </div>
-        </div>
-
-        {/* Token B */}
-        <div>
-          <div className="mb-1 text-sm text-gray-400">{tokenB!.symbol} Balance: {tokenB!.amount}</div>
-          <div className="flex">
-            <DecimalInput
-              className="flex-1 bg-[#1a1e2d] border border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
-              value={amountB.toFixed(10)}
-              onChange={() => { }}
-              onBlur={async (v) => {
-                await getDepositAmountA(v);
-              }}
-            />
-            <button
-              className="text-xs px-2 py-1 ml-2 rounded bg-blue-600 hover:bg-blue-700 text-white"
-              onClick={async () => await getDepositAmountA(new Decimal(tokenB!.amount.toString()))}
-            >
-              Max
-            </button>
-          </div>
-        </div>
-
-        {/* Submit Button */}
+      <div className="flex gap-2 text-sm font-semibold text-gray-100">
+        <DecimalInput
+          className='flex-1 bg-[#1a1e2d] border border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500'
+          value={swapSolAmount.toFixed()}
+          onChange={() => { }}
+          onBlur={(v) => setSwapSolAmount(v)}
+        />
         <button
-          className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded text-sm"
-          disabled={!amountA || !amountB}
-          onClick={handleDeposit}
-        >
-          Deposit
+          className="bg-green-600 hover:bg-green-700 text-white py-2 rounded text-sm"
+          onClick={() => swapSOLAndDeposit()}>
+          Swap from SOL and Deposit
         </button>
       </div>
+      {(!tokenA || !tokenB) && (
+        <div className="mb-3 justify-self-center text-sm text-gray-700">Could not find one of tokens</div>
+      )}
+
+      {(tokenA && tokenB) && (
+
+        <div className="flex flex-col gap-2">
+          {/* Token A */}
+          <div>
+            <div className="mb-1 text-sm text-gray-400">{tokenA!.symbol} Balance: {tokenA!.amount}</div>
+            <div className="flex">
+              <DecimalInput
+                className="flex-1 bg-[#1a1e2d] border border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
+                value={amountA.toFixed(10)}
+                onChange={() => { }}
+                onBlur={(v) => getDepositAmountB(v)}
+              />
+              <button
+                className="text-xs px-2 py-1 ml-2 rounded bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={() => getDepositAmountB(new Decimal(tokenA!.amount.toString()))}
+              >
+                Max
+              </button>
+            </div>
+          </div>
+
+          {/* Token B */}
+          <div>
+            <div className="mb-1 text-sm text-gray-400">{tokenB!.symbol} Balance: {tokenB!.amount}</div>
+            <div className="flex">
+              <DecimalInput
+                className="flex-1 bg-[#1a1e2d] border border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
+                value={amountB.toFixed(10)}
+                onChange={() => { }}
+                onBlur={async (v) => {
+                  await getDepositAmountA(v);
+                }}
+              />
+              <button
+                className="text-xs px-2 py-1 ml-2 rounded bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={async () => await getDepositAmountA(new Decimal(tokenB!.amount.toString()))}
+              >
+                Max
+              </button>
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <button
+            className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded text-sm"
+            disabled={!amountA || !amountB}
+            onClick={handleDeposit}
+          >
+            Deposit
+          </button>
+        </div>
+      )}
+
     </div>
 
   );

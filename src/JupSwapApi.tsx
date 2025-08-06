@@ -40,7 +40,7 @@ const baseUrl: string = "https://quote-api.jup.ag/v6";
 
 export const getQuote = async (params: QuoteParams): Promise<QuoteResponse> => {
   try {
-    const url = new URL(`https://ultra-api.jup.ag/order`);
+    const url = new URL(`https://quote-api.jup.ag/v6/quote?`);
     url.searchParams.append("inputMint", params.inputMint);
     url.searchParams.append("outputMint", params.outputMint);
     url.searchParams.append("amount", params.amount.toString());
@@ -66,10 +66,32 @@ export const getQuote = async (params: QuoteParams): Promise<QuoteResponse> => {
   }
 }
 
-interface SwapInstructions
-{
-  setupInstrutions:TransactionInstruction[],
-  swapInstruction:TransactionInstruction,
+export const getSwapTransactionVersioned = async (quoteResponse: QuoteResponse, publicKey:PublicKey):Promise<VersionedTransaction> => {
+
+  const {swapTransaction}  = await (
+    await fetch('https://quote-api.jup.ag/v6/swap', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        quoteResponse,
+        userPublicKey: publicKey.toBase58(),
+        wrapAndUnwrapSol: true,
+        // Optional, use if you want to charge a fee.  feeBps must have been passed in /quote API.
+        // feeAccount: "fee_account_public_key"
+      })
+    })
+  ).json();
+
+  const swapTransactionBuf = Buffer.from(swapTransaction, 'base64');
+var transaction = VersionedTransaction.deserialize(swapTransactionBuf);
+  return transaction;
+}
+
+interface SwapInstructions {
+  setupInstrutions: TransactionInstruction[],
+  swapInstruction: TransactionInstruction,
   cleanupInstruction: TransactionInstruction,
 }
 
@@ -99,11 +121,11 @@ export const getSwapInstructions = async (quoteResponse: QuoteResponse, pubKey: 
   } = instructions;
 
 
-    return {
-      setupInstrutions:[setupInstructions.map(deserializeInstruction)],
-      swapInstruction: deserializeInstruction(swapInstructionPayload),
-      cleanupInstruction: deserializeInstruction(cleanupInstruction),
-    }
+  return {
+    setupInstrutions: [setupInstructions.map(deserializeInstruction)],
+    swapInstruction: deserializeInstruction(swapInstructionPayload),
+    cleanupInstruction: deserializeInstruction(cleanupInstruction),
+  }
 }
 
 
