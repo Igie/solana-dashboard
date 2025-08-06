@@ -7,6 +7,10 @@ export interface TokenMetadataMap {
     [key: string]: TokenMetadata
 }
 
+export interface TokenAccountMap {
+    [key: string]: TokenAccount
+}
+
 export interface TokenMetadata {
     mint: string
     tokenProgram: string
@@ -16,8 +20,6 @@ export interface TokenMetadata {
     decimals: number
     image?: string
     description?: string
-
-
 }
 
 export interface TokenAccount {
@@ -42,15 +44,19 @@ export const metadataToAccounts = (tm: TokenMetadata[]): TokenAccount[] => {
 }
 
 export const GetTokenMetadataMap = (metadata: TokenMetadata[]): TokenMetadataMap => {
-    const metadataMap: { [key: string]: TokenMetadata } = {}
-
-
+    const metadataMap: TokenMetadataMap = {}
     metadata.map((x) => {
         metadataMap[x.mint] = x;
     });
-
     return metadataMap;
+}
 
+export const GetTokenAccountMap = (tokenAccounts: TokenAccount[]): TokenAccountMap => {
+    const tokenAccountMap: TokenAccountMap = {}
+    tokenAccounts.map((x) => {
+        tokenAccountMap[x.mint] = x;
+    });
+    return tokenAccountMap;
 }
 
 export const fetchTokenMetadata = async (c: Connection, mintAddresses: string[]): Promise<{ [key: string]: TokenMetadata }> => {
@@ -175,12 +181,8 @@ export const fetchTokenAccounts = async (c: Connection, publicKey: PublicKey): P
                 value,
             }
         })
-
-
         return [metadataArray, updatedAccounts];
     }
-
-
 
     return [[], []];
 }

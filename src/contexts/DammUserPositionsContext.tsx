@@ -32,7 +32,17 @@ export interface PoolPositionInfo {
     positionUnclaimedFee: number // from tokenA + tokenB fee values
     poolBaseFeeBPS: number
     poolCurrentFeeBPS: number
+}
+export interface PoolPositionInfoMap {
+    [key: string]: PoolPositionInfo
+}
 
+export const getPoolPositionMap = (poolPositions: PoolPositionInfo[]): PoolPositionInfoMap => {
+    const poolPositionMap: PoolPositionInfoMap = {}
+    poolPositions.map((x) => {
+        poolPositionMap[x.poolAddress.toBase58()] = x;
+    });
+    return poolPositionMap;
 }
 
 export enum SortType {
@@ -90,12 +100,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
         try {
 
             if (!publicKey || !connection) return
-
-
             setLoading(true)
-
-            // Get all token accounts owned by the user
-
             const positionsTemp: PoolPositionInfo[] = [];
             const allMints = new Set<string>();
 

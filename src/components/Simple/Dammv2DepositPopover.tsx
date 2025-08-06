@@ -7,6 +7,7 @@ import { DecimalInput } from './DecimalInput';
 import { BN } from '@coral-xyz/anchor';
 import { useTokenAccounts } from '../../contexts/TokenAccountsContext';
 import type { PoolDetailedInfo } from '../../constants';
+import { useDammUserPositions } from '../../contexts/DammUserPositionsContext';
 
 interface DepositPopoverProps {
   cpAmm: CpAmm;
@@ -14,7 +15,7 @@ interface DepositPopoverProps {
   poolInfo: PoolDetailedInfo | null;
   onClose: () => void;
   position: { x: number; y: number };
-  sendTransaction: (tx: Transaction, nft: Keypair) => void;
+  sendTransaction:  (tx: Transaction, nft: Keypair) => Promise<boolean>;
 }
 
 export const DepositPopover: React.FC<DepositPopoverProps> = ({
@@ -35,6 +36,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
   const [depositQuote, setDepositQuote] = useState<DepositQuote>();
 
   const { refreshTokenAccounts } = useTokenAccounts()
+  const { refreshPositions } = useDammUserPositions()
 
   const setTokensAB = async () => {
     if (!poolInfo) return;
@@ -127,7 +129,12 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
       tokenBProgram: getTokenProgram(poolInfo.poolInfo.account.tokenBFlag),
     });
 
-    sendTransaction(tx, positionNft);
+    const success = await sendTransaction(tx, positionNft);
+    if (success) {
+      onClose();
+      await refreshTokenAccounts();
+      await refreshPositions();
+    }
 
   };
 

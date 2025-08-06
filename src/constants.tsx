@@ -44,6 +44,14 @@ export interface PoolDetailedInfoMap {
     [key: string]: PoolDetailedInfo
 }
 
+export const GetPoolDetailedInfoMap = (poolDetailedInfos: PoolDetailedInfo[]): PoolDetailedInfoMap => {
+    const poolDetailedInfoMap: PoolDetailedInfoMap = {}
+    poolDetailedInfos.map((x) => {
+        poolDetailedInfoMap[x.poolInfo.publicKey.toBase58()] = x;
+    });
+    return poolDetailedInfoMap;
+}
+
 export enum PoolSortType {
     PoolActivationTime,
     PoolBaseFee,
@@ -77,7 +85,7 @@ export const sortPositions = (pools: PoolDetailedInfo[], sortType: PoolSortType,
             case PoolSortType.PoolTokenAFees:
                 r = (x.tokenA.totalFees.sub(y.tokenA.totalFees).toNumber());
                 break;
-                
+
             case PoolSortType.PoolTokenBFees:
                 r = (x.tokenB.totalFees.sub(y.tokenB.totalFees).toNumber());
                 break;
@@ -90,9 +98,7 @@ export const sortPositions = (pools: PoolDetailedInfo[], sortType: PoolSortType,
         if (!ascending)
             r = -r;
         return r;
-    }
-    )
-
+    });
     pools = p;
 }
 

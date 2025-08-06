@@ -2,13 +2,14 @@ import { TrendingUp } from "lucide-react";
 import { SortArrow } from "./SortArrow";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { DepositPopover } from "./Dammv2DepositPopover";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTokenAccounts } from "../../contexts/TokenAccountsContext";
 import type { CpAmm } from "@meteora-ag/cp-amm-sdk";
 import { useTransactionManager } from "../../contexts/TransactionManagerContext";
-import type { TokenMetadataMap } from "../../tokenUtils";
+import { GetTokenAccountMap, type TokenAccountMap, type TokenMetadataMap } from "../../tokenUtils";
 import { getShortMint, PoolSortType, sortPositions, type PoolDetailedInfo } from "../../constants";
 import { useWallet } from "@jup-ag/wallet-adapter";
+import { getPoolPositionMap, useDammUserPositions, type PoolPositionInfoMap } from "../../contexts/DammUserPositionsContext";
 
 interface Dammv2PoolListProps {
     cpAmm: CpAmm
@@ -25,7 +26,11 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
 ) => {
     const { publicKey } = useWallet();
     const { sendTxn } = useTransactionManager();
-    const { refreshTokenAccounts } = useTokenAccounts();
+    const { tokenAccounts, refreshTokenAccounts } = useTokenAccounts();
+    const { positions, refreshPositions } = useDammUserPositions();
+
+    const [tokenAccountMap, setTokenAccountMap] = useState<TokenAccountMap>({});
+    const [userPoolPositionInfoMap, setUserPoolPositionInfoMap] = useState<PoolPositionInfoMap>({});
 
     const [sortBy, setSortBy] = useState<PoolSortType>(PoolSortType.PoolActivationTime);
     const [sortAscending, setSortAscending] = useState<boolean | undefined>(true);
@@ -66,6 +71,20 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
         setPosition({ x: rect.left, y: rect.bottom + window.scrollY });
         setPopoverVisible(true);
     }
+
+    useEffect(() => {
+        refreshTokenAccounts();
+        refreshPositions();
+    }, []);
+
+    useEffect(() => {
+        setTokenAccountMap(GetTokenAccountMap(tokenAccounts));
+    }, [tokenAccounts]);
+
+    useEffect(() => {
+        setUserPoolPositionInfoMap(getPoolPositionMap(positions));
+    }, [positions]);
+
     return (
         <div>
 
@@ -129,13 +148,14 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                 onClose={() => setPopoverVisible(false)}
                                 position={position}
                                 sendTransaction={async (x, nft) => {
+                                    let success = false;
                                     await sendTxn(x, [nft], {
                                         notify: true,
                                         onSuccess: () => {
-                                            setPopoverVisible(false);
+                                            success = true;
                                         }
                                     })
-
+                                    return success;
                                 }}
                             />
                         )}
@@ -144,7 +164,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                 key={index}
                                 className="grid grid-cols-10 gap-4 px-4 py-3 text-sm text-white border-b border-gray-800"
                             >
-                                <div className='col-span-2 grid items grid-cols-3 gap-x-2'>
+                                <div className='col-span-2 grid grid-cols-3 gap-x-2'>
                                     <div className="flex items-center justify-center">
                                         <a
                                             className="w-full h-full bg-purple-600 hover:bg-purple-500 rounded-md text-white text-sm flex items-center justify-center"
@@ -156,29 +176,31 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                         </a>
                                     </div>
                                     <div className="flex items-center justify-center">
-                                        <button className="w-full h-full bg-blue-600 hover:bg-blue-700 rounded-md text-white text-sm justify-center"
+                                        <button className="w-full h-full grid bg-blue-600 hover:bg-blue-700 rounded-md text-white text-sm items-center justify-center"
                                             onClick={() => {
                                                 window.Jupiter.init({
                                                     formProps: {
                                                         initialInputMint: pool.poolInfo.account.tokenBMint.toBase58(),
                                                         initialOutputMint: pool.poolInfo.account.tokenAMint.toBase58(),
                                                         initialAmount: (0.01 * LAMPORTS_PER_SOL).toString(),
-
+                                                    },
+                                                    onSuccess: async () => {
+                                                        await refreshTokenAccounts();
                                                     }
                                                 });
                                             }}
                                         >
-                                            Jup Trade
+                                            Jup Trade {(tokenAccountMap[pool.tokenA.mint] && (<span>{tokenAccountMap[pool.tokenA.mint].amount.toFixed(2)}</span>))}
                                         </button>
                                     </div>
                                     <div className="flex items-center justify-center">
-                                        <button className="w-full h-full bg-blue-600 hover:bg-blue-700 rounded-md text-white text-sm justify-center"
+                                        <button className="w-full h-full grid bg-blue-600 hover:bg-blue-700 rounded-md text-white text-sm items-center justify-center"
                                             onClick={(e) => {
                                                 setDepositPool(pool);
                                                 handleDepositClick(e);
                                             }}
                                         >
-                                            Deposit
+                                            <span>Deposit</span> {(userPoolPositionInfoMap[pool.poolInfo.publicKey.toBase58()] && (<span>{userPoolPositionInfoMap[pool.poolInfo.publicKey.toBase58()].positionValue.toFixed(2) + '$'}</span>))}
                                         </button>
                                     </div>
                                 </div>

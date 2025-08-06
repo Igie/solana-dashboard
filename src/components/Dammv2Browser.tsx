@@ -62,8 +62,6 @@ const Dammv2Browser: React.FC = () => {
         currentSlot = (await connection.getSlot())
         let mints: string[] = [];
         try {
-
-
             const pools = await cpAmm.getAllPools();
             pools.sort((x, y) => y.account.activationPoint.sub(x.account.activationPoint).toNumber())
             const allPools = (pools).slice(0, 20); // Limit to first 20 pools
@@ -77,9 +75,6 @@ const Dammv2Browser: React.FC = () => {
             mapPools(allPools, tm);
             setFetchingPools(false);
             return;
-
-
-
         } catch (err) {
             setTokenMetadataMap({});
             setPools([])
@@ -244,7 +239,6 @@ const Dammv2Browser: React.FC = () => {
                 pools={detailedPools}
                 tokenMetadataMap={tokenMetadataMap} />
         </div>
-
     )
 }
 export default Dammv2Browser
