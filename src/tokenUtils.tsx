@@ -128,7 +128,6 @@ export const fetchTokenAccounts = async (c: Connection, publicKey: PublicKey): P
 
 
     const tokenAccounts = [...tokenAccountsSPL, ...tokenAccountsSPL2022];
-    console.log(tokenAccounts.map(x => x.account.data.parsed));
     const accounts: TokenAccount[] = []
     const mintAddresses: string[] = ["So11111111111111111111111111111111111111112"]
 
