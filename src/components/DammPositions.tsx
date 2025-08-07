@@ -32,6 +32,8 @@ const DammPositions: React.FC = () => {
 
     const [mintToMintSwap, setMintToMintSwap] = useState<TwoMints[]>([])
 
+    const [searchString, setSearchString] = useState<string>("")
+
 
     const [popupIndex, setPopupIndex] = useState<number | null>(null)
 
@@ -156,6 +158,16 @@ const DammPositions: React.FC = () => {
             console.log(e);
         }
     };
+
+    const poolContainsString = (pool: PoolPositionInfo, searchString: string): boolean => {
+        const lowerSearch = searchString.toLowerCase();
+        return pool.tokenA.name.toLowerCase().includes(lowerSearch) ||
+            pool.tokenA.symbol.toLowerCase().includes(lowerSearch) ||
+            pool.tokenA.mint===searchString ||
+            pool.tokenB.name.toLowerCase().includes(lowerSearch) ||
+            pool.tokenB.symbol.toLowerCase().includes(lowerSearch) ||
+            pool.tokenB.mint === lowerSearch;
+    }
 
     useEffect(() => {
         if (!mintToMintSwap || mintToMintSwap.length === 0 || connection === null || publicKey === null) return;
@@ -283,7 +295,18 @@ const DammPositions: React.FC = () => {
                     {/* Column Headers */}
                     <div className="grid grid-cols-12 gap-4 py-3 text-sm font-medium text-gray-300">
 
-                        <div className="col-span-3">Pool</div>
+                        <div className="col-span-3 flex items-start gap-2">
+                            <div>Pool</div>
+                            <input
+                                className="flex-1 bg-gray-800 border border-gray-700 px-4 text-white placeholder-gray-500"
+                                type="text"
+                                value={searchString}
+                                onChange={(e) => {
+                                    setSearchString(e.target.value);
+                                }}
+                                placeholder="Search by token mint, name or symbol"
+                            />
+                        </div>
                         <div className="col-span-3 flex flex-col">
                             <div className='grid grid-cols-3 grid-rows-1'>
                                 <span className='col-span-4  flex justify-start'>Fee Model</span>
@@ -307,7 +330,7 @@ const DammPositions: React.FC = () => {
                             </div>
                             <div className="col-span-2 col-start-1 row-start-2 flex items-center">
                                 <div className='justify-self-start flex items-center gap-1 px-2 py-1 bg-green-900 rounded text-xs font-medium text-white transition-colors"'
-                                    //onClick={handleClaimAllFees}
+                                //onClick={handleClaimAllFees}
                                 >
                                     Total Fees ${positions.reduce((sum, pos) => sum + pos.positionUnclaimedFee, 0).toFixed(2)}
                                 </div>
@@ -346,22 +369,7 @@ const DammPositions: React.FC = () => {
                                 {selectedPositions.size} pool{selectedPositions.size > 1 ? 's' : ''} selected
                             </div>
                             <div className="flex gap-2">
-                                {/* <button
-                                        className="bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded text-white"
-                                     onClick={async () => 
-                                     {
-                                        for (const pos of selectedPositions)
-                                        {
-                                            await handleClosePositionAndSwapToQuote(pos);
-                                        }
-                                            await refreshPositions();
-                                            setSelectedPositions(new Set());
 
-                                     }
-                                     }
-                                    >
-                                        Close All and Swap to Quote
-                                    </button> */}
                                 <button
                                     className="bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded text-white"
                                     onClick={async () => {
@@ -389,8 +397,8 @@ const DammPositions: React.FC = () => {
                             </div>
                         </div>
 
-                        {positions.map((position, index) => (
-                            <div key={index} className="px-6 hover:bg-gray-800/50 transition-colors">
+                        {positions.map((position, index) => ((searchString == "" || poolContainsString(position, searchString)) &&
+                            (<div key={index} className="px-6 hover:bg-gray-800/50 transition-colors">
                                 <div className="grid grid-cols-12 gap-4 items-center min-h-[96px]">
                                     <div className="col-span-3 flex items-center gap-4">
                                         <input
@@ -616,7 +624,7 @@ const DammPositions: React.FC = () => {
                                         </div>
                                     </div>
                                 )}
-                            </div>
+                            </div>)
                         ))}
 
                     </div>

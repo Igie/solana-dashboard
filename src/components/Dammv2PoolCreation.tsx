@@ -53,13 +53,13 @@ const Dammv2PoolCreation: React.FC = () => {
     const [baseFeePercentage, setBaseFeePercentage] = useState(new Decimal(49))
     const [baseFeePercentageInput, setBaseFeePercentageInput] = useState("49")
 
-    const [totalSchedulerDuration, setTotalSchedulerDuration] = useState<number>(60)
-    const [totalSchedulerDurationInput, setTotalSchedulerDurationInput] = useState("60")
+    const [totalSchedulerDuration, setTotalSchedulerDuration] = useState<number>(30)
+    const [totalSchedulerDurationInput, setTotalSchedulerDurationInput] = useState("30")
 
-    const [schedulerReductionPeriod, setSchedulerReductionPeriod] = useState<number>(2)
-    const [schedulerReductionPeriodInput, setSchedulerReductionPeriodInput] = useState("2")
+    const [schedulerReductionPeriod, setSchedulerReductionPeriod] = useState<number>(1.5)
+    const [schedulerReductionPeriodInput, setSchedulerReductionPeriodInput] = useState("1.5")
 
-    const [selectedFeeScheduler, setSelectedFeeScheduler] = useState<FeeSchedulerMode>(FeeSchedulerMode.Linear)
+    const [selectedFeeScheduler, setSelectedFeeScheduler] = useState<FeeSchedulerMode>(FeeSchedulerMode.Exponential)
     const [feeSchedulerDropdownOpen, setFeeSchedulerDropdownOpen] = useState(false)
 
     const [selectedFeeMode, setSelectedFeeMode] = useState<CollectFeeMode>(CollectFeeMode.OnlyB)

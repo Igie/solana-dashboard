@@ -2,10 +2,12 @@ import React, { useState, useEffect, useRef } from 'react'
 
 import { LAMPORTS_PER_SOL } from '@solana/web3.js'
 
-import { Coins, RefreshCw, TrendingUp, Wallet, ExternalLink, AlertCircle } from 'lucide-react'
+import { Coins, RefreshCw, TrendingUp, Wallet, ExternalLink } from 'lucide-react'
 import { type TokenAccount } from '../tokenUtils'
 import { useTokenAccounts } from '../contexts/TokenAccountsContext'
 import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-adapter'
+import { toast } from 'sonner'
+import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from '@solana/spl-token'
 
 const Portfolio: React.FC = () => {
   const { connection } = useConnection()
@@ -14,7 +16,6 @@ const Portfolio: React.FC = () => {
   const [solBalance, setSolBalance] = useState<number | null>(null)
   const { tokenAccounts, tokenMetadata, refreshTokenAccounts } = useTokenAccounts()
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string>('')
   const [totalValue, setTotalValue] = useState<number>(0)
   const [solPrice, setSolPrice] = useState<number>(0)
   const [popupIndex, setPopupIndex] = useState<number | null>(null)
@@ -23,7 +24,6 @@ const Portfolio: React.FC = () => {
   // Fetch all portfolio data
   const fetchPortfolioData = async () => {
     setLoading(true)
-    setError('')
     try {
       const solPrice = tokenMetadata.find(x => x?.mint === "So11111111111111111111111111111111111111112")?.price || 0
       const balance = await connection.getBalance(publicKey!)
@@ -34,7 +34,7 @@ const Portfolio: React.FC = () => {
       await refreshTokenAccounts();
     } catch (err) {
       console.error('Error fetching SOL balance:', err)
-      setError('Failed to fetch SOL balance')
+      toast.error('Failed to fetch SOL balance')
     }
     setLoading(false)
   }
@@ -170,17 +170,6 @@ const Portfolio: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Error Display */}
-      {error && (
-        <div className="bg-red-900/30 border border-red-700 rounded-lg p-4">
-          <div className="flex items-center">
-            <AlertCircle className="w-5 h-5 mr-2 text-red-400" />
-            <span className="text-red-400">{error}</span>
-          </div>
-        </div>
-      )}
-
       {/* Token Holdings */}
       <div className="bg-gray-900 border border-gray-700 rounded-2xl">
         <div className="p-6 border-b border-gray-700">
@@ -189,7 +178,6 @@ const Portfolio: React.FC = () => {
             Token Holdings
           </h2>
         </div>
-
         {loading ? (
           <div className="p-8 text-center">
             <RefreshCw className="w-8 h-8 mx-auto mb-4 text-purple-400 animate-spin" />
@@ -239,9 +227,9 @@ const Portfolio: React.FC = () => {
                 key={index}
                 className="p-4 hover:bg-gray-800/50 transition-colors"
               >
-                <div className="grid grid-cols-12 gap-4 items-center">
+                <div className="grid grid-cols-12 gap-1 items-center">
                   {/* Token Info - Left aligned (cols 1-7) */}
-                  <div className="col-span-7 flex items-center space-x-3">
+                  <div className="col-span-2 flex items-center space-x-3">
                     <div className="relative w-10 h-10">
                       <div
                         className="w-10 h-10 rounded-full overflow-hidden bg-gray-700 cursor-pointer"
@@ -292,7 +280,7 @@ const Portfolio: React.FC = () => {
                       <div className="text-sm text-gray-400 flex items-center gap-2">
                         <span>{token.symbol}</span>
                         <button
-                          onClick={() => window.open(`https://explorer.solana.com/address/${token.mint}`, '_blank')}
+                          onClick={() => window.open(`https://solscan.io/token/${token.mint}`, '_blank')}
                           className="text-purple-400 hover:text-purple-300 transition-colors"
                         >
                           <ExternalLink className="w-3 h-3" />
@@ -300,10 +288,14 @@ const Portfolio: React.FC = () => {
                       </div>
                     </div>
                   </div>
-
+                    <div className="col-span-1 flex text-purple-400 texrt space-x-3">
+                      {token.tokenProgram == TOKEN_PROGRAM_ID.toString() ? "SPL Token" :
+                        token.tokenProgram ==TOKEN_2022_PROGRAM_ID.toString() ? "SPL 2022 Token" :
+                        "Unknown Token Program"}
+                      </div>
                   {/* Balance - Right aligned (cols 8-12) */}
-                  <div className="col-span-5 text-right">
-                    <div className="font-semibold text-white">
+                  <div className="col-span-9 text-right">
+                    <div className="font-semibold  text-white">
                       {token.amount < 1
                         ? token.amount.toFixed(Math.min(6, token.decimals))
                         : token.amount.toLocaleString(undefined, {

@@ -116,16 +116,19 @@ export const fetchTokenAccounts = async (c: Connection, publicKey: PublicKey): P
 
     // Get all token accounts for the wallet
 
-    const tokenAccounts = (await c.getParsedTokenAccountsByOwner(
+    const tokenAccountsSPL = (await c.getParsedTokenAccountsByOwner(
         publicKey,
         { programId: TOKEN_PROGRAM_ID }
     )).value
 
-    const tokenAccounts2022 = (await c.getParsedTokenAccountsByOwner(
+    const tokenAccountsSPL2022 = (await c.getParsedTokenAccountsByOwner(
         publicKey,
         { programId: TOKEN_2022_PROGRAM_ID }
     )).value
-    tokenAccounts.push(...tokenAccounts2022);
+
+
+    const tokenAccounts = [...tokenAccountsSPL, ...tokenAccountsSPL2022];
+    console.log(tokenAccounts.map(x => x.account.data.parsed));
     const accounts: TokenAccount[] = []
     const mintAddresses: string[] = ["So11111111111111111111111111111111111111112"]
 
@@ -141,6 +144,7 @@ export const fetchTokenAccounts = async (c: Connection, publicKey: PublicKey): P
             })
 
     for (const account of tokenAccounts) {
+
         const parsedInfo = account.account.data.parsed.info
         const mintAddress = parsedInfo.mint
         const amount = parsedInfo.tokenAmount.uiAmount

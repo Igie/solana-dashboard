@@ -59,7 +59,7 @@ const Dammv2Browser: React.FC = () => {
         mapPools([], {});
         setFetchingPools(true)
         currentTime = (new BN((Date.now())).divn(1000).toNumber());
-        currentSlot = (await connection.getSlot())
+        currentSlot = (await connection.getSlot());
         let mints: string[] = [];
         try {
             const pools = await cpAmm.getAllPools();
