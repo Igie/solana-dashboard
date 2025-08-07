@@ -50,7 +50,7 @@ export const MintSelectorInput: React.FC<Props> = ({
     }, [mint]);
 
     useEffect(() => {
-            setAmountInternalInput(amount.toFixed());
+        setAmountInternalInput(amount.toFixed());
     }, [amount]);
 
     // Handle mint input
@@ -132,7 +132,7 @@ export const MintSelectorInput: React.FC<Props> = ({
             {/* Dropdown */}
             {dropdownOpen && (
                 <div
-                    className="absolute z-10 mt-1 w-full bg-gray-800 border border-gray-700 rounded-md shadow-lg max-h-60 overflow-auto"
+                    className="absolute z-10 mt-1 w-64 bg-gray-800 border border-gray-700 rounded-md shadow-lg max-h-120 overflow-auto"
                     ref={dropdownRef}
                 >
                     {loading ? (
@@ -140,24 +140,49 @@ export const MintSelectorInput: React.FC<Props> = ({
                     ) : tokenAccounts.length === 0 ? (
                         <div className="p-2 text-sm text-center">No tokens</div>
                     ) : (
-                        tokenAccounts.map((account) => {
-                            return (
-                                <button
-                                    key={account.mint}
-                                    className="w-full flex items-center px-3 py-2 hover:bg-gray-700 text-sm gap-2"
-                                    onClick={() => {
-                                        setMintInput(account.mint);
-                                        onMintChange(account.mint);
-                                        setDropdownOpen(false)
-                                    }}
-                                >
-                                    {account?.image && <img src={account.image} alt="" className="w-4 h-4 rounded-full" />}
-                                    <span>{account?.symbol || account.mint.slice(0, 4) + '...'}</span>
-                                </button>
-                            )
-                        })
+                        tokenAccounts
+                            .sort((a, b) => b.amount * b.price - a.amount * a.price)
+                            .map((account) => {
+                                if (!account) return null;
+                                return (
+                                    <button
+                                        key={account.mint}
+                                        className="w-full flex items-start px-3 py-2 hover:bg-gray-700 text-sm gap-3 text-left"
+                                        onClick={() => {
+                                            setMintInput(account.mint);
+                                            onMintChange(account.mint);
+                                            setDropdownOpen(false);
+                                        }}
+                                    >
+                                        {/* Left side: icon + name + amount */}
+                                        <div className="flex flex-col items-start gap-0.5 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                {account.image && (
+                                                    <img
+                                                        src={account.image}
+                                                        alt=""
+                                                        className="w-4 h-4 rounded-full flex-shrink-0"
+                                                    />
+                                                )}
+                                                <span className="truncate">
+                                                    {account.symbol || account.mint.slice(0, 4) + '...'}
+                                                </span>
+                                            </div>
+                                            <div className="text-xs text-gray-400">
+                                                {account.amount.toFixed(2)}
+                                            </div>
+                                        </div>
+
+                                        {/* Right side: total value */}
+                                        <div className="ml-auto text-xs text-gray-300 whitespace-nowrap">
+                                            ${(account.amount * account.price).toFixed(2)}
+                                        </div>
+                                    </button>
+                                );
+                            })
                     )}
                 </div>
+
             )}
 
             {/* Amount Input */}
