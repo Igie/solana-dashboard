@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useEffect } from 'react'
-import { Target, RefreshCcw } from 'lucide-react'
+import { RefreshCcw } from 'lucide-react'
 import { CollectFeeMode, CpAmm, deriveCustomizablePoolAddress, feeNumeratorToBps, FeeSchedulerMode, getBaseFeeNumerator, getBaseFeeParams, getDynamicFeeParams, getFeeNumerator, getPriceFromSqrtPrice, MAX_SQRT_PRICE, MIN_SQRT_PRICE } from '@meteora-ag/cp-amm-sdk'
 import { Keypair, PublicKey } from '@solana/web3.js'
 import { BN } from '@coral-xyz/anchor'
@@ -13,7 +13,7 @@ import { txToast } from './Simple/TxToast'
 import Dammv2PoolList from './Simple/Dammv2PoolList'
 import type { PoolDetailedInfo, PoolInfo } from '../constants'
 import { toast } from 'sonner'
-import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-adapter'
+import { useConnection, useWallet } from '@jup-ag/wallet-adapter'
 
 
 const Dammv2PoolCreation: React.FC = () => {
@@ -382,16 +382,6 @@ const Dammv2PoolCreation: React.FC = () => {
         updateCommonTokens();
     }, []);
 
-    if (!connected) {
-        return (
-            <div className="text-center py-12">
-                <Target className="w-16 h-16 mx-auto mb-6 text-gray-400" />
-                <h2 className="text-2xl font-bold mb-4 text-gray-300">Connect Your Wallet</h2>
-                <UnifiedWalletButton buttonClassName="!bg-purple-600 hover:!bg-purple-700 !rounded-lg !font-medium !px-8 !py-3" />
-            </div>
-        )
-    }
-
     return (
         <div className="space-y-6">
             {/* Snipe Form */}
@@ -420,13 +410,15 @@ const Dammv2PoolCreation: React.FC = () => {
                 </div>
             </div>
             <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 space-y-6">
+                {connected && (
                 <button
                     onClick={() => setShowCreateForm(!showCreateForm)}
                     className="bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded-lg text-white font-medium"
                 >
                     {showCreateForm ? "Hide Create Pool Form" : "Create New DAMMv2 Pool"}
                 </button>
-                {showCreateForm && (
+                )}
+                {showCreateForm && connected && (
                     <div className="space-y-4">
                         <div className="relative">
                             <label className="block text-sm text-gray-400 mb-1">Base Token</label>
@@ -677,7 +669,7 @@ const Dammv2PoolCreation: React.FC = () => {
 
 
                         </div>
-                        {!newPoolAddressExists ?
+                        {!newPoolAddressExists && connected ?
                             <button
                                 className="bg-green-600 hover:bg-green-500 px-4 py-2 rounded-lg text-white font-semibold"
                                 onClick={handleCreatePool}

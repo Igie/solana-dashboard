@@ -24,7 +24,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
         tokenMetadataMap,
     }
 ) => {
-    const { publicKey } = useWallet();
+    const { publicKey, connected } = useWallet();
     const { sendTxn } = useTransactionManager();
     const { tokenAccounts, refreshTokenAccounts } = useTokenAccounts();
     const { positions, refreshPositions } = useDammUserPositions();
@@ -176,7 +176,8 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                         </a>
                                     </div>
                                     <div className="flex items-center justify-center">
-                                        <button className="w-full h-full grid bg-blue-600 hover:bg-blue-700 rounded-md text-white text-sm items-center justify-center"
+                                        <button disabled={!connected}
+                                        className="w-full h-full grid bg-blue-600 hover:bg-blue-700 rounded-md text-white text-sm items-center justify-center"
                                             onClick={() => {
                                                 window.Jupiter.init({
                                                     formProps: {
@@ -194,7 +195,8 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                         </button>
                                     </div>
                                     <div className="flex items-center justify-center">
-                                        <button className="w-full h-full grid bg-blue-600 hover:bg-blue-700 rounded-md text-white text-sm items-center justify-center"
+                                        <button disabled={!connected}
+                                        className="w-full h-full grid bg-blue-600 hover:bg-blue-700 rounded-md text-white text-sm items-center justify-center"
                                             onClick={(e) => {
                                                 setDepositPool(pool);
                                                 handleDepositClick(e);

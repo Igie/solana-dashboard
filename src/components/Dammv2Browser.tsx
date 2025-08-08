@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Target, RefreshCcw, RefreshCw } from 'lucide-react'
+import { RefreshCcw, RefreshCw } from 'lucide-react'
 import { CpAmm, feeNumeratorToBps, getBaseFeeNumerator, getFeeNumerator, getPriceFromSqrtPrice, getTokenProgram } from '@meteora-ag/cp-amm-sdk'
 import { PublicKey } from '@solana/web3.js'
 import { BN } from '@coral-xyz/anchor'
@@ -8,10 +8,9 @@ import Decimal from 'decimal.js'
 
 import { type PoolDetailedInfo, type PoolInfo } from '../constants'
 import Dammv2PoolList from './Simple/Dammv2PoolList'
-import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-adapter'
+import { useConnection } from '@jup-ag/wallet-adapter'
 
 const Dammv2Browser: React.FC = () => {
-    const { connected } = useWallet()
     const { connection } = useConnection()
 
     //const { positions, totalLiquidityValue, loading, refreshPositions } = useDammUserPositions()
@@ -173,16 +172,6 @@ const Dammv2Browser: React.FC = () => {
         };
         setDetailedPools(detailedPools);
     };
-
-    if (!connected) {
-        return (
-            <div className="text-center py-12">
-                <Target className="w-16 h-16 mx-auto mb-6 text-gray-400" />
-                <h2 className="text-2xl font-bold mb-4 text-gray-300">Connect Your Wallet</h2>
-                <UnifiedWalletButton buttonClassName="!bg-purple-600 hover:!bg-purple-700 !rounded-lg !font-medium !px-8 !py-3" />
-            </div>
-        )
-    }
 
     return (
         <div className="space-y-6">

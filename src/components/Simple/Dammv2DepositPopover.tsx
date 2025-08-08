@@ -10,7 +10,6 @@ import type { PoolDetailedInfo } from '../../constants';
 import { useDammUserPositions } from '../../contexts/DammUserPositionsContext';
 import { getQuote, getSwapTransactionVersioned } from '../../JupSwapApi';
 import { NATIVE_MINT } from '@solana/spl-token';
-import { useWallet } from '@jup-ag/wallet-adapter';
 import { useTransactionManager } from '../../contexts/TransactionManagerContext';
 import { txToast } from './TxToast';
 
@@ -44,7 +43,6 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
   const [swapSolAmount, setSwapSolAmount] = useState(new Decimal(0.01));
 
   const { sendTxn } = useTransactionManager();
-  const { publicKey } = useWallet();
   const { refreshTokenAccounts } = useTokenAccounts();
   const { refreshPositions } = useDammUserPositions();
 
@@ -107,7 +105,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
       slippageBps: 500,
     });
 
-    const transaction = await getSwapTransactionVersioned(quote, publicKey!);
+    const transaction = await getSwapTransactionVersioned(quote, owner);
 
     await sendTxn(transaction, undefined, {
       notify: true,
