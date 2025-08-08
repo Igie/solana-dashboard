@@ -74,7 +74,7 @@ const DammPositions: React.FC = () => {
         })
 
         try {
-            sendTxn(txn, undefined, {
+            await sendTxn(txn, undefined, {
                 notify: true,
                 onSuccess: () => {
                     updatePosition(position.positionAddress);
@@ -145,7 +145,7 @@ const DammPositions: React.FC = () => {
         });
 
         try {
-            sendTxn(txn, undefined, {
+            await sendTxn(txn, undefined, {
                 notify: true,
                 onSuccess: () => {
                     removePosition(position.positionAddress);
@@ -186,9 +186,9 @@ const DammPositions: React.FC = () => {
         },
             connection, publicKey!);
 
-        t.then((x) => {
+        t.then(async (x) => {
             if (!x) return;
-            sendTxn(x, undefined,
+            await sendTxn(x, undefined,
                 {
                     notify: true,
                     onSuccess: async () => {

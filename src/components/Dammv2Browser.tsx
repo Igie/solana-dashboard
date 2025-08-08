@@ -64,7 +64,7 @@ const Dammv2Browser: React.FC = () => {
         try {
             const pools = await cpAmm.getAllPools();
             pools.sort((x, y) => y.account.activationPoint.sub(x.account.activationPoint).toNumber())
-            const allPools = (pools).slice(0, 20); // Limit to first 20 pools
+            const allPools = (pools).slice(0, 60); // Limit to first 40 pools
 
             mints.push(...allPools.map(p => p.account.tokenAMint.toBase58()));
             mints.push(...allPools.map(p => p.account.tokenBMint.toBase58()));

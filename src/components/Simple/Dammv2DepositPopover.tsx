@@ -109,7 +109,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
 
     const transaction = await getSwapTransactionVersioned(quote, publicKey!);
 
-    sendTxn(transaction, undefined, {
+    await sendTxn(transaction, undefined, {
       notify: true,
       onError: () => {
         txToast.error("Swap failed");

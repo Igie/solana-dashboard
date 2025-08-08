@@ -92,7 +92,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                 <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 space-y-4">
                     <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                         <TrendingUp className="w-5 h-5 text-purple-400" />
-                        DAMMv2 Pools {pools.length > 20 && 'Showing first 20 (total ' + pools.length + ')'}
+                        DAMMv2 Pools {pools.length > 60 && 'Showing first 60 (total ' + pools.length + ')'}
                     </h3>
 
                     <div className="overflow-x-auto">
@@ -159,7 +159,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                 }}
                             />
                         )}
-                        {pools.slice(0, Math.min(20, pools.length)).map((pool, index) => (
+                        {pools.slice(0, Math.min(60, pools.length)).map((pool, index) => (
                             <div
                                 key={index}
                                 className="grid grid-cols-10 gap-4 px-4 py-3 text-sm text-white border-b border-gray-800"
