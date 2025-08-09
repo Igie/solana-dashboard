@@ -75,7 +75,6 @@ export const fetchTokenMetadata = async (c: Connection, mintAddresses: string[])
     if (mintAddresses.length === 0)
         return metadataMap;
     try {
-
         const response = await fetch(c.rpcEndpoint, {
             method: 'POST',
             headers: {
@@ -99,10 +98,9 @@ export const fetchTokenMetadata = async (c: Connection, mintAddresses: string[])
             const prices: JupDataMap = {}
             let i = 0;
             while (i < mintAddresses.length) {
-                const end = Math.min(i + 150, mintAddresses.length);
+                const end = Math.min(i + 100, mintAddresses.length);
                 const priceRes = await fetch("https://lite-api.jup.ag/price/v3?ids=" + mintAddresses.slice(i, end).join(','));
                 const pricesJson: JupDataMap = await priceRes.json();
-
                 for (const [index, price] of Object.entries(pricesJson)) {
                     prices[index] = price;
                 }
@@ -122,7 +120,7 @@ export const fetchTokenMetadata = async (c: Connection, mintAddresses: string[])
                     name: metadata.name || 'Unknown Token',
                     tokenProgram: r.token_info?.token_program,
                     symbol: metadata.symbol || 'UNK',
-                    price: prices?.[mint]?.usdPrice || 0,
+                    price: prices[mint]?.usdPrice || r.token_info?.price_info?.price_per_token || 0,
                     decimals: r.token_info?.decimals || 0,
                     image: r.content.files?.[0]?.uri || metadata.image,
                     description: metadata.description
