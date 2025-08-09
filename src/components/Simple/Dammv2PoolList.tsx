@@ -1,4 +1,4 @@
-import { TrendingUp } from "lucide-react";
+import { ExternalLink, PanelsTopLeft, TrendingUp } from "lucide-react";
 import { SortArrow } from "./SortArrow";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { DepositPopover } from "./Dammv2DepositPopover";
@@ -96,12 +96,8 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                     </h3>
 
                     <div className="overflow-x-auto">
-                        <div className="grid grid-cols-10 gap-4 px-4 py-2 text-sm font-medium text-gray-400 border-b border-gray-700">
-                            <div className='col-span-2 grid grid-cols-3 justify-center gap-x-2'>
-                                <div className='flex justify-center items-center'>Pool</div>
-                                <div className='flex justify-center items-center'>Jup Trade</div>
-                                <div className='flex justify-center items-center'>Deposit</div>
-                            </div>
+                        <div className="grid grid-cols-10 gap-2 px-4 py-2 text-sm font-medium text-gray-400 border-b border-gray-700">
+                            <div className='col-span-2 grid-cols-4 flex justify-center items-center'>Links</div>
                             <div className='col-span-3 grid grid-cols-4 justify-center gap-x-2'>
                                 <div className='flex justify-center items-center'>Base Token</div>
                                 <div className='flex justify-center items-center'>Quote Token</div>
@@ -162,50 +158,87 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                         {pools.slice(0, Math.min(60, pools.length)).map((pool, index) => (
                             <div
                                 key={index}
-                                className="grid grid-cols-10 gap-4 px-4 py-3 text-sm text-white border-b border-gray-800"
+                                className="grid grid-cols-10 gap-2 px-4 py-3 text-sm text-white border-b border-gray-800"
                             >
-                                <div className='col-span-2 grid grid-cols-3 gap-x-2'>
-                                    <div className="flex items-center justify-center">
-                                        <a
-                                            className="w-full h-full bg-purple-600 hover:bg-purple-500 rounded-md text-white text-sm flex items-center justify-center"
-                                            href={`https://edge.meteora.ag/dammv2/${pool.poolInfo.publicKey.toBase58()}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                        >
-                                            Pool
-                                        </a>
-                                    </div>
-                                    <div className="flex items-center justify-center">
-                                        <button disabled={!connected}
-                                        className="w-full h-full grid bg-blue-600 hover:bg-blue-700 rounded-md text-white text-sm items-center justify-center"
-                                            onClick={() => {
-                                                window.Jupiter.init({
-                                                    formProps: {
-                                                        initialInputMint: pool.poolInfo.account.tokenBMint.toBase58(),
-                                                        initialOutputMint: pool.poolInfo.account.tokenAMint.toBase58(),
-                                                        initialAmount: (0.01 * LAMPORTS_PER_SOL).toString(),
-                                                    },
-                                                    onSuccess: async () => {
-                                                        await refreshTokenAccounts();
-                                                    }
-                                                });
-                                            }}
-                                        >
-                                            Jup Trade {(tokenAccountMap[pool.tokenA.mint] && (<span>{tokenAccountMap[pool.tokenA.mint].amount.toFixed(2)}</span>))}
-                                        </button>
-                                    </div>
-                                    <div className="flex items-center justify-center">
-                                        <button disabled={!connected}
-                                        className="w-full h-full grid bg-blue-600 hover:bg-blue-700 rounded-md text-white text-sm items-center justify-center"
-                                            onClick={(e) => {
-                                                setDepositPool(pool);
-                                                handleDepositClick(e);
-                                            }}
-                                        >
-                                            <span>Deposit</span> {(userPoolPositionInfoMap[pool.poolInfo.publicKey.toBase58()] && (<span>{userPoolPositionInfoMap[pool.poolInfo.publicKey.toBase58()].positionValue.toFixed(2) + '$'}</span>))}
-                                        </button>
-                                    </div>
-                                </div>
+
+
+<div className='col-span-2 grid grid-cols-4 gap-x-2'>
+    {/* Pool Link */}
+    <div className="flex items-center justify-center">
+        <a
+            className="w-full h-full bg-purple-600 hover:bg-purple-500 text-white text-sm flex items-center justify-center gap-1"
+            href={`https://edge.meteora.ag/dammv2/${pool.poolInfo.publicKey.toBase58()}`}
+            target="_blank"
+            rel="noopener noreferrer"
+        >
+            Pool
+            <ExternalLink size={14} />
+        </a>
+    </div>
+
+    {/* GMGN Link */}
+    <div className="flex items-center justify-center">
+        <a
+            className="w-full h-full bg-purple-600 hover:bg-purple-500 text-white text-sm flex items-center justify-center gap-1"
+            href={`https://gmgn.ai/sol/token/NQhHUcmQ_${pool.tokenA.mint}`}
+            target="_blank"
+            rel="noopener noreferrer"
+        >
+            GMGN
+            <ExternalLink size={14} />
+        </a>
+    </div>
+
+    {/* Jup Trade Popup */}
+    <div className="flex items-center justify-center">
+        <button
+            disabled={!connected}
+            className="w-full h-full grid bg-blue-600 hover:bg-blue-700 rounded-md text-white text-sm items-center justify-center gap-1"
+            onClick={() => {
+                window.Jupiter.init({
+                    formProps: {
+                        initialInputMint: pool.poolInfo.account.tokenBMint.toBase58(),
+                        initialOutputMint: pool.poolInfo.account.tokenAMint.toBase58(),
+                        initialAmount: (0.01 * LAMPORTS_PER_SOL).toString(),
+                    },
+                    onSuccess: async () => {
+                        await refreshTokenAccounts();
+                    }
+                });
+            }}
+        >
+            <div className="flex gap-1 items-center justify-center">
+                <span>Jup Trade</span>
+            <PanelsTopLeft  size={14} />
+            </div>
+            {tokenAccountMap[pool.tokenA.mint] && (
+                <span>{tokenAccountMap[pool.tokenA.mint].amount.toFixed(2)}</span>
+            )}
+        </button>
+    </div>
+
+    {/* Deposit Popup */}
+    <div className="flex items-center justify-center">
+        <button
+            disabled={!connected}
+            className="w-full h-full grid bg-blue-600 hover:bg-blue-700 rounded-md text-white text-sm items-center justify-center gap-1"
+            onClick={(e) => {
+                setDepositPool(pool);
+                handleDepositClick(e);
+            }}
+        >
+            <div className="flex gap-1 items-center justify-center">
+                <span>Deposit</span>
+            <PanelsTopLeft  size={14} />
+            </div>
+            {userPoolPositionInfoMap[pool.poolInfo.publicKey.toBase58()] && (
+                <span>
+                    {userPoolPositionInfoMap[pool.poolInfo.publicKey.toBase58()].positionValue.toFixed(2) + "$"}
+                </span>
+            )}
+        </button>
+    </div>
+</div>
                                 <div className='col-span-3 grid items grid-cols-4 gap-x-2'>
                                     <div className="font-mono grid items-center justify-center">
                                         <div className="truncate">
