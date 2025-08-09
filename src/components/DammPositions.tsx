@@ -378,6 +378,7 @@ const DammPositions: React.FC = () => {
                                             await handleClosePosition(pos);
                                         }
                                         setSelectedPositions(new Set());
+                                        await refreshPositions();
                                     }}
                                 >
                                     Close All

@@ -116,7 +116,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                     {SortArrow<PoolSortType>(PoolSortType.PoolBaseFee, sortBy, sortAscending, handleSort)}
                                 </div>
                                 <div className='flex justify-start items-center'>
-                                    <div>Current Fee</div>
+                                    <div className='flex justify-center items-center'>Current Fee</div>
                                     {SortArrow<PoolSortType>(PoolSortType.PoolCurrentFee, sortBy, sortAscending, handleSort)}
                                 </div>
                             </div>

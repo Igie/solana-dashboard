@@ -35,6 +35,17 @@ export interface TokenAccount {
     amount: number
 }
 
+export interface JupData {
+    blockId: number,
+    decimals: number,
+    priceChange24h: number,
+    usdPrice: number
+}
+
+export interface JupDataMap {
+    [key: string]: JupData
+}
+
 export const metadataToAccounts = (tm: TokenMetadata[]): TokenAccount[] => {
     return tm.map(x => ({
         ...x,
@@ -82,7 +93,22 @@ export const fetchTokenMetadata = async (c: Connection, mintAddresses: string[])
 
         const data = await response.json();
 
+
         if (data.result) {
+
+            const prices: JupDataMap = {}
+            let i = 0;
+            while (i < mintAddresses.length) {
+                const end = Math.min(i + 150, mintAddresses.length);
+                const priceRes = await fetch("https://lite-api.jup.ag/price/v3?ids=" + mintAddresses.slice(i, end).join(','));
+                const pricesJson: JupDataMap = await priceRes.json();
+
+                for (const [index, price] of Object.entries(pricesJson)) {
+                    prices[index] = price;
+                }
+                i = end;
+            }
+
             for (let i = 0; i < data.result.length; i++) {
                 let r = data.result[i];
                 if (r === null) {
@@ -96,7 +122,7 @@ export const fetchTokenMetadata = async (c: Connection, mintAddresses: string[])
                     name: metadata.name || 'Unknown Token',
                     tokenProgram: r.token_info?.token_program,
                     symbol: metadata.symbol || 'UNK',
-                    price: r.token_info?.price_info?.price_per_token || 0,
+                    price: prices?.[mint]?.usdPrice || 0,
                     decimals: r.token_info?.decimals || 0,
                     image: r.content.files?.[0]?.uri || metadata.image,
                     description: metadata.description
@@ -132,15 +158,15 @@ export const fetchTokenAccounts = async (c: Connection, publicKey: PublicKey): P
     const mintAddresses: string[] = ["So11111111111111111111111111111111111111112"]
 
     accounts.push({
-                mint: "So11111111111111111111111111111111111111112",
-                tokenProgram: "",
-                amount: (await c.getBalance(publicKey))/ (LAMPORTS_PER_SOL),
-                decimals: 9,
-                symbol: 'Loading...',
-                name: 'Loading...',
-                price: 0,
-                value: 0
-            })
+        mint: "So11111111111111111111111111111111111111112",
+        tokenProgram: "",
+        amount: (await c.getBalance(publicKey)) / (LAMPORTS_PER_SOL),
+        decimals: 9,
+        symbol: 'Loading...',
+        name: 'Loading...',
+        price: 0,
+        value: 0
+    })
 
     for (const account of tokenAccounts) {
 
