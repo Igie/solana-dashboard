@@ -457,14 +457,22 @@ const DammPositions: React.FC = () => {
                                                             {position.tokenB.symbol.slice(0, 2)}
                                                         </div>
                                                     )}
+                                                    
                                                 </div>
                                             </div>
                                             <div>
+                                                
                                                 <div className="text-white font-semibold">{position.tokenA.symbol}/{position.tokenB.symbol}</div>
                                                 <div className="text-xs text-gray-400">
                                                     Share: {position.shareOfPoolPercentage.toFixed(2)}%
                                                 </div>
                                             </div>
+                                            <button 
+                                            onClick={() => window.open(`https://edge.meteora.ag/dammv2/${position.poolAddress}`, '_blank')}
+                                            className="text-purple-400 hover:text-purple-300 mt-1"
+                                        >
+                                            <ExternalLink className="w-3 h-3" />
+                                        </button>
                                         </div>
                                     </div>
 
@@ -497,12 +505,7 @@ const DammPositions: React.FC = () => {
                                         <div className="text-xs text-gray-400">
                                             Fee: {(position.poolCurrentFeeBPS / 100).toFixed(2)}%
                                         </div>
-                                        <button 
-                                            onClick={() => window.open(`https://edge.meteora.ag/dammv2/${position.poolAddress}`, '_blank')}
-                                            className="text-purple-400 hover:text-purple-300 mt-1"
-                                        >
-                                            <ExternalLink className="w-3 h-3" />
-                                        </button>
+                                        
                                     </div>
                                 </div>
 
@@ -553,7 +556,7 @@ const DammPositions: React.FC = () => {
                                             </div>
                                             <div className="bg-gray-700 p-2 rounded">
                                                 <div className="text-gray-400">Fee Token</div>
-                                                <div className="flex items-center justify-center gap-1">
+                                                <div className="flex items-start justify-start gap-1">
                                                     {position.poolState.collectFeeMode === 0 ? (
                                                         <>
                                                             <img src={position.tokenA.image} alt="Token A" className="w-4 h-4 rounded-full" />
