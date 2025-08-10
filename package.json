@@ -14,6 +14,7 @@
     "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
     "@esbuild-plugins/node-modules-polyfill": "^0.2.2",
     "@jup-ag/api": "^6.0.44",
+    "@jup-ag/jup-mobile-adapter": "^0.0.2",
     "@jup-ag/wallet-adapter": "^0.2.3",
     "@meteora-ag/cp-amm-sdk": "^1.1.0",
     "@solana/spl-token": "^0.4.13",

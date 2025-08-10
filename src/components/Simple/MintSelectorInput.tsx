@@ -98,97 +98,104 @@ export const MintSelectorInput: React.FC<Props> = ({
     const selectedTokenAccount = tokenAccounts.find(x => x.mint === mintInput);
 
     return (
-        <div className="relative w-full p-2 bg-gray-900 rounded-lg text-white space-y-2 border border-gray-700">
+        <div className="relative w-full max-w-full p-2 bg-gray-900 rounded-lg text-white space-y-2 border border-gray-700">
+
             {/* Mint Selector */}
             <div className="flex items-center justify-between gap-2">
-                <button
-                    className="min-w-40 flex items-center gap-2 px-3 py-1 bg-gray-800 rounded-md hover:bg-gray-700"
-                    onMouseUp={() => {
-                        if (!dropdownOpen && onOpenDropdown) {
-                            onOpenDropdown()
-                        }
-                        setDropdownOpen(!dropdownOpen)
-                    }}
-                >
-                    {selectedTokenAccount ? (
-                        <>
-                            <img src={selectedTokenAccount.image} alt="" className="w-5 h-5 rounded-full" />
-                            <span>{selectedTokenAccount.symbol}</span>
-                        </>
-                    ) : (
-                        <span>Select</span>
-                    )}
-                </button>
-                <input
-                    type="text"
-                    placeholder="Paste mint address"
-                    className="flex-1 px-2 py-1 bg-gray-800 rounded-md text-sm outline-none"
-                    value={mintInput}
-                    onChange={handleMintChange}
-                />
+                <div className="relative flex-shrink-0">
+                    <button
+                        className="flex items-center gap-2 px-3 py-1 bg-gray-800 rounded-md hover:bg-gray-700 max-w-full truncate"
+                        onMouseUp={() => {
+                            if (!dropdownOpen && onOpenDropdown) {
+                                onOpenDropdown()
+                            }
+                            setDropdownOpen(!dropdownOpen)
+                        }}
+                    >
+                        {selectedTokenAccount ? (
+                            <>
+                                <img src={selectedTokenAccount.image} alt="" className="w-5 h-5 rounded-full" />
+                                <span className="truncate">{selectedTokenAccount.symbol}</span>
+                            </>
+                        ) : (
+                            <span>Select</span>
+                        )}
+                    </button>
 
-            </div>
+                    {dropdownOpen && (
+                        <div
+                            ref={dropdownRef}
+                            className="absolute left-0 z-10 mt-1 bg-gray-800 border border-gray-700 rounded-md shadow-lg max-h-60 overflow-hidden 
+                   w-64 max-w-[calc(100vw-2rem)]"
+                        >
 
-            {/* Dropdown */}
-            {dropdownOpen && (
-                <div
-                    className="absolute z-10 mt-1 w-64 bg-gray-800 border border-gray-700 rounded-md shadow-lg max-h-120 overflow-auto"
-                    ref={dropdownRef}
-                >
-                    {loading ? (
-                        <div className="p-2 text-sm text-center">Loading...</div>
-                    ) : tokenAccounts.length === 0 ? (
-                        <div className="p-2 text-sm text-center">No tokens</div>
-                    ) : (
-                        tokenAccounts
-                            .sort((a, b) => b.amount * b.price - a.amount * a.price)
-                            .map((account) => {
-                                if (!account) return null;
-                                return (
-                                    <button
-                                        key={account.mint}
-                                        className="w-full flex items-start px-3 py-2 hover:bg-gray-700 text-sm gap-3 text-left"
-                                        onClick={() => {
-                                            setMintInput(account.mint);
-                                            onMintChange(account.mint);
-                                            setDropdownOpen(false);
-                                        }}
-                                    >
-                                        {/* Left side: icon + name + amount */}
-                                        <div className="flex flex-col items-start gap-0.5 min-w-0">
-                                            <div className="flex items-center gap-2">
-                                                {account.image && (
-                                                    <img
-                                                        src={account.image}
-                                                        alt=""
-                                                        className="w-4 h-4 rounded-full flex-shrink-0"
-                                                    />
-                                                )}
-                                                <span className="truncate">
-                                                    {account.symbol || account.mint.slice(0, 4) + '...'}
-                                                </span>
-                                            </div>
-                                            <div className="text-xs text-gray-400">
-                                                {account.amount.toFixed(2)}
-                                            </div>
-                                        </div>
+                            {loading ? (
+                                <div className="p-2 text-sm text-center">Loading...</div>
+                            ) : tokenAccounts.length === 0 ? (
+                                <div className="p-2 text-sm text-center">No tokens</div>
+                            ) : (
+                                tokenAccounts
+                                    .sort((a, b) => b.amount * b.price - a.amount * a.price)
+                                    .map((account) => {
+                                        if (!account) return null;
+                                        return (
+                                            <button
+                                                key={account.mint}
+                                                className="w-full flex items-start px-3 py-2 hover:bg-gray-700 text-sm gap-3 text-left"
+                                                onClick={() => {
+                                                    setMintInput(account.mint);
+                                                    onMintChange(account.mint);
+                                                    setDropdownOpen(false);
+                                                }}
+                                            >
+                                                {/* Left side: icon + name + amount */}
+                                                <div className="flex flex-col items-start gap-0.5 min-w-0">
+                                                    <div className="flex items-center gap-2">
+                                                        {account.image && (
+                                                            <img
+                                                                src={account.image}
+                                                                alt=""
+                                                                className="w-4 h-4 rounded-full flex-shrink-0"
+                                                            />
+                                                        )}
+                                                        <span className="truncate">
+                                                            {account.symbol || account.mint.slice(0, 4) + '...'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-xs text-gray-400">
+                                                        {account.amount.toFixed(2)}
+                                                    </div>
+                                                </div>
 
-                                        {/* Right side: total value */}
-                                        <div className="ml-auto text-xs text-gray-300 whitespace-nowrap">
-                                            ${(account.amount * account.price).toFixed(2)}
-                                        </div>
-                                    </button>
-                                );
-                            })
+                                                {/* Right side: total value */}
+                                                <div className="ml-auto text-xs text-gray-300 whitespace-nowrap">
+                                                    ${(account.amount * account.price).toFixed(2)}
+                                                </div>
+                                            </button>
+                                        );
+                                    })
+                            )}
+
+
+
+
+                        </div>
                     )}
                 </div>
 
-            )}
+                <input
+                    type="text"
+                    placeholder="Paste mint address"
+                    className="flex-1 min-w-0 px-2 py-1 bg-gray-800 rounded-md text-sm outline-none overflow-hidden"
+                    value={mintInput}
+                    onChange={handleMintChange}
+                />
+            </div>
 
             {/* Amount Input */}
             <div className="flex items-center justify-between gap-2">
                 <button
-                    className="min-w-40 gap-2 px-3 py-1 text-xs bg-gray-700 rounded hover:bg-gray-600"
+                    className="gap-2 px-2 min-w-0 py-1 text-xs bg-gray-700 rounded hover:bg-gray-600 overflow-hidden"
                     onClick={handleMax}
                     disabled={!mintInput}
                 >

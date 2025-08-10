@@ -1,17 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { RefreshCw, Wallet, ExternalLink, Droplets, TrendingUp } from 'lucide-react'
+import { RefreshCw, Wallet, ExternalLink, Droplets, TrendingUp, ChevronDown, ChevronUp, Menu } from 'lucide-react'
 import { CpAmm } from '@meteora-ag/cp-amm-sdk'
 import { SortType, useDammUserPositions, type PoolPositionInfo } from '../contexts/DammUserPositionsContext'
 import { useTokenAccounts } from '../contexts/TokenAccountsContext'
 import { useTransactionManager } from '../contexts/TransactionManagerContext'
-
 import { getSwapTransaction } from '../JupSwapApi'
-import { SortArrow } from './Simple/SortArrow'
 import { toast } from 'sonner'
 import { BN } from '@coral-xyz/anchor'
 import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-adapter'
 import { PublicKey } from '@solana/web3.js'
-
 
 interface TwoMints {
     base: string,
@@ -34,32 +31,24 @@ const DammPositions: React.FC = () => {
 
     const [searchString, setSearchString] = useState<string>("")
 
-
-    const [popupIndex, setPopupIndex] = useState<number | null>(null)
-
     const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
     const [sortBy, setSortBy] = useState<SortType>(SortType.PoolBaseFee);
     const [sortAscending, setSortAscending] = useState<boolean | undefined>(true);
+    const [showSortMenu, setShowSortMenu] = useState(false);
 
     const popupRef = useRef<HTMLDivElement | null>(null)
     const cpAmm = new CpAmm(connection);
 
-    const togglePopup = (index: number) => {
-        setPopupIndex(popupIndex === index ? null : index);
-    }
-
     const toggleRowExpand = (index: number) => {
         setExpandedIndex(expandedIndex === index ? null : index);
     };
-
 
     const handleClaimFees = async (position: PoolPositionInfo) => {
         if (position.positionUnclaimedFee <= 0) return;
 
         const txn = await cpAmm.claimPositionFee2({
             receiver: publicKey!,
-
             owner: publicKey!,
             feePayer: publicKey!,
             pool: position.poolAddress,
@@ -85,46 +74,6 @@ const DammPositions: React.FC = () => {
             console.log(e);
         }
     }
-
-    // const handleClaimAllFees = async () => {
-    //     const txnSignerPairs: TxnSignersPair[] = [];
-
-    //     for (const position of positions) {
-    //         if (position.positionUnclaimedFee > 0) {
-    //             const txn = await cpAmm.claimPositionFee2({
-    //                 receiver: publicKey!,
-
-    //                 owner: publicKey!,
-    //                 feePayer: publicKey!,
-    //                 pool: position.poolAddress,
-    //                 position: position.positionAddress,
-    //                 positionNftAccount: position.positionNftAccount,
-    //                 tokenAMint: position.poolState.tokenAMint,
-    //                 tokenBMint: position.poolState.tokenBMint,
-    //                 tokenAProgram: new PublicKey(position.tokenA.tokenProgram),
-    //                 tokenBProgram: new PublicKey(position.tokenA.tokenProgram),
-    //                 tokenAVault: position.poolState.tokenAVault,
-    //                 tokenBVault: position.poolState.tokenBVault,
-    //             })
-
-    //             txnSignerPairs.push({
-    //                 tx: txn
-    //             })
-    //         }
-    //     }
-    //     if (txnSignerPairs.length == 0) return;
-    //     try {
-    //         sendMultiTxn(txnSignerPairs, {
-    //             notify: true,
-    //             onSuccess: async () => {
-    //                 await refreshPositions();
-    //             }
-    //         })
-
-    //     } catch (e) {
-    //         console.log(e);
-    //     }
-    // }
 
     const handleClosePosition = async (position: PoolPositionInfo) => {
         if (cpAmm.isLockedPosition(position.positionState)) {
@@ -205,11 +154,11 @@ const DammPositions: React.FC = () => {
         setSelectedPositions(new Set());
     }, [connection, publicKey])
 
-    // Close popup when clicking outside
+    // Close popup and sort menu when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
-                setPopupIndex(null)
+                setShowSortMenu(false)
             }
         }
 
@@ -219,35 +168,35 @@ const DammPositions: React.FC = () => {
         }
     }, [])
 
-
     const handleSort = (sortType: SortType, ascending?: boolean) => {
         setSortBy(sortType);
         setSortAscending(ascending);
-        sortPositionsBy(sortType, ascending)
+        sortPositionsBy(sortType, ascending);
+        setShowSortMenu(false);
     };
 
     if (!connected) {
         return (
-            <div className="text-center py-12">
+            <div className="text-center py-12 px-4">
                 <Wallet className="w-16 h-16 mx-auto mb-6 text-gray-400" />
                 <h2 className="text-2xl font-bold mb-4 text-gray-300">Connect Your Wallet</h2>
-                <p className="text-gray-400 mb-6">Connect your Solana wallet to view your DAMMv2 pool positions</p>
+                <p className="text-gray-400 mb-6 px-4">Connect your Solana wallet to view your DAMMv2 pool positions</p>
                 <UnifiedWalletButton buttonClassName="!bg-purple-600 hover:!bg-purple-700 !rounded-lg !font-medium !px-8 !py-3" />
             </div>
         )
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 px-4 md:px-0">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <button
                     onClick={() => {
                         refreshPositions()
                         setSelectedPositions(new Set())
                     }}
                     disabled={loading}
-                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded-lg font-medium transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded-lg font-medium transition-colors w-full sm:w-auto justify-center sm:justify-start"
                 >
                     {loading ? (
                         <RefreshCw className="w-4 h-4 animate-spin" />
@@ -256,16 +205,119 @@ const DammPositions: React.FC = () => {
                     )}
                     Refresh
                 </button>
+
+                {/* Sort Menu */}
+                <div className="relative">
+                    <button
+                        onClick={() => setShowSortMenu(!showSortMenu)}
+                        className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white w-full sm:w-auto justify-center sm:justify-start"
+                    >
+                        <Menu className="w-4 h-4" />
+                        Sort
+                        {showSortMenu ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </button>
+                    {showSortMenu && (
+                        <div className="absolute right-0 top-12 bg-gray-800 border border-gray-600 rounded-lg p-2 z-10 min-w-56 shadow-lg">
+                            <div className="text-xs text-gray-400 px-3 py-1 font-medium">Position Value</div>
+                            <button
+                                onClick={() => handleSort(SortType.PositionValue, false)}
+                                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${
+                                    sortBy === SortType.PositionValue && sortAscending === false ? 'bg-gray-700' : ''
+                                }`}
+                            >
+                                Highest to Lowest ↓
+                            </button>
+                            <button
+                                onClick={() => handleSort(SortType.PositionValue, true)}
+                                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${
+                                    sortBy === SortType.PositionValue && sortAscending === true ? 'bg-gray-700' : ''
+                                }`}
+                            >
+                                Lowest to Highest ↑
+                            </button>
+                            
+                            <div className="text-xs text-gray-400 px-3 py-1 font-medium mt-2">Unclaimed Fees</div>
+                            <button
+                                onClick={() => handleSort(SortType.PositionUnclaimedFee, false)}
+                                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${
+                                    sortBy === SortType.PositionUnclaimedFee && sortAscending === false ? 'bg-gray-700' : ''
+                                }`}
+                            >
+                                Highest to Lowest ↓
+                            </button>
+                            <button
+                                onClick={() => handleSort(SortType.PositionUnclaimedFee, true)}
+                                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${
+                                    sortBy === SortType.PositionUnclaimedFee && sortAscending === true ? 'bg-gray-700' : ''
+                                }`}
+                            >
+                                Lowest to Highest ↑
+                            </button>
+
+                            <div className="text-xs text-gray-400 px-3 py-1 font-medium mt-2">Pool TVL</div>
+                            <button
+                                onClick={() => handleSort(SortType.PoolValue, false)}
+                                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${
+                                    sortBy === SortType.PoolValue && sortAscending === false ? 'bg-gray-700' : ''
+                                }`}
+                            >
+                                Highest to Lowest ↓
+                            </button>
+                            <button
+                                onClick={() => handleSort(SortType.PoolValue, true)}
+                                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${
+                                    sortBy === SortType.PoolValue && sortAscending === true ? 'bg-gray-700' : ''
+                                }`}
+                            >
+                                Lowest to Highest ↑
+                            </button>
+
+                            <div className="text-xs text-gray-400 px-3 py-1 font-medium mt-2">Pool Fees</div>
+                            <button
+                                onClick={() => handleSort(SortType.PoolCurrentFee, false)}
+                                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${
+                                    sortBy === SortType.PoolCurrentFee && sortAscending === false ? 'bg-gray-700' : ''
+                                }`}
+                            >
+                                Current Fee ↓
+                            </button>
+                            <button
+                                onClick={() => handleSort(SortType.PoolCurrentFee, true)}
+                                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${
+                                    sortBy === SortType.PoolCurrentFee && sortAscending === true ? 'bg-gray-700' : ''
+                                }`}
+                            >
+                                Current Fee ↑
+                            </button>
+                            <button
+                                onClick={() => handleSort(SortType.PoolBaseFee, false)}
+                                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${
+                                    sortBy === SortType.PoolBaseFee && sortAscending === false ? 'bg-gray-700' : ''
+                                }`}
+                            >
+                                Base Fee ↓
+                            </button>
+                            <button
+                                onClick={() => handleSort(SortType.PoolBaseFee, true)}
+                                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${
+                                    sortBy === SortType.PoolBaseFee && sortAscending === true ? 'bg-gray-700' : ''
+                                }`}
+                            >
+                                Base Fee ↑
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Pool Overview Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-700/50 rounded-2xl p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-700/50 rounded-2xl p-4">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-lg font-semibold text-blue-300">Total Liquidity</h3>
                         <Droplets className="w-5 h-5 text-blue-400" />
                     </div>
-                    <div className="text-3xl font-bold text-white">
+                    <div className="text-2xl sm:text-3xl font-bold text-white">
                         ${totalLiquidityValue.toFixed(2)}
                     </div>
                     <div className="text-sm text-blue-300 mt-2">
@@ -273,12 +325,12 @@ const DammPositions: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-purple-900/30 to-purple-800/20 border border-purple-700/50 rounded-2xl p-6">
+                <div className="bg-gradient-to-br from-purple-900/30 to-purple-800/20 border border-purple-700/50 rounded-2xl p-4">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-lg font-semibold text-purple-300">Active Pools</h3>
                         <TrendingUp className="w-5 h-5 text-purple-400" />
                     </div>
-                    <div className="text-3xl font-bold text-white">
+                    <div className="text-2xl sm:text-3xl font-bold text-white">
                         {positions.length}
                     </div>
                     <div className="text-sm text-purple-300 mt-2">
@@ -287,127 +339,86 @@ const DammPositions: React.FC = () => {
                 </div>
             </div>
 
-            {/* Pool Positions */}
-            <div className="bg-gray-900 border border-gray-700 rounded-2xl">
-                <div className="p-6 border-b border-gray-700">
+            {/* Search Bar */}
+            <div className="bg-gray-900 border border-gray-700 rounded-xl p-4">
+                <input
+                    className="w-full bg-gray-800 border border-gray-600 px-4 py-3 rounded-lg text-white placeholder-gray-400 text-base"
+                    type="text"
+                    value={searchString}
+                    onChange={(e) => setSearchString(e.target.value)}
+                    placeholder="Search by token mint, name or symbol..."
+                />
+            </div>
 
-
-                    {/* Column Headers */}
-                    <div className="grid grid-cols-12 gap-4 py-3 text-sm font-medium text-gray-300">
-
-                        <div className="col-span-3 flex items-start gap-2">
-                            <div>Pool</div>
-                            <input
-                                className="flex-1 bg-gray-800 border border-gray-700 px-4 text-white placeholder-gray-500"
-                                type="text"
-                                value={searchString}
-                                onChange={(e) => {
-                                    setSearchString(e.target.value);
+            {/* Total Fees Summary */}
+            {positions.length > 0 && (
+                <div className="bg-green-900/20 border border-green-700/50 rounded-xl p-4">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div className="text-green-300">
+                            <span className="text-lg font-semibold">
+                                Total Fees: ${positions.reduce((sum, pos) => sum + pos.positionUnclaimedFee, 0).toFixed(2)}
+                            </span>
+                        </div>
+                        <div className="flex gap-2 w-full sm:w-auto">
+                            <button
+                                className="bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded text-white flex-1 sm:flex-none"
+                                onClick={async () => {
+                                    const selectedPositionsTemp = [...selectedPositions];
+                                    for (const pos of selectedPositionsTemp) {
+                                        await handleClosePosition(pos);
+                                    }
+                                    setSelectedPositions(new Set());
+                                    await refreshPositions();
                                 }}
-                                placeholder="Search by token mint, name or symbol"
-                            />
-                        </div>
-                        <div className="col-span-3 flex flex-col">
-                            <div className='grid grid-cols-3 grid-rows-1'>
-                                <span className='col-span-4  flex justify-start'>Fee Model</span>
-                                <div className="col-span-1 flex items-center">
-                                    <span className="text-xs font-normal text-gray-500">Current Fee</span>
-                                    {SortArrow<SortType>(SortType.PoolCurrentFee, sortBy, sortAscending, handleSort)}
-                                </div>
-                                <div className="col-span-1 flex items-center">
-                                    <span className="text-xs font-normal text-gray-500">Base Fee</span>
-                                    {SortArrow<SortType>(SortType.PoolBaseFee, sortBy, sortAscending, handleSort)}
-                                </div>
-                                <span className="col-span-1 text-xs font-normal text-gray-500">Scheduler</span>
-                                <span className="col-span-1 text-xs font-normal text-gray-500">Token</span>
-                            </div>
-
-                        </div>
-                        <div className='col-span-4 grid grid-rows-2 grid-cols-8 gap-1 h-full'>
-                            <div className="col-span-2 flex items-center">
-                                <div>Your Liquidity</div>
-                                {SortArrow<SortType>(SortType.PositionValue, sortBy, sortAscending, handleSort)}
-                            </div>
-                            <div className="col-span-2 col-start-1 row-start-2 flex items-center">
-                                <div className='justify-self-start flex items-center gap-1 px-2 py-1 bg-green-900 rounded text-xs font-medium text-white transition-colors"'
-                                //onClick={handleClaimAllFees}
-                                >
-                                    Total Fees ${positions.reduce((sum, pos) => sum + pos.positionUnclaimedFee, 0).toFixed(2)}
-                                </div>
-
-                                {SortArrow<SortType>(SortType.PositionUnclaimedFee, sortBy, sortAscending, handleSort)}
-                            </div>
-                        </div>
-
-                        <div className="col-span-2 flex items-center justify-end">
-                            <div className="text-right">TVL</div>
-                            {SortArrow<SortType>(SortType.PoolValue, sortBy, sortAscending, handleSort)}
+                            >
+                                Close All ({selectedPositions.size})
+                            </button>
+                            <button
+                                className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-white flex-1 sm:flex-none"
+                                onClick={async () => {
+                                    const selectedPositionsTemp = [...selectedPositions];
+                                    for (const pos of selectedPositionsTemp) {
+                                        await handleClaimFees(pos);
+                                    }
+                                    setSelectedPositions(new Set());
+                                }}
+                            >
+                                Claim Fees ({selectedPositions.size})
+                            </button>
                         </div>
                     </div>
                 </div>
+            )}
 
-                {loading && (
-                    <div className="p-8 text-center">
-                        <RefreshCw className="w-8 h-8 mx-auto mb-4 text-purple-400 animate-spin" />
-                        <p className="text-gray-400">Loading pool positions...</p>
-                    </div>
-                )}  {(positions.length === 0 && !loading) ? (
-                    <div className="p-8 text-center">
-                        <Droplets className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                        <h3 className="text-lg font-semibold text-gray-300 mb-2">No Pool Positions Found</h3>
-                        <p className="text-gray-500">
-                            You don't have any active liquidity positions in DAMMv2 pools
-                        </p>
-                    </div>
-                ) : (
+            {loading && (
+                <div className="p-8 text-center">
+                    <RefreshCw className="w-8 h-8 mx-auto mb-4 text-purple-400 animate-spin" />
+                    <p className="text-gray-400">Loading pool positions...</p>
+                </div>
+            )}
 
-
-                    <div className="divide-y divide-gray-700">
-
-                        <div className="flex items-center justify-between p-4 bg-gray-800 border border-purple-700 rounded-xl mt-4">
-                            <div className="text-purple-300">
-                                {selectedPositions.size} pool{selectedPositions.size > 1 ? 's' : ''} selected
-                            </div>
-                            <div className="flex gap-2">
-
-                                <button
-                                    className="bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded text-white"
-                                    onClick={async () => {
-                                        const selectedPositionsTemp = [...selectedPositions];
-                                        for (const pos of selectedPositionsTemp) {
-                                            await handleClosePosition(pos);
-                                        }
-                                        setSelectedPositions(new Set());
-                                        await refreshPositions();
-                                    }}
-                                >
-                                    Close All
-                                </button>
-                                <button
-                                    className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-white"
-                                    onClick={async () => {
-                                        const selectedPositionsTemp = [...selectedPositions];
-                                        for (const pos of selectedPositionsTemp) {
-                                            await handleClaimFees(pos);
-                                        }
-                                        setSelectedPositions(new Set());
-                                    }}
-                                >
-                                    Claim Fees
-                                </button>
-                            </div>
-                        </div>
-
-                        {positions.map((position, index) => ((searchString == "" || poolContainsString(position, searchString)) &&
-                            (<div key={index} className="px-6 hover:bg-gray-800/50 transition-colors">
-                                <div className="grid grid-cols-12 gap-4 items-center min-h-[96px]">
-                                    <div className="col-span-3 flex items-center gap-4">
+            {(positions.length === 0 && !loading) ? (
+                <div className="p-8 text-center">
+                    <Droplets className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                    <h3 className="text-lg font-semibold text-gray-300 mb-2">No Pool Positions Found</h3>
+                    <p className="text-gray-500 px-4">
+                        You don't have any active liquidity positions in DAMMv2 pools
+                    </p>
+                </div>
+            ) : (
+                /* Mobile-friendly position cards */
+                <div className="space-y-1">
+                    {positions.map((position, index) => ((searchString === "" || poolContainsString(position, searchString)) && (
+                        <div key={index} className="bg-gray-900 border border-gray-700 rounded-xl overflow-hidden">
+                            {/* Position Header */}
+                            <div className="p-2 border-b border-gray-700">
+                                <div className="flex items-center justify-between mb-1">
+                                    <div className="flex items-center gap-3">
                                         <input
-                                            className="scale-150 accent-purple-600"
+                                            className="scale-125 accent-purple-600"
                                             type="checkbox"
                                             checked={selectedPositions.has(position)}
                                             onChange={(e) => {
-
                                                 if (lastSelectedPosition !== null && (e.nativeEvent as MouseEvent).shiftKey) {
                                                     const index1 = positions.indexOf(position);
                                                     const index2 = positions.indexOf(lastSelectedPosition);
@@ -421,217 +432,204 @@ const DammPositions: React.FC = () => {
                                                     setSelectedPositions(new Set(selectedPositions.add(position)));
                                                 }
                                                 if (!e.target.checked) {
-                                                    setSelectedPositions(new Set<PoolPositionInfo>(Array.from(selectedPositions).filter(x => {
-                                                        return x !== position
-                                                    }
-                                                    )));
+                                                    setSelectedPositions(new Set<PoolPositionInfo>(Array.from(selectedPositions).filter(x => x !== position)));
                                                 }
                                             }}
                                         />
-                                        {/* Expand/Collapse Arrow */}
-                                        <div className="flex justify-center">
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    toggleRowExpand(index);
-                                                }}
-                                                className={`w-8 h-8 rounded-full bg-gray-700 hover:bg-gray-600 flex items-center justify-center transition-all shadow-md`}
-                                                title={expandedIndex === index ? 'Collapse Details' : 'Expand Details'}
-                                            >
-                                                <svg
-                                                    className={`w-4 h-4 text-white transform transition-transform duration-300 ${expandedIndex === index ? 'rotate-180' : ''
-                                                        }`}
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    strokeWidth={2}
-                                                    viewBox="0 0 24 24"
-                                                >
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                                                </svg>
-                                            </button>
-                                        </div>
-                                        {/* Token A */}
-                                        <div className="flex items-center -space-x-2 relative">
-                                            <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-700 border-2 border-gray-900" onClick={() => togglePopup(index)}>
-                                                {position.tokenA.image ? (
-                                                    <img src={position.tokenA.image} alt={position.tokenA.symbol} className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-xs">
-                                                        {position.tokenA.symbol.slice(0, 2)}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Token B */}
-                                        <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-700 border-2 border-gray-900">
-                                            {position.tokenB.image ? (
-                                                <img src={position.tokenB.image} alt={position.tokenB.symbol} className="w-full h-full object-cover" />
-                                            ) : (
-                                                <div className="w-full h-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold text-xs">
-                                                    {position.tokenB.symbol.slice(0, 2)}
+                                        
+                                        {/* Token Pair */}
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex items-center -space-x-1">
+                                                <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-700 border-2 border-gray-900">
+                                                    {position.tokenA.image ? (
+                                                        <img src={position.tokenA.image} alt={position.tokenA.symbol} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-xs">
+                                                            {position.tokenA.symbol.slice(0, 2)}
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            )}
-                                        </div>
-
-                                        {/* Pair Info */}
-                                        <div className="flex flex-col justify-center">
-                                            <div className="text-white font-semibold text-lg">{position.tokenA.symbol}/{position.tokenB.symbol}</div>
-                                            <button onClick={() => window.open(`https://edge.meteora.ag/dammv2/${position.poolAddress}`, '_blank')} className="text-purple-400 hover:text-purple-300">
-                                                <ExternalLink className="w-3 h-3" />
-                                            </button>
-                                            <div className="text-sm text-gray-400 flex items-center gap-1">
-                                                <span>Pool Share: {position.shareOfPoolPercentage.toFixed(2)}%</span>
-
+                                                <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-700 border-2 border-gray-900">
+                                                    {position.tokenB.image ? (
+                                                        <img src={position.tokenB.image} alt={position.tokenB.symbol} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold text-xs">
+                                                            {position.tokenB.symbol.slice(0, 2)}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div className="text-white font-semibold">{position.tokenA.symbol}/{position.tokenB.symbol}</div>
+                                                <div className="text-xs text-gray-400">
+                                                    Share: {position.shareOfPoolPercentage.toFixed(2)}%
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="col-span-3 grid grid-cols-4 items-center gap-2 text-sm text-white">
-                                        <div className="bg-gray-800 px-2 py-2 rounded-md text-xs text-gray-300 text-center">
-                                            {(position.poolCurrentFeeBPS / 100).toFixed(2)}%
+
+                                    <button
+                                        onClick={() => toggleRowExpand(index)}
+                                        className="p-2 rounded-full bg-gray-700 hover:bg-gray-600"
+                                    >
+                                        {expandedIndex === index ? 
+                                            <ChevronUp className="w-4 h-4 text-white" /> : 
+                                            <ChevronDown className="w-4 h-4 text-white" />
+                                        }
+                                    </button>
+                                </div>
+
+                                {/* Key Metrics Row */}
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <div className="text-xs text-gray-400 mt-1">Your Liquidity</div>
+                                        <div className="text-lg font-bold text-white">${position.positionValue.toFixed(2)}</div>
+                                        <div className="text-xs text-gray-400">
+                                            {position.tokenA.positionAmount.toFixed(2)} {position.tokenA.symbol}
                                         </div>
-                                        <div className="bg-gray-800 px-2 py-2 rounded-md text-xs text-gray-300 text-center">
-                                            {(position.poolBaseFeeBPS / 100).toFixed(2)}%
-                                        </div>
-                                        <div className="bg-gray-800 px-2 py-2 rounded-md text-xs text-gray-300 text-center">
-                                            {position.poolState.poolFees.baseFee.feeSchedulerMode === 0 ? "Linear" :
-                                                position.poolState.poolFees.baseFee.feeSchedulerMode === 1 ? "Exponential" : "Unknown"}
-                                        </div>
-                                        <div className="bg-gray-800 px-2 py-2 rounded-md text-xs text-gray-300 flex items-center justify-center gap-1">
-                                            {position.poolState.collectFeeMode === 0 ? (
-                                                <>
-                                                    <img src={position.tokenA.image} alt="Token A" className="w-4 h-4 rounded-full" />
-                                                    <img src={position.tokenB.image} alt="Token B" className="w-4 h-4 rounded-full" />
-                                                </>
-                                            ) : position.poolState.collectFeeMode === 1 ? (
-                                                <img src={position.tokenB.image} alt="Quote Token" className="w-4 h-4 rounded-full" />
-                                            ) : (
-                                                "Unknown"
-                                            )}
+                                        <div className="text-xs text-gray-400">
+                                            {position.tokenB.positionAmount.toFixed(2)} {position.tokenB.symbol}
                                         </div>
                                     </div>
-                                    {/* User Liquidity (col-span-4) */}
-                                    <div className="col-span-4">
-                                        <div className="grid grid-rows-2 grid-cols-8 gap-1 h-full">
-                                            <div className="col-span-2 text-lg font-bold text-white">
-                                                ${position.positionValue.toFixed(2)}
-                                            </div>
-                                            <div className="col-span-3 text-sm text-gray-400">
-                                                {position.tokenA.positionAmount.toFixed(2)} {position.tokenA.symbol}
-                                            </div>
-                                            <div className="col-span-3 text-sm text-gray-400">
-                                                {position.tokenB.positionAmount.toFixed(2)} {position.tokenB.symbol}
-                                            </div>
-
-                                            <div className='col-span-3 col-start-3 row-start-2 text-sm text-green-700'>{position.tokenA.unclaimedFee.toFixed(2)} {position.tokenA.symbol}</div>
-                                            <div className='col-span-3 row-start-2 text-sm text-green-700'>{position.tokenB.unclaimedFee.toFixed(2)} {position.tokenB.symbol}</div>
-
-                                            {position.positionUnclaimedFee > 0 && (
-                                                <button
-                                                    onClick={() => handleClaimFees(position)}
-                                                    className="col-span-2 col-start-1 row-start-2 justify-self-start flex items-center gap-1 px-2 py-1 bg-green-900 hover:bg-green-700 rounded text-xs font-medium text-white transition-colors"
-                                                >
-                                                    Claim ${position.positionUnclaimedFee.toFixed(2)}
-                                                </button>
-                                            )}
-
-                                        </div>
-                                    </div>
-
-                                    {/* Pool Value (col-span-2) */}
-                                    <div className="col-span-2 flex flex-col justify-center items-end h-full text-right">
+                                    <div className="text-right">
+                                        <div className="text-xs text-gray-400 mt-1">Pool TVL</div>
                                         <div className="text-lg font-bold text-white">${position.poolValue.toFixed(2)}</div>
-                                        <div className="text-sm text-gray-400">
-                                            {position.tokenA.poolAmount.toFixed(2)} {position.tokenA.symbol} + {position.tokenB.poolAmount.toFixed(2)} {position.tokenB.symbol}
+                                        <div className="text-xs text-gray-400">
+                                            Fee: {(position.poolCurrentFeeBPS / 100).toFixed(2)}%
                                         </div>
+                                        <button 
+                                            onClick={() => window.open(`https://edge.meteora.ag/dammv2/${position.poolAddress}`, '_blank')}
+                                            className="text-purple-400 hover:text-purple-300 mt-1"
+                                        >
+                                            <ExternalLink className="w-3 h-3" />
+                                        </button>
                                     </div>
                                 </div>
 
-                                {/* Expandable section (animated) */}
-                                {expandedIndex === index && (
-                                    <div className="p-4 mt-4 bg-gray-800 rounded-xl">
-                                        <div className="flex flex-col md:flex-row gap-4">
-                                            {/* Chart iframe */}
-                                            <div className="w-full md:w-3/4 h-[400px]">
-                                                <iframe
-                                                    src={`https://www.gmgn.cc/kline/sol/${position.tokenA.mint}`}
-                                                    width="100%"
-                                                    height="100%"
-                                                    frameBorder="0"
-                                                    className="rounded-xl"
-                                                    allowFullScreen
-                                                ></iframe>
+                                {/* Fees Section */}
+                                {position.positionUnclaimedFee > 0 && (
+                                    <div className="mt-1 p-1 bg-green-900/20 rounded-lg">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <div className="text-green-300 font-semibold">
+                                                    Unclaimed: ${position.positionUnclaimedFee.toFixed(2)}
+                                                </div>
+                                                <div className="text-xs text-green-400">
+                                                    {position.tokenA.unclaimedFee.toFixed(2)} {position.tokenA.symbol} + {position.tokenB.unclaimedFee.toFixed(2)} {position.tokenB.symbol}
+                                                </div>
                                             </div>
-
-                                            {/* Actions */}
-                                            <div className="w-full md:w-1/4 flex flex-col justify-start gap-3">
-                                                <button
-                                                    onClick={() => {
-                                                        handleClosePosition(position);
-                                                    }}
-                                                    className="bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2 rounded-lg"
-                                                >
-                                                    Close Position
-                                                </button>
-                                                {/* <button
-                                                    onClick={() => {
-                                                        handleClosePositionAndSwapToQuote(position);
-                                                    }}
-                                                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors"
-                                                >
-                                                    Close Position and Swap
-                                                </button> */}
-
-                                                {/* <button
-                                                    onClick={() => {
-                                                        // TODO: Add add liquidity logic
-                                                    }}
-                                                    className="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded-lg"
-                                                >
-                                                    Add Liquidity
-                                                </button> */}
-
-                                                <button
-                                                    onClick={() => {
-                                                        window.open(`https://solscan.io/account/${position.positionAddress.toBase58()}`, '_blank');
-                                                    }}
-                                                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg"
-                                                >
-                                                    View on Solscan
-                                                </button>
-
-                                                {/* Copy Token A Mint */}
-                                                <button
-                                                    onClick={() => {
-                                                        navigator.clipboard.writeText(position.tokenA.mint);
-                                                        toast.info(`${position.tokenA.symbol} mint copied`);
-                                                    }}
-                                                    className="bg-gray-700 hover:bg-gray-600 text-white text-sm px-4 py-2 rounded-lg"
-                                                >
-                                                    Copy {position.tokenA.symbol} Mint
-                                                </button>
-
-                                                {/* Copy Token B Mint */}
-                                                <button
-                                                    onClick={() => {
-                                                        navigator.clipboard.writeText(position.tokenB.mint);
-                                                        toast.info(`${position.tokenB.symbol} mint copied`);
-                                                    }}
-                                                    className="bg-gray-700 hover:bg-gray-600 text-white text-sm px-4 py-2 rounded-lg"
-                                                >
-                                                    Copy {position.tokenB.symbol} Mint
-                                                </button>
-                                            </div>
+                                            <button
+                                                onClick={() => handleClaimFees(position)}
+                                                className="px-3 py-2 bg-green-600 hover:bg-green-700 rounded text-white text-sm font-medium"
+                                            >
+                                                Claim
+                                            </button>
                                         </div>
                                     </div>
                                 )}
-                            </div>)
-                        ))}
+                            </div>
 
-                    </div>
-                )}
-            </div>
+                            {/* Expandable Details */}
+                            {expandedIndex === index && (
+                                <div className="p-4 bg-gray-800">
+                                    {/* Fee Model Details */}
+                                    <div className="mb-4">
+                                        <h4 className="text-white font-medium mb-2">Fee Model</h4>
+                                        <div className="grid grid-cols-2 gap-2 text-sm">
+                                            <div className="bg-gray-700 p-2 rounded">
+                                                <div className="text-gray-400">Current Fee</div>
+                                                <div className="text-white">{(position.poolCurrentFeeBPS / 100).toFixed(2)}%</div>
+                                            </div>
+                                            <div className="bg-gray-700 p-2 rounded">
+                                                <div className="text-gray-400">Base Fee</div>
+                                                <div className="text-white">{(position.poolBaseFeeBPS / 100).toFixed(2)}%</div>
+                                            </div>
+                                            <div className="bg-gray-700 p-2 rounded">
+                                                <div className="text-gray-400">Scheduler</div>
+                                                <div className="text-white text-xs">
+                                                    {position.poolState.poolFees.baseFee.feeSchedulerMode === 0 ? "Linear" :
+                                                        position.poolState.poolFees.baseFee.feeSchedulerMode === 1 ? "Exponential" : "Unknown"}
+                                                </div>
+                                            </div>
+                                            <div className="bg-gray-700 p-2 rounded">
+                                                <div className="text-gray-400">Fee Token</div>
+                                                <div className="flex items-center justify-center gap-1">
+                                                    {position.poolState.collectFeeMode === 0 ? (
+                                                        <>
+                                                            <img src={position.tokenA.image} alt="Token A" className="w-4 h-4 rounded-full" />
+                                                            <img src={position.tokenB.image} alt="Token B" className="w-4 h-4 rounded-full" />
+                                                        </>
+                                                    ) : position.poolState.collectFeeMode === 1 ? (
+                                                        <img src={position.tokenB.image} alt="Quote Token" className="w-4 h-4 rounded-full" />
+                                                    ) : (
+                                                        "Unknown"
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Chart - Mobile optimized */}
+                                    <div className="mb-4">
+                                        <h4 className="text-white font-medium mb-2">Price Chart</h4>
+                                        <div className="w-full h-[300px] rounded-xl overflow-hidden">
+                                            <iframe
+                                                src={`https://www.gmgn.cc/kline/sol/${position.tokenA.mint}`}
+                                                width="100%"
+                                                height="100%"
+                                                frameBorder="0"
+                                                allowFullScreen
+                                            ></iframe>
+                                        </div>
+                                    </div>
+
+                                    {/* Action Buttons */}
+                                    <div className="space-y-3">
+                                        <button
+                                            onClick={() => handleClosePosition(position)}
+                                            className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-3 rounded-lg"
+                                        >
+                                            Close Position
+                                        </button>
+                                        
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <button
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(position.tokenA.mint);
+                                                    toast.info(`${position.tokenA.symbol} mint copied`);
+                                                }}
+                                                className="bg-gray-700 hover:bg-gray-600 text-white text-sm px-3 py-2 rounded-lg"
+                                            >
+                                                Copy {position.tokenA.symbol} Mint
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(position.tokenB.mint);
+                                                    toast.info(`${position.tokenB.symbol} mint copied`);
+                                                }}
+                                                className="bg-gray-700 hover:bg-gray-600 text-white text-sm px-3 py-2 rounded-lg"
+                                            >
+                                                Copy {position.tokenB.symbol} Mint
+                                            </button>
+                                        </div>
+                                        
+                                        <button
+                                            onClick={() => {
+                                                window.open(`https://solscan.io/account/${position.positionAddress.toBase58()}`, '_blank');
+                                            }}
+                                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg"
+                                        >
+                                            View on Solscan
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )))}
+                </div>
+            )}
         </div>
     )
 }
+
 export default DammPositions

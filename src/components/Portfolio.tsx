@@ -7,7 +7,6 @@ import { type TokenAccount } from '../tokenUtils'
 import { useTokenAccounts } from '../contexts/TokenAccountsContext'
 import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-adapter'
 import { toast } from 'sonner'
-import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from '@solana/spl-token'
 
 const Portfolio: React.FC = () => {
   const { connection } = useConnection()
@@ -130,8 +129,8 @@ const Portfolio: React.FC = () => {
       </div>
 
       {/* Portfolio Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-gradient-to-br from-purple-900/30 to-purple-800/20 border border-purple-700/50 rounded-2xl p-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+        <div className="bg-gradient-to-br from-purple-900/30 to-purple-800/20 border border-purple-700/50 rounded-2xl p-2">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-purple-300">Total Value</h3>
             <TrendingUp className="w-5 h-5 text-purple-400" />
@@ -144,7 +143,7 @@ const Portfolio: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-green-900/30 to-green-800/20 border border-green-700/50 rounded-2xl p-6">
+        <div className="bg-gradient-to-br from-green-900/30 to-green-800/20 border border-green-700/50 rounded-2xl p-2">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-green-300">SOL Balance</h3>
             <Coins className="w-5 h-5 text-green-400" />
@@ -157,7 +156,7 @@ const Portfolio: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-700/50 rounded-2xl p-6">
+        <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-700/50 rounded-2xl p-2">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-blue-300">Token Types</h3>
             <Coins className="w-5 h-5 text-blue-400" />
@@ -193,43 +192,15 @@ const Portfolio: React.FC = () => {
           </div>
         ) : (
           <div className="divide-y divide-gray-700">
-            {/* SOL Entry */}
-            {solBalance && solBalance > 0 && (
-              <div className="p-4 hover:bg-gray-800/50 transition-colors">
-                <div className="grid grid-cols-12 gap-4 items-center">
-                  {/* Token Info - Left aligned (cols 1-7) */}
-                  <div className="col-span-7 flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="text-white font-bold text-sm">SOL</span>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="font-semibold text-white truncate">Solana</div>
-                      <div className="text-sm text-gray-400">SOL</div>
-                    </div>
-                  </div>
-
-                  {/* Balance - Right aligned (cols 8-12) */}
-                  <div className="col-span-5 text-right">
-                    <div className="font-semibold text-white">
-                      {solBalance.toFixed(4)}
-                    </div>
-                    <div className="text-sm text-gray-400">
-                      ${solPrice > 0 ? (solBalance * solPrice).toFixed(2) : '0.00'}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Token Entries */}
             {tokenAccounts.map((token, index) => (
               <div
                 key={index}
-                className="p-4 hover:bg-gray-800/50 transition-colors"
+                className="p-1 hover:bg-gray-800/50 transition-colors"
               >
-                <div className="grid grid-cols-12 gap-1 items-center">
-                  {/* Token Info - Left aligned (cols 1-7) */}
-                  <div className="col-span-2 flex items-center space-x-3">
+                <div className="flex items-center">
+                  {/* Left Side */}
+                  <div className="flex items-center space-x-1 min-w-[10rem] flex-shrink-0">
                     <div className="relative w-10 h-10">
                       <div
                         className="w-10 h-10 rounded-full overflow-hidden bg-gray-700 cursor-pointer"
@@ -263,6 +234,7 @@ const Portfolio: React.FC = () => {
                           <button
                             onClick={() => handleSwap(token)}
                             className="block w-full text-left px-3 py-2 text-sm text-white hover:bg-purple-700 rounded-md"
+                            aria-label={`Swap ${token.symbol} via Jupiter`}
                           >
                             Swap via Jupiter
                           </button>
@@ -275,8 +247,8 @@ const Portfolio: React.FC = () => {
                         </div>
                       )}
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="font-semibold text-white truncate">{token.name}</div>
+                    <div className="min-w-0 flex-1 truncate">
+                      <div className="text-white truncate">{token.name}</div>
                       <div className="text-sm text-gray-400 flex items-center gap-2">
                         <span>{token.symbol}</span>
                         <button
@@ -288,13 +260,9 @@ const Portfolio: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                    <div className="col-span-1 flex text-purple-400 texrt space-x-3">
-                      {token.tokenProgram == TOKEN_PROGRAM_ID.toString() ? "SPL Token" :
-                        token.tokenProgram ==TOKEN_2022_PROGRAM_ID.toString() ? "SPL 2022 Token" :
-                        "Unknown Token Program"}
-                      </div>
-                  {/* Balance - Right aligned (cols 8-12) */}
-                  <div className="col-span-9 text-right">
+                 
+                  {/* Right Side */}
+                  <div className="ml-auto text-right min-w-[6rem]">
                     <div className="font-semibold  text-white">
                       {token.amount < 1
                         ? token.amount.toFixed(Math.min(6, token.decimals))
@@ -319,29 +287,6 @@ const Portfolio: React.FC = () => {
           </div>
         )}
       </div>
-
-      {/* Wallet Info */}
-      {publicKey && (
-        <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6">
-          <h3 className="text-lg font-semibold mb-4 text-white">Wallet Information</h3>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-400">Address:</span>
-              <div className="flex items-center gap-2">
-                <code className="text-purple-400 text-sm font-mono">
-                  {publicKey.toString().slice(0, 4)}...{publicKey.toString().slice(-4)}
-                </code>
-                <button
-                  onClick={() => window.open(`https://explorer.solana.com/address/${publicKey.toString()}`, '_blank')}
-                  className="text-purple-400 hover:text-purple-300"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

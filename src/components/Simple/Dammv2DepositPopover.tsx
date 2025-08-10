@@ -205,7 +205,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
 
     <div
       ref={ref}
-      className="absolute z-50 w-140 bg-[#0d111c] text-gray-100 border border-gray-700 rounded-xl shadow-xl p-4 text-sm justify-center"
+      className="absolute z-50 bg-[#0d111c] text-gray-100 border border-gray-700 rounded-xl shadow-xl p-4 text-sm justify-center"
       style={{ top: position.y, left: position.x }}
     >
       <div className="flex gap-2 text-sm font-semibold text-gray-100">
@@ -218,7 +218,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
         <button
           className="bg-green-600 hover:bg-green-700 text-white py-2 rounded text-sm"
           onClick={() => swapSOLAndDeposit()}>
-          Swap from SOL and Deposit
+          Swap SOL
         </button>
       </div>
       {(!tokenA || !tokenB) && (

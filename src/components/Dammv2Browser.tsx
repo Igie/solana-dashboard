@@ -174,7 +174,7 @@ const Dammv2Browser: React.FC = () => {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-2">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <button
