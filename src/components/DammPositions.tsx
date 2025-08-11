@@ -112,7 +112,7 @@ const DammPositions: React.FC = () => {
         const lowerSearch = searchString.toLowerCase();
         return pool.tokenA.name.toLowerCase().includes(lowerSearch) ||
             pool.tokenA.symbol.toLowerCase().includes(lowerSearch) ||
-            pool.tokenA.mint===searchString ||
+            pool.tokenA.mint === searchString ||
             pool.tokenB.name.toLowerCase().includes(lowerSearch) ||
             pool.tokenB.symbol.toLowerCase().includes(lowerSearch) ||
             pool.tokenB.mint === lowerSearch;
@@ -189,126 +189,7 @@ const DammPositions: React.FC = () => {
     return (
         <div className="space-y-4 px-4 md:px-0">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <button
-                    onClick={() => {
-                        refreshPositions()
-                        setSelectedPositions(new Set())
-                    }}
-                    disabled={loading}
-                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded-lg font-medium transition-colors w-full sm:w-auto justify-center sm:justify-start"
-                >
-                    {loading ? (
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                    ) : (
-                        <RefreshCw className="w-4 h-4" />
-                    )}
-                    Refresh
-                </button>
 
-                {/* Sort Menu */}
-                <div className="relative">
-                    <button
-                        onClick={() => setShowSortMenu(!showSortMenu)}
-                        className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white w-full sm:w-auto justify-center sm:justify-start"
-                    >
-                        <Menu className="w-4 h-4" />
-                        Sort
-                        {showSortMenu ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                    </button>
-                    {showSortMenu && (
-                        <div className="absolute right-0 top-12 bg-gray-800 border border-gray-600 rounded-lg p-2 z-10 min-w-56 shadow-lg">
-                            <div className="text-xs text-gray-400 px-3 py-1 font-medium">Position Value</div>
-                            <button
-                                onClick={() => handleSort(SortType.PositionValue, false)}
-                                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${
-                                    sortBy === SortType.PositionValue && sortAscending === false ? 'bg-gray-700' : ''
-                                }`}
-                            >
-                                Highest to Lowest ↓
-                            </button>
-                            <button
-                                onClick={() => handleSort(SortType.PositionValue, true)}
-                                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${
-                                    sortBy === SortType.PositionValue && sortAscending === true ? 'bg-gray-700' : ''
-                                }`}
-                            >
-                                Lowest to Highest ↑
-                            </button>
-                            
-                            <div className="text-xs text-gray-400 px-3 py-1 font-medium mt-2">Unclaimed Fees</div>
-                            <button
-                                onClick={() => handleSort(SortType.PositionUnclaimedFee, false)}
-                                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${
-                                    sortBy === SortType.PositionUnclaimedFee && sortAscending === false ? 'bg-gray-700' : ''
-                                }`}
-                            >
-                                Highest to Lowest ↓
-                            </button>
-                            <button
-                                onClick={() => handleSort(SortType.PositionUnclaimedFee, true)}
-                                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${
-                                    sortBy === SortType.PositionUnclaimedFee && sortAscending === true ? 'bg-gray-700' : ''
-                                }`}
-                            >
-                                Lowest to Highest ↑
-                            </button>
-
-                            <div className="text-xs text-gray-400 px-3 py-1 font-medium mt-2">Pool TVL</div>
-                            <button
-                                onClick={() => handleSort(SortType.PoolValue, false)}
-                                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${
-                                    sortBy === SortType.PoolValue && sortAscending === false ? 'bg-gray-700' : ''
-                                }`}
-                            >
-                                Highest to Lowest ↓
-                            </button>
-                            <button
-                                onClick={() => handleSort(SortType.PoolValue, true)}
-                                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${
-                                    sortBy === SortType.PoolValue && sortAscending === true ? 'bg-gray-700' : ''
-                                }`}
-                            >
-                                Lowest to Highest ↑
-                            </button>
-
-                            <div className="text-xs text-gray-400 px-3 py-1 font-medium mt-2">Pool Fees</div>
-                            <button
-                                onClick={() => handleSort(SortType.PoolCurrentFee, false)}
-                                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${
-                                    sortBy === SortType.PoolCurrentFee && sortAscending === false ? 'bg-gray-700' : ''
-                                }`}
-                            >
-                                Current Fee ↓
-                            </button>
-                            <button
-                                onClick={() => handleSort(SortType.PoolCurrentFee, true)}
-                                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${
-                                    sortBy === SortType.PoolCurrentFee && sortAscending === true ? 'bg-gray-700' : ''
-                                }`}
-                            >
-                                Current Fee ↑
-                            </button>
-                            <button
-                                onClick={() => handleSort(SortType.PoolBaseFee, false)}
-                                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${
-                                    sortBy === SortType.PoolBaseFee && sortAscending === false ? 'bg-gray-700' : ''
-                                }`}
-                            >
-                                Base Fee ↓
-                            </button>
-                            <button
-                                onClick={() => handleSort(SortType.PoolBaseFee, true)}
-                                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${
-                                    sortBy === SortType.PoolBaseFee && sortAscending === true ? 'bg-gray-700' : ''
-                                }`}
-                            >
-                                Base Fee ↑
-                            </button>
-                        </div>
-                    )}
-                </div>
-            </div>
 
             {/* Pool Overview Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -348,6 +229,130 @@ const DammPositions: React.FC = () => {
                     onChange={(e) => setSearchString(e.target.value)}
                     placeholder="Search by token mint, name or symbol..."
                 />
+            </div>
+
+            <div className="flex flex-row items-start justify-between gap-4">
+                <div className="flex flex-col items-stretch justify-start gap-4">
+                <button
+                    onClick={() => {
+                        refreshPositions()
+                        setSelectedPositions(new Set())
+                    }}
+                    disabled={loading}
+                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded-lg font-medium transition-colors w-auto justify-center"
+                >
+                    {loading ? (
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                        <RefreshCw className="w-4 h-4" />
+                    )}
+                    Refresh
+                </button>
+                
+                    <button
+                        onClick={() => {
+                            setSelectedPositions(new Set([...positions]))
+                        }}
+                        disabled={loading}
+                        className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded-lg font-medium transition-colors w-auto justify-center"
+                    >
+                        Select All
+                    
+                    </button>
+                    </div>
+                    {/* Sort Menu */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowSortMenu(!showSortMenu)}
+                            className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white w-auto justify-center"
+                        >
+                            <Menu className="w-4 h-4" />
+                            Sort
+                            {showSortMenu ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        </button>
+                        {showSortMenu && (
+                            <div className="absolute right-0 top-12 bg-gray-800 border border-gray-600 rounded-lg p-2 z-10 min-w-56 shadow-lg">
+                                <div className="text-xs text-gray-400 px-3 py-1 font-medium">Position Value</div>
+                                <button
+                                    onClick={() => handleSort(SortType.PositionValue, false)}
+                                    className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PositionValue && sortAscending === false ? 'bg-gray-700' : ''
+                                        }`}
+                                >
+                                    Highest to Lowest ↓
+                                </button>
+                                <button
+                                    onClick={() => handleSort(SortType.PositionValue, true)}
+                                    className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PositionValue && sortAscending === true ? 'bg-gray-700' : ''
+                                        }`}
+                                >
+                                    Lowest to Highest ↑
+                                </button>
+
+                                <div className="text-xs text-gray-400 px-3 py-1 font-medium mt-2">Unclaimed Fees</div>
+                                <button
+                                    onClick={() => handleSort(SortType.PositionUnclaimedFee, false)}
+                                    className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PositionUnclaimedFee && sortAscending === false ? 'bg-gray-700' : ''
+                                        }`}
+                                >
+                                    Highest to Lowest ↓
+                                </button>
+                                <button
+                                    onClick={() => handleSort(SortType.PositionUnclaimedFee, true)}
+                                    className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PositionUnclaimedFee && sortAscending === true ? 'bg-gray-700' : ''
+                                        }`}
+                                >
+                                    Lowest to Highest ↑
+                                </button>
+
+                                <div className="text-xs text-gray-400 px-3 py-1 font-medium mt-2">Pool TVL</div>
+                                <button
+                                    onClick={() => handleSort(SortType.PoolValue, false)}
+                                    className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PoolValue && sortAscending === false ? 'bg-gray-700' : ''
+                                        }`}
+                                >
+                                    Highest to Lowest ↓
+                                </button>
+                                <button
+                                    onClick={() => handleSort(SortType.PoolValue, true)}
+                                    className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PoolValue && sortAscending === true ? 'bg-gray-700' : ''
+                                        }`}
+                                >
+                                    Lowest to Highest ↑
+                                </button>
+
+                                <div className="text-xs text-gray-400 px-3 py-1 font-medium mt-2">Pool Fees</div>
+                                <button
+                                    onClick={() => handleSort(SortType.PoolCurrentFee, false)}
+                                    className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PoolCurrentFee && sortAscending === false ? 'bg-gray-700' : ''
+                                        }`}
+                                >
+                                    Current Fee ↓
+                                </button>
+                                <button
+                                    onClick={() => handleSort(SortType.PoolCurrentFee, true)}
+                                    className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PoolCurrentFee && sortAscending === true ? 'bg-gray-700' : ''
+                                        }`}
+                                >
+                                    Current Fee ↑
+                                </button>
+                                <button
+                                    onClick={() => handleSort(SortType.PoolBaseFee, false)}
+                                    className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PoolBaseFee && sortAscending === false ? 'bg-gray-700' : ''
+                                        }`}
+                                >
+                                    Base Fee ↓
+                                </button>
+                                <button
+                                    onClick={() => handleSort(SortType.PoolBaseFee, true)}
+                                    className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PoolBaseFee && sortAscending === true ? 'bg-gray-700' : ''
+                                        }`}
+                                >
+                                    Base Fee ↑
+                                </button>
+                            </div>
+                        )}
+                    </div>
+             
             </div>
 
             {/* Total Fees Summary */}
@@ -436,7 +441,7 @@ const DammPositions: React.FC = () => {
                                                 }
                                             }}
                                         />
-                                        
+
                                         {/* Token Pair */}
                                         <div className="flex items-center gap-2">
                                             <div className="flex items-center -space-x-1">
@@ -457,22 +462,22 @@ const DammPositions: React.FC = () => {
                                                             {position.tokenB.symbol.slice(0, 2)}
                                                         </div>
                                                     )}
-                                                    
+
                                                 </div>
                                             </div>
                                             <div>
-                                                
+
                                                 <div className="text-white font-semibold">{position.tokenA.symbol}/{position.tokenB.symbol}</div>
                                                 <div className="text-xs text-gray-400">
                                                     Share: {position.shareOfPoolPercentage.toFixed(2)}%
                                                 </div>
                                             </div>
-                                            <button 
-                                            onClick={() => window.open(`https://edge.meteora.ag/dammv2/${position.poolAddress}`, '_blank')}
-                                            className="text-purple-400 hover:text-purple-300 mt-1"
-                                        >
-                                            <ExternalLink className="w-3 h-3" />
-                                        </button>
+                                            <button
+                                                onClick={() => window.open(`https://edge.meteora.ag/dammv2/${position.poolAddress}`, '_blank')}
+                                                className="text-purple-400 hover:text-purple-300 mt-1"
+                                            >
+                                                <ExternalLink className="w-3 h-3" />
+                                            </button>
                                         </div>
                                     </div>
 
@@ -480,8 +485,8 @@ const DammPositions: React.FC = () => {
                                         onClick={() => toggleRowExpand(index)}
                                         className="p-2 rounded-full bg-gray-700 hover:bg-gray-600"
                                     >
-                                        {expandedIndex === index ? 
-                                            <ChevronUp className="w-4 h-4 text-white" /> : 
+                                        {expandedIndex === index ?
+                                            <ChevronUp className="w-4 h-4 text-white" /> :
                                             <ChevronDown className="w-4 h-4 text-white" />
                                         }
                                     </button>
@@ -505,7 +510,7 @@ const DammPositions: React.FC = () => {
                                         <div className="text-xs text-gray-400">
                                             Fee: {(position.poolCurrentFeeBPS / 100).toFixed(2)}%
                                         </div>
-                                        
+
                                     </div>
                                 </div>
 
@@ -594,7 +599,7 @@ const DammPositions: React.FC = () => {
                                         >
                                             Close Position
                                         </button>
-                                        
+
                                         <div className="grid grid-cols-2 gap-2">
                                             <button
                                                 onClick={() => {
@@ -615,7 +620,7 @@ const DammPositions: React.FC = () => {
                                                 Copy {position.tokenB.symbol} Mint
                                             </button>
                                         </div>
-                                        
+
                                         <button
                                             onClick={() => {
                                                 window.open(`https://solscan.io/account/${position.positionAddress.toBase58()}`, '_blank');

@@ -191,15 +191,15 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                             <span className="text-gray-400">Sort by:</span>
                             <button 
                                 className={`px-2 py-1 rounded ${sortBy === PoolSortType.PoolActivationTime ? 'bg-purple-600' : 'bg-gray-700'} text-white`}
-                                onClick={() => handleSort(PoolSortType.PoolActivationTime)}
+                                onClick={() => handleSort(PoolSortType.PoolActivationTime, true)}
                             >
                                 Activation
                             </button>
                             <button 
-                                className={`px-2 py-1 rounded ${sortBy === PoolSortType.PoolBaseFee ? 'bg-purple-600' : 'bg-gray-700'} text-white`}
-                                onClick={() => handleSort(PoolSortType.PoolBaseFee)}
+                                className={`px-2 py-1 rounded ${sortBy === PoolSortType.PoolCurrentFee ? 'bg-purple-600' : 'bg-gray-700'} text-white`}
+                                onClick={() => handleSort(PoolSortType.PoolCurrentFee)}
                             >
-                                Base Fee
+                                Current Fee
                             </button>
                             <button 
                                 className={`px-2 py-1 rounded ${sortBy === PoolSortType.PoolTotalFees ? 'bg-purple-600' : 'bg-gray-700'} text-white`}

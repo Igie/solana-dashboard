@@ -1,4 +1,4 @@
-import { type PoolState } from "@meteora-ag/cp-amm-sdk";
+import { type PoolState} from "@meteora-ag/cp-amm-sdk";
 import { PublicKey } from "@solana/web3.js";
 
 import Decimal from 'decimal.js'
@@ -110,4 +110,36 @@ export const getShortMint = (mint: PublicKey) => {
 export const getShortMintS = (mint: string) => {
 
     return mint.slice(0, 4) + "...." + mint.slice(mint.length - 4, mint.length);
+}
+
+export function getFirstKey(key1: PublicKey, key2: PublicKey) {
+  const buf1 = key1.toBuffer();
+  const buf2 = key2.toBuffer();
+  if (Buffer.compare(buf1, buf2) === 1) {
+    return buf1;
+  }
+  return buf2;
+}
+
+export function getSecondKey(key1: PublicKey, key2: PublicKey) {
+  const buf1 = key1.toBuffer();
+  const buf2 = key2.toBuffer();
+  if (Buffer.compare(buf1, buf2) === 1) {
+    return buf2;
+  }
+  return buf1;
+}
+
+export const derivePoolAddressFromConfig = (tokenA: string, tokenB: string, config: string): string => {
+    const key1 = new PublicKey(tokenA);
+    const key2 = new PublicKey(tokenB);
+    return PublicKey.findProgramAddressSync(
+    [
+      Buffer.from("pool"),
+      new PublicKey(config).toBuffer(),
+      getFirstKey(key1, key2),
+      getSecondKey(key1, key2),
+    ],
+    new PublicKey("cpamdpZCGKUy5JxQXB4dcpGPiikHawvSWAd6mEn1sGG")
+  )[0].toBase58();
 }
