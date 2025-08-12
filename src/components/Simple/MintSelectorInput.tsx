@@ -77,8 +77,6 @@ export const MintSelectorInput: React.FC<Props> = ({
         }
     };
 
-
-
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (
@@ -93,8 +91,6 @@ export const MintSelectorInput: React.FC<Props> = ({
         document.addEventListener('mousedown', handleClickOutside)
         return () => document.removeEventListener('mousedown', handleClickOutside)
     }, [amountInternalInput, mintInput])
-
-
     const selectedTokenAccount = tokenAccounts.find(x => x.mint === mintInput);
 
     return (
@@ -125,8 +121,8 @@ export const MintSelectorInput: React.FC<Props> = ({
                     {dropdownOpen && (
                         <div
                             ref={dropdownRef}
-                            className="absolute left-0 z-10 mt-1 bg-gray-800 border border-gray-700 rounded-md shadow-lg max-h-60 overflow-hidden 
-                   w-64 max-w-[calc(100vw-2rem)]"
+                            className="absolute left-0 z-10 mt-1 bg-gray-800 border border-gray-700 rounded-md shadow-lg 
+                                        max-h-60 overflow-y-auto w-64 max-w-[calc(100vw-2rem)]"
                         >
 
                             {loading ? (
@@ -175,10 +171,6 @@ export const MintSelectorInput: React.FC<Props> = ({
                                         );
                                     })
                             )}
-
-
-
-
                         </div>
                     )}
                 </div>

@@ -16,7 +16,6 @@ interface Dammv2PoolListProps {
     pools: PoolDetailedInfo[]
     tokenMetadataMap: TokenMetadataMap
 }
-
 const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
     {
         cpAmm,
@@ -64,60 +63,60 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
     };
 
     const handleDepositClick = async (e: React.MouseEvent) => {
-  await refreshTokenAccounts();
-  const rect = (e.target as HTMLElement).getBoundingClientRect();
-  
-  // Calculate smart position that stays within viewport
-  const calculatePosition = (buttonRect: DOMRect) => {
-    const popoverWidth = 320; // Adjust based on your actual popover width
-    const popoverHeight = 400; // Adjust based on your actual popover height
-    const padding = 16; // Minimum distance from viewport edges
-    
-    const viewport = {
-      width: window.innerWidth,
-      height: window.innerHeight,
-      scrollY: window.scrollY,
-      scrollX: window.scrollX
+        await refreshTokenAccounts();
+        const rect = (e.target as HTMLElement).getBoundingClientRect();
+
+        // Calculate smart position that stays within viewport
+        const calculatePosition = (buttonRect: DOMRect) => {
+            const popoverWidth = 320; // Adjust based on your actual popover width
+            const popoverHeight = 400; // Adjust based on your actual popover height
+            const padding = 16; // Minimum distance from viewport edges
+
+            const viewport = {
+                width: window.innerWidth,
+                height: window.innerHeight,
+                scrollY: window.scrollY,
+                scrollX: window.scrollX
+            };
+
+            // Initial position below the button
+            let x = buttonRect.left + window.scrollX;
+            let y = buttonRect.bottom + window.scrollY;
+
+            // Adjust horizontal position if popover would extend beyond right edge
+            if (x + popoverWidth > viewport.scrollX + viewport.width - padding) {
+                x = viewport.scrollX + viewport.width - popoverWidth - padding;
+            }
+
+            // Adjust horizontal position if popover would extend beyond left edge
+            if (x < viewport.scrollX + padding) {
+                x = viewport.scrollX + padding;
+            }
+
+            // Check if popover would extend beyond bottom edge
+            if (y + popoverHeight > viewport.scrollY + viewport.height - padding) {
+                // Try positioning above the button instead
+                const yAbove = buttonRect.top + window.scrollY - popoverHeight;
+
+                if (yAbove >= viewport.scrollY + padding) {
+                    // Position above if there's enough space
+                    y = yAbove;
+                } else {
+                    // If no space above or below, position at the bottom of viewport
+                    y = Math.max(
+                        viewport.scrollY + padding,
+                        Math.min(y, viewport.scrollY + viewport.height - popoverHeight - padding)
+                    );
+                }
+            }
+
+            return { x: Math.round(x), y: Math.round(y) };
+        };
+
+        const position = calculatePosition(rect);
+        setPosition(position);
+        setPopoverVisible(true);
     };
-
-    // Initial position below the button
-    let x = buttonRect.left + window.scrollX;
-    let y = buttonRect.bottom + window.scrollY;
-
-    // Adjust horizontal position if popover would extend beyond right edge
-    if (x + popoverWidth > viewport.scrollX + viewport.width - padding) {
-      x = viewport.scrollX + viewport.width - popoverWidth - padding;
-    }
-
-    // Adjust horizontal position if popover would extend beyond left edge
-    if (x < viewport.scrollX + padding) {
-      x = viewport.scrollX + padding;
-    }
-
-    // Check if popover would extend beyond bottom edge
-    if (y + popoverHeight > viewport.scrollY + viewport.height - padding) {
-      // Try positioning above the button instead
-      const yAbove = buttonRect.top + window.scrollY - popoverHeight;
-      
-      if (yAbove >= viewport.scrollY + padding) {
-        // Position above if there's enough space
-        y = yAbove;
-      } else {
-        // If no space above or below, position at the bottom of viewport
-        y = Math.max(
-          viewport.scrollY + padding,
-          Math.min(y, viewport.scrollY + viewport.height - popoverHeight - padding)
-        );
-      }
-    }
-
-    return { x: Math.round(x), y: Math.round(y) };
-  };
-
-  const position = calculatePosition(rect);
-  setPosition(position);
-  setPopoverVisible(true);
-};
 
     useEffect(() => {
         refreshTokenAccounts();
@@ -189,19 +188,19 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                     <div className="lg:hidden mb-4">
                         <div className="flex flex-wrap gap-2 text-xs">
                             <span className="text-gray-400">Sort by:</span>
-                            <button 
+                            <button
                                 className={`px-2 py-1 rounded ${sortBy === PoolSortType.PoolActivationTime ? 'bg-purple-600' : 'bg-gray-700'} text-white`}
                                 onClick={() => handleSort(PoolSortType.PoolActivationTime, true)}
                             >
                                 Activation
                             </button>
-                            <button 
+                            <button
                                 className={`px-2 py-1 rounded ${sortBy === PoolSortType.PoolCurrentFee ? 'bg-purple-600' : 'bg-gray-700'} text-white`}
                                 onClick={() => handleSort(PoolSortType.PoolCurrentFee)}
                             >
                                 Current Fee
                             </button>
-                            <button 
+                            <button
                                 className={`px-2 py-1 rounded ${sortBy === PoolSortType.PoolTotalFees ? 'bg-purple-600' : 'bg-gray-700'} text-white`}
                                 onClick={() => handleSort(PoolSortType.PoolTotalFees)}
                             >
@@ -245,14 +244,14 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                             <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2">
                                                 <span className="text-xs text-gray-400 w-12">Base:</span>
                                                 <span className="text-sm font-mono truncate min-w-0">
-                                                    {(tokenMetadataMap[pool.poolInfo.account.tokenAMint.toBase58()]?.name && 
-                                                      tokenMetadataMap[pool.poolInfo.account.tokenAMint.toBase58()]?.name.length > 15)
+                                                    {(tokenMetadataMap[pool.poolInfo.account.tokenAMint.toBase58()]?.name &&
+                                                        tokenMetadataMap[pool.poolInfo.account.tokenAMint.toBase58()]?.name.length > 15)
                                                         ? tokenMetadataMap[pool.poolInfo.account.tokenAMint.toBase58()]?.name.slice(0, 15) + '...'
-                                                        : tokenMetadataMap[pool.poolInfo.account.tokenAMint.toBase58()]?.name || 
-                                                          (pool.poolInfo.account.tokenAMint.toBase58().slice(0, 4) + '...')
+                                                        : tokenMetadataMap[pool.poolInfo.account.tokenAMint.toBase58()]?.name ||
+                                                        (pool.poolInfo.account.tokenAMint.toBase58().slice(0, 4) + '...')
                                                     }
                                                 </span>
-                                                <button 
+                                                <button
                                                     className="bg-gray-600 hover:bg-gray-500 px-1 py-0.5 rounded text-xs flex-shrink-0"
                                                     onClick={() => navigator.clipboard.writeText(pool.poolInfo.account.tokenAMint.toBase58())}
                                                 >
@@ -262,14 +261,14 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                             <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2">
                                                 <span className="text-xs text-gray-400 w-12">Quote:</span>
                                                 <span className="text-sm font-mono truncate min-w-0">
-                                                    {(tokenMetadataMap[pool.poolInfo.account.tokenBMint.toBase58()]?.name && 
-                                                      tokenMetadataMap[pool.poolInfo.account.tokenBMint.toBase58()]?.name.length > 15)
+                                                    {(tokenMetadataMap[pool.poolInfo.account.tokenBMint.toBase58()]?.name &&
+                                                        tokenMetadataMap[pool.poolInfo.account.tokenBMint.toBase58()]?.name.length > 15)
                                                         ? tokenMetadataMap[pool.poolInfo.account.tokenBMint.toBase58()]?.name.slice(0, 15) + '...'
-                                                        : tokenMetadataMap[pool.poolInfo.account.tokenBMint.toBase58()]?.name || 
-                                                          (pool.poolInfo.account.tokenBMint.toBase58().slice(0, 4) + '...')
+                                                        : tokenMetadataMap[pool.poolInfo.account.tokenBMint.toBase58()]?.name ||
+                                                        (pool.poolInfo.account.tokenBMint.toBase58().slice(0, 4) + '...')
                                                     }
                                                 </span>
-                                                <button 
+                                                <button
                                                     className="bg-gray-600 hover:bg-gray-500 px-1 py-0.5 rounded text-xs flex-shrink-0"
                                                     onClick={() => navigator.clipboard.writeText(pool.poolInfo.account.tokenBMint.toBase58())}
                                                 >
@@ -288,7 +287,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                         <div className="min-w-0 flex gap-1 justify-end">
                                             <span className="text-gray-400">Activation: </span>
                                             <span className="truncate">
-                                                {formatDuration(pool.activationTime).length > 8 
+                                                {formatDuration(pool.activationTime).length > 8
                                                     ? formatDuration(pool.activationTime).slice(0, 8) + '...'
                                                     : formatDuration(pool.activationTime)
                                                 } ago
@@ -311,7 +310,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                             <span className="text-gray-400">Fee Mode: </span>
                                             <span className="truncate">
                                                 {pool.poolInfo.account.collectFeeMode === 0 ? "Both Tokens" :
-                                                 pool.poolInfo.account.collectFeeMode === 1 ? "Quote Token" : "Unknown"}
+                                                    pool.poolInfo.account.collectFeeMode === 1 ? "Quote Token" : "Unknown"}
                                             </span>
                                         </div>
                                         <div className="min-w-0 flex gap-1 justify-end">
@@ -319,7 +318,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                             <span className="truncate">
                                                 {(() => {
                                                     const schedulerText = pool.poolInfo.account.poolFees.baseFee.feeSchedulerMode === 0 ? "Linear" :
-                                                                          pool.poolInfo.account.poolFees.baseFee.feeSchedulerMode === 1 ? "Exponential" : "Unknown";
+                                                        pool.poolInfo.account.poolFees.baseFee.feeSchedulerMode === 1 ? "Exponential" : "Unknown";
                                                     return schedulerText.length > 10 ? schedulerText.slice(0, 10) + '...' : schedulerText;
                                                 })()}
                                             </span>

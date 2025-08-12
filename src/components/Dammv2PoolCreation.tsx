@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useEffect } from 'react'
 import { RefreshCcw } from 'lucide-react'
-import { CollectFeeMode, CpAmm, deriveCustomizablePoolAddress, feeNumeratorToBps, FeeSchedulerMode, getBaseFeeNumerator, getBaseFeeParams, getDynamicFeeParams, getFeeNumerator, getPriceFromSqrtPrice, MAX_SQRT_PRICE, MIN_SQRT_PRICE } from '@meteora-ag/cp-amm-sdk'
+import { CollectFeeMode, CpAmm, deriveCustomizablePoolAddress, derivePoolAddress, feeNumeratorToBps, FeeSchedulerMode, getBaseFeeNumerator, getBaseFeeParams, getDynamicFeeParams, getFeeNumerator, getPriceFromSqrtPrice, MAX_SQRT_PRICE, MIN_SQRT_PRICE } from '@meteora-ag/cp-amm-sdk'
 import { Keypair, PublicKey } from '@solana/web3.js'
 import { BN } from '@coral-xyz/anchor'
 import { fetchTokenMetadata, metadataToAccounts, type TokenAccount, type TokenMetadataMap } from '../tokenUtils'
@@ -127,7 +127,7 @@ const Dammv2PoolCreation: React.FC = () => {
             if (searchMint === '') {
                 const pools = await cpAmm.getAllPools();
                 pools.sort((x, y) => y.account.activationPoint.sub(x.account.activationPoint).toNumber())
-                const allPools = (pools).slice(0, 20); // Limit to first 20 pools
+                const allPools = (pools).slice(0, 20);
 
                 mints.push(...allPools.map(p => p.account.tokenAMint.toBase58()));
                 mints.push(...allPools.map(p => p.account.tokenBMint.toBase58()));
@@ -261,7 +261,8 @@ const Dammv2PoolCreation: React.FC = () => {
         setDetailedPools(detailedPools);
     };
 
-    const handleCreatePool = async () => {
+    const handleCreatePool = async (addConfig:boolean) => {
+        console.log("shiftkey", addConfig);
         if (!tokenAMint || !tokenBMint) {
             return
         }
@@ -297,45 +298,95 @@ const Dammv2PoolCreation: React.FC = () => {
             const poolFees = {
                 baseFee: getBaseFeeParams(maxFee * 100, minFee * 100, selectedFeeScheduler, totalDuration.div(new BN(reductionPeriod)).toNumber(), totalDuration.toNumber()),
                 padding: [],
-                dynamicFee: getDynamicFeeParams(5000, 150),
+                dynamicFee: getDynamicFeeParams(25, 150),
             };
 
-            const positionNft = Keypair.generate();
-            const { tx, pool } = await cpAmm.createCustomPool({
-                payer: publicKey!,
-                creator: publicKey!,
-                positionNft: positionNft.publicKey,
-                tokenAMint: tokenA,
-                tokenBMint: tokenB,
-                tokenAAmount: tokenAAmount,
-                tokenBAmount: tokenBAmount,
-                initSqrtPrice: initSqrtPrice,
-                sqrtMinPrice: MIN_SQRT_PRICE,
-                sqrtMaxPrice: MAX_SQRT_PRICE,
-                liquidityDelta: initPoolLiquidityDelta,
-                poolFees,
-                hasAlphaVault: false,
-                collectFeeMode: selectedFeeMode, // 0: BothToken, 1: onlyB
-                activationPoint: null,
-                activationType: 1, // 0: slot, 1: timestamp
-                tokenAProgram: new PublicKey(tokenAMetadata.tokenProgram),
-                tokenBProgram: new PublicKey(tokenBMetadata.tokenProgram),
-            });
-            try {
-                await sendTxn(tx, [positionNft],
-                    {
-                        notify: true,
-                        onSuccess: async () => {
-                            txToast.showPool(pool.toBase58());
-                            await updateCommonTokens()
-                            setTokenBaseAmount(new Decimal(0));
-                            setNewPoolAddressExists(true);
-                        },
-                    }
-                );
+            let config: PublicKey | undefined;
 
-            } catch (e) {
-                console.log(e);
+            try {
+                if (addConfig) {
+                    config = new PublicKey(await navigator.clipboard.readText());
+            console.log("shiftkey", addConfig, "config:", config);
+
+                }
+            } catch { }
+
+            console.log("shiftkey", addConfig, "config:", config, await navigator.clipboard.readText());
+
+            const positionNft = Keypair.generate();
+            if (!config) {
+                const { tx, pool } = await cpAmm.createCustomPool({
+                    payer: publicKey!,
+                    creator: publicKey!,
+                    positionNft: positionNft.publicKey,
+                    tokenAMint: tokenA,
+                    tokenBMint: tokenB,
+                    tokenAAmount: tokenAAmount,
+                    tokenBAmount: tokenBAmount,
+                    initSqrtPrice: initSqrtPrice,
+                    sqrtMinPrice: MIN_SQRT_PRICE,
+                    sqrtMaxPrice: MAX_SQRT_PRICE,
+                    liquidityDelta: initPoolLiquidityDelta,
+                    poolFees,
+                    hasAlphaVault: false,
+                    collectFeeMode: selectedFeeMode, // 0: BothToken, 1: onlyB
+                    activationPoint: null,
+                    activationType: 1, // 0: slot, 1: timestamp
+                    tokenAProgram: new PublicKey(tokenAMetadata.tokenProgram),
+                    tokenBProgram: new PublicKey(tokenBMetadata.tokenProgram),
+                });
+                try {
+                    await sendTxn(tx, [positionNft],
+                        {
+                            notify: true,
+                            onSuccess: async () => {
+                                txToast.showPool(pool.toBase58());
+                                await updateCommonTokens();
+                                setTokenBaseAmount(new Decimal(0));
+                                setNewPoolAddressExists(true);
+                            },
+                        }
+                    );
+
+                } catch (e) {
+                    console.log(e);
+                }
+            } else {
+                const tx = await cpAmm.createPool({
+                    payer: publicKey!,
+                    config: config,
+                    creator: new PublicKey("FhVo3mqL8PW5pH5U2CN4XE33DokiyZnUwuGpH2hmHLuM"),
+                    positionNft: positionNft.publicKey,
+                    tokenAMint: tokenA,
+                    tokenBMint: tokenB,
+                    tokenAAmount: tokenAAmount,
+                    tokenBAmount: tokenBAmount,
+                    initSqrtPrice: initSqrtPrice,
+                    isLockLiquidity: false,
+
+                    
+                    liquidityDelta: initPoolLiquidityDelta,
+                    activationPoint: null,
+                    tokenAProgram: new PublicKey(tokenAMetadata.tokenProgram),
+                    tokenBProgram: new PublicKey(tokenBMetadata.tokenProgram),
+                });
+
+                try {
+                    await sendTxn(tx, [positionNft],
+                        {
+                            notify: true,
+                            onSuccess: async () => {
+                                txToast.showPool(derivePoolAddress(config, tokenA, tokenB).toBase58());
+                                await updateCommonTokens();
+                                setTokenBaseAmount(new Decimal(0));
+                                setNewPoolAddressExists(true);
+                            },
+                        }
+                    );
+
+                } catch (e) {
+                    console.log(e);
+                }
             }
         } catch (err) {
             console.error("Failed to create pool:", err)
@@ -672,7 +723,7 @@ const Dammv2PoolCreation: React.FC = () => {
                         {!newPoolAddressExists && connected ?
                             <button
                                 className="bg-green-600 hover:bg-green-500 px-4 py-2 rounded-lg text-white font-semibold"
-                                onClick={handleCreatePool}
+                                onClick={(e) =>handleCreatePool(e.shiftKey)}
                             >
                                 Create Pool
                             </button>
