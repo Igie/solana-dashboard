@@ -86,7 +86,7 @@ const Dammv2PoolCreation: React.FC = () => {
     }, [tokenBaseAmount])
 
     useEffect(() => {
-        setInitialPriceInput(initialPrice.toString())
+        setInitialPriceInput(initialPrice.toFixed())
     }, [initialPrice])
 
     const cpAmm = new CpAmm(connection);
@@ -508,7 +508,6 @@ const Dammv2PoolCreation: React.FC = () => {
                                 </button>
                                 <input
                                     type="text"
-                                    inputMode="decimal"
                                     pattern="^[0-9]*[.,]?[0-9]*$"
                                     className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-4 py-2 text-white placeholder-gray-500"
                                     placeholder="0"

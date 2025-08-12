@@ -39,8 +39,8 @@ export const MintSelectorInput: React.FC<Props> = ({
     const handleMax = () => {
         const selected = tokenAccounts.find(t => t.mint === mintInput)
         if (selected) {
-            const maxValue = new Decimal(selected.amount.toFixed())
-            setAmountInternalInput(maxValue.toFixed());
+            const maxValue = new Decimal(selected.amount.toString())
+            setAmountInternalInput(maxValue.toString());
             onAmountChange(maxValue);
         }
     }
