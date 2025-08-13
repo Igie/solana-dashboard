@@ -1,4 +1,4 @@
-import { type PoolState} from "@meteora-ag/cp-amm-sdk";
+import { type PoolState } from "@meteora-ag/cp-amm-sdk";
 import { PublicKey } from "@solana/web3.js";
 
 import Decimal from 'decimal.js'
@@ -113,33 +113,51 @@ export const getShortMintS = (mint: string) => {
 }
 
 export function getFirstKey(key1: PublicKey, key2: PublicKey) {
-  const buf1 = key1.toBuffer();
-  const buf2 = key2.toBuffer();
-  if (Buffer.compare(buf1, buf2) === 1) {
-    return buf1;
-  }
-  return buf2;
+    const buf1 = key1.toBuffer();
+    const buf2 = key2.toBuffer();
+    if (Buffer.compare(buf1, buf2) === 1) {
+        return buf1;
+    }
+    return buf2;
 }
 
 export function getSecondKey(key1: PublicKey, key2: PublicKey) {
-  const buf1 = key1.toBuffer();
-  const buf2 = key2.toBuffer();
-  if (Buffer.compare(buf1, buf2) === 1) {
-    return buf2;
-  }
-  return buf1;
+    const buf1 = key1.toBuffer();
+    const buf2 = key2.toBuffer();
+    if (Buffer.compare(buf1, buf2) === 1) {
+        return buf2;
+    }
+    return buf1;
 }
 
 export const derivePoolAddressFromConfig = (tokenA: string, tokenB: string, config: string): string => {
     const key1 = new PublicKey(tokenA);
     const key2 = new PublicKey(tokenB);
     return PublicKey.findProgramAddressSync(
-    [
-      Buffer.from("pool"),
-      new PublicKey(config).toBuffer(),
-      getFirstKey(key1, key2),
-      getSecondKey(key1, key2),
-    ],
-    new PublicKey("cpamdpZCGKUy5JxQXB4dcpGPiikHawvSWAd6mEn1sGG")
-  )[0].toBase58();
+        [
+            Buffer.from("pool"),
+            new PublicKey(config).toBuffer(),
+            getFirstKey(key1, key2),
+            getSecondKey(key1, key2),
+        ],
+        new PublicKey("cpamdpZCGKUy5JxQXB4dcpGPiikHawvSWAd6mEn1sGG")
+    )[0].toBase58();
+}
+
+export function formatDuration(seconds: number | null): string {
+    if (!seconds) return "0s"
+
+    if (seconds < 0) return seconds.toString() + "s"
+    const d = Math.floor(seconds / 86400)
+    const h = Math.floor((seconds % 86400) / 3600)
+    const m = Math.floor((seconds % 3600) / 60)
+    const s = seconds % 60
+
+    const parts = []
+    if (d > 0) parts.push(`${d}d`)
+    if (h > 0 || d > 0) parts.push(`${h}h`)
+    if (m > 0 || h > 0 || d > 0) parts.push(`${m}m`)
+    if (d === 0 && h === 0 && m === 0) parts.push(`${s}s`)
+
+    return parts.join(' ')
 }
