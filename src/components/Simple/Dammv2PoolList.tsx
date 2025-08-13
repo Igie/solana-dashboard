@@ -244,10 +244,10 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                             <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2">
                                                 <span className="text-xs text-gray-400 w-12">Base:</span>
                                                 <span className="text-sm font-mono truncate min-w-0">
-                                                    {(tokenMetadataMap[pool.poolInfo.account.tokenAMint.toBase58()]?.name &&
-                                                        tokenMetadataMap[pool.poolInfo.account.tokenAMint.toBase58()]?.name.length > 15)
-                                                        ? tokenMetadataMap[pool.poolInfo.account.tokenAMint.toBase58()]?.name.slice(0, 15) + '...'
-                                                        : tokenMetadataMap[pool.poolInfo.account.tokenAMint.toBase58()]?.name ||
+                                                    {(tokenMetadataMap[pool.poolInfo.account.tokenAMint.toBase58()]?.symbol &&
+                                                        tokenMetadataMap[pool.poolInfo.account.tokenAMint.toBase58()]?.symbol.length > 15)
+                                                        ? tokenMetadataMap[pool.poolInfo.account.tokenAMint.toBase58()]?.symbol.slice(0, 15) + '...'
+                                                        : tokenMetadataMap[pool.poolInfo.account.tokenAMint.toBase58()]?.symbol ||
                                                         (pool.poolInfo.account.tokenAMint.toBase58().slice(0, 4) + '...')
                                                     }
                                                 </span>
@@ -261,10 +261,10 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                             <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2">
                                                 <span className="text-xs text-gray-400 w-12">Quote:</span>
                                                 <span className="text-sm font-mono truncate min-w-0">
-                                                    {(tokenMetadataMap[pool.poolInfo.account.tokenBMint.toBase58()]?.name &&
-                                                        tokenMetadataMap[pool.poolInfo.account.tokenBMint.toBase58()]?.name.length > 15)
-                                                        ? tokenMetadataMap[pool.poolInfo.account.tokenBMint.toBase58()]?.name.slice(0, 15) + '...'
-                                                        : tokenMetadataMap[pool.poolInfo.account.tokenBMint.toBase58()]?.name ||
+                                                    {(tokenMetadataMap[pool.poolInfo.account.tokenBMint.toBase58()]?.symbol &&
+                                                        tokenMetadataMap[pool.poolInfo.account.tokenBMint.toBase58()]?.symbol.length > 15)
+                                                        ? tokenMetadataMap[pool.poolInfo.account.tokenBMint.toBase58()]?.symbol.slice(0, 15) + '...'
+                                                        : tokenMetadataMap[pool.poolInfo.account.tokenBMint.toBase58()]?.symbol ||
                                                         (pool.poolInfo.account.tokenBMint.toBase58().slice(0, 4) + '...')
                                                     }
                                                 </span>
@@ -499,7 +499,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                     <div className='col-span-3 grid items grid-cols-4 gap-x-2'>
                                         <div className="font-mono grid items-center justify-center">
                                             <div className="truncate">
-                                                {tokenMetadataMap[pool.poolInfo.account.tokenAMint.toBase58()]?.name || (pool.poolInfo.account.tokenAMint.toBase58().slice(0, 4) + '...')}
+                                                {tokenMetadataMap[pool.poolInfo.account.tokenAMint.toBase58()]?.symbol || (pool.poolInfo.account.tokenAMint.toBase58().slice(0, 4) + '...')}
                                             </div>
                                             <button className="bg-gray-600 hover:bg-gray-500 px-1 py-0.5 rounded-md text-white text-sm justify-center"
                                                 onClick={() => navigator.clipboard.writeText(pool.poolInfo.account.tokenAMint.toBase58())}>
@@ -508,7 +508,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                         </div>
                                         <div className="font-mono grid items-center justify-center">
                                             <div className="truncate">
-                                                {tokenMetadataMap[pool.poolInfo.account.tokenBMint.toBase58()]?.name || pool.poolInfo.account.tokenBMint.toBase58().slice(0, 4) + '...'}
+                                                {tokenMetadataMap[pool.poolInfo.account.tokenBMint.toBase58()]?.symbol || pool.poolInfo.account.tokenBMint.toBase58().slice(0, 4) + '...'}
                                             </div>
                                             <button className="bg-gray-600 hover:bg-gray-500 px-1 py-0.5 rounded-md text-white text-sm justify-center"
                                                 onClick={() => navigator.clipboard.writeText(pool.poolInfo.account.tokenBMint.toBase58())}>

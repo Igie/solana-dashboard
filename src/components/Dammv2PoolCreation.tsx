@@ -47,17 +47,17 @@ const Dammv2PoolCreation: React.FC = () => {
     const [initialPrice, setInitialPrice] = useState(new Decimal(0))
     const [initialPriceInput, setInitialPriceInput] = useState("0")
 
-    const [maxBaseFeePercentage, setMaxBaseFeePercentage] = useState(new Decimal(50))
-    const [maxBaseFeePercentageInput, setMaxBaseFeePercentageInput] = useState("50")
+    const [maxBaseFeePercentage, setMaxBaseFeePercentage] = useState(new Decimal(40))
+    const [maxBaseFeePercentageInput, setMaxBaseFeePercentageInput] = useState("40")
 
-    const [baseFeePercentage, setBaseFeePercentage] = useState(new Decimal(49))
-    const [baseFeePercentageInput, setBaseFeePercentageInput] = useState("49")
+    const [baseFeePercentage, setBaseFeePercentage] = useState(new Decimal(20))
+    const [baseFeePercentageInput, setBaseFeePercentageInput] = useState("20")
 
-    const [totalSchedulerDuration, setTotalSchedulerDuration] = useState<number>(30)
-    const [totalSchedulerDurationInput, setTotalSchedulerDurationInput] = useState("30")
+    const [totalSchedulerDuration, setTotalSchedulerDuration] = useState<number>(4800)
+    const [totalSchedulerDurationInput, setTotalSchedulerDurationInput] = useState("4800")
 
-    const [schedulerReductionPeriod, setSchedulerReductionPeriod] = useState<number>(1.5)
-    const [schedulerReductionPeriodInput, setSchedulerReductionPeriodInput] = useState("1.5")
+    const [schedulerReductionPeriod, setSchedulerReductionPeriod] = useState<number>(1)
+    const [schedulerReductionPeriodInput, setSchedulerReductionPeriodInput] = useState("1")
 
     const [selectedFeeScheduler, setSelectedFeeScheduler] = useState<FeeSchedulerMode>(FeeSchedulerMode.Exponential)
     const [feeSchedulerDropdownOpen, setFeeSchedulerDropdownOpen] = useState(false)
@@ -355,7 +355,7 @@ const Dammv2PoolCreation: React.FC = () => {
                 const tx = await cpAmm.createPool({
                     payer: publicKey!,
                     config: config,
-                    creator: new PublicKey("FhVo3mqL8PW5pH5U2CN4XE33DokiyZnUwuGpH2hmHLuM"),
+                    creator: publicKey!,
                     positionNft: positionNft.publicKey,
                     tokenAMint: tokenA,
                     tokenBMint: tokenB,
