@@ -3,12 +3,8 @@ import { PublicKey } from "@solana/web3.js";
 
 import Decimal from 'decimal.js'
 
-//export const HELIUS_RPC: string = "https://mainnet.helius-rpc.com/?api-key=bcfb59d7-f9d7-4b23-8d12-6c5a31c0e014"
-export const MAINNET_HELIUS_RPC: string = "https://mainnet.helius-rpc.com/?api-key=82313df7-fd1f-4290-a697-0c282f8ee8d7";
-export const DEVNET_HELIUS_RPC: string = "https://devnet.helius-rpc.com?api-key=82313df7-fd1f-4290-a697-0c282f8ee8d7";
-//export const HELIUS_RPC: string = "https://api.devnet.solana.com"
-
-export const SOL_MINT = "So11111111111111111111111111111111111111112";
+export const MAINNET_HELIUS_RPC: string = `https://mainnet.helius-rpc.com/?api-key=${import.meta.env.VITE_HELIUS_API_KEY}`;
+export const DEVNET_HELIUS_RPC: string = `https://devnet.helius-rpc.com?api-key=${import.meta.env.VITE_HELIUS_API_KEY}`;
 
 export interface PoolInfo {
     publicKey: PublicKey;

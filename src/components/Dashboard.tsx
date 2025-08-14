@@ -47,6 +47,10 @@ const Dashboard: React.FC = () => {
     }
   }, [connection])
 
+  useEffect(() => {
+    
+  }, [])
+
   return (
     <div className="space-y-2">
       {/* Wallet Connection */}
