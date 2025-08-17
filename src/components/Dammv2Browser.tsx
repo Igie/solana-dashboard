@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { RefreshCcw, RefreshCw } from 'lucide-react'
 import { CpAmm, feeNumeratorToBps, getBaseFeeNumerator, getFeeNumerator, getPriceFromSqrtPrice, getTokenProgram } from '@meteora-ag/cp-amm-sdk'
-import { PublicKey } from '@solana/web3.js'
+import { PublicKey, } from '@solana/web3.js'
 import { BN } from '@coral-xyz/anchor'
 import { fetchTokenMetadata, type TokenMetadataMap } from '../tokenUtils'
 import Decimal from 'decimal.js'
@@ -173,6 +173,30 @@ const Dammv2Browser: React.FC = () => {
         setDetailedPools(detailedPools);
     };
 
+    // useEffect(() => {
+
+    //     console.log("subscribing to program change event");
+    //     console.log(connection.rpcEndpoint);
+    //     if (!connection.rpcEndpoint) return;
+
+        
+
+    //     const id = connection.onProgramAccountChange(new PublicKey("cpamdpZCGKUy5JxQXB4dcpGPiikHawvSWAd6mEn1sGG"), (e: KeyedAccountInfo) => {
+    //         if (e.accountInfo.data.length !== 1112) {
+    //             console.log(e);
+    //             console.log(e.accountInfo);
+    //             console.log();
+    //         }
+    //     }, {
+    //         encoding: 'jsonParsed',
+    //         commitment: 'finalized',
+    //         filters:[{dataSize:408}],
+    //     });
+
+    //     return () => {
+    //         connection.removeProgramAccountChangeListener(id);
+    //     }
+    // }, [connection]);
     return (
         <div className="space-y-2">
             {/* Header */}

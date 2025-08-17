@@ -148,12 +148,22 @@ const Dammv2PoolCreation: React.FC = () => {
                 console.error('Invalid mint address')
                 return;
             }
-            const allPools = await cpAmm.getAllPools();
 
-            const related = allPools.filter(
-                (p) => {
-                    return p.account.tokenAMint.equals(mintKey) || p.account.tokenBMint.equals(mintKey)
-                });
+            const allPoolsA = await cpAmm._program.account.pool.all([{memcmp:{
+                encoding:'base58',
+                offset: 168,
+                bytes:searchMint,
+            }}])
+
+            const allPoolsB = await cpAmm._program.account.pool.all([{memcmp:{
+                encoding:'base58',
+                offset: 168 + 32,
+                bytes:searchMint,
+            }}])
+
+            const allPools = [...allPoolsA, ...allPoolsB];
+            
+            const related = allPools.sort((x, y) => y.account.activationPoint.sub(x.account.activationPoint).toNumber()).slice(0, 20);
             mints.push(...related.map(p => p.account.tokenAMint.toBase58()));
             mints.push(...related.map(p => p.account.tokenBMint.toBase58()));
             mints = [...new Set(mints)];
