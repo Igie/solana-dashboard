@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { RefreshCw, Wallet, ExternalLink, Droplets, TrendingUp, ChevronDown, ChevronUp, Menu } from 'lucide-react'
 import { CpAmm } from '@meteora-ag/cp-amm-sdk'
+import Decimal from 'decimal.js'
 import { SortType, useDammUserPositions, type PoolPositionInfo } from '../contexts/DammUserPositionsContext'
 import { useTokenAccounts } from '../contexts/TokenAccountsContext'
 import { useTransactionManager } from '../contexts/TransactionManagerContext'
-import { getSwapTransaction } from '../JupSwapApi'
+import { getQuote, getSwapTransaction, getSwapTransactionVersioned } from '../JupSwapApi'
 import { toast } from 'sonner'
 import { BN } from '@coral-xyz/anchor'
 import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-adapter'
 import { PublicKey } from '@solana/web3.js'
+import { txToast } from './Simple/TxToast'
 
 interface TwoMints {
     base: string,
@@ -25,7 +27,7 @@ const DammPositions: React.FC = () => {
     const { positions, totalLiquidityValue, loading, refreshPositions, sortPositionsBy } = useDammUserPositions();
     const [selectedPositions, setSelectedPositions] = useState<Set<PoolPositionInfo>>(new Set());
     const [lastSelectedPosition, setLastSelectedPosition] = useState<PoolPositionInfo | null>(null);
-    const { tokenAccounts } = useTokenAccounts();
+    const { tokenAccounts, refreshTokenAccounts } = useTokenAccounts();
 
     const [mintToMintSwap, setMintToMintSwap] = useState<TwoMints[]>([])
 
@@ -108,6 +110,69 @@ const DammPositions: React.FC = () => {
         }
     };
 
+    const handleClosePositionAndSwap = async (position: PoolPositionInfo) => {
+        if (cpAmm.isLockedPosition(position.positionState)) {
+            toast.error("Cannot close a locked position");
+            return;
+        }
+
+        const txn = await cpAmm.removeAllLiquidityAndClosePosition({
+            owner: publicKey!,
+            position: position.positionAddress,
+            positionNftAccount: position.positionNftAccount,
+            positionState: position.positionState,
+            poolState: position.poolState,
+            tokenAAmountThreshold: new BN(0),
+            tokenBAmountThreshold: new BN(0),
+            vestings: [],
+            currentPoint: new BN(0),
+        });
+
+        let closed = false;
+        try {
+            await sendTxn(txn, undefined, {
+                notify: true,
+                onSuccess: () => {
+                    removePosition(position.positionAddress);
+                    if (expandedIndex)
+                        setExpandedIndex(null);
+
+                    closed = true;
+                }
+            })
+
+        } catch (e) {
+            console.log(e);
+        }
+
+        if (closed) {
+            const { tokenAccounts } = await refreshTokenAccounts();
+            const tokenAAccount = tokenAccounts.find(x => x.mint == position.tokenA.mint);
+            if (!tokenAAccount) {
+                txToast.error("Could not find token account");
+                return;
+            }
+            const quote = await getQuote({
+                inputMint: position.tokenA.mint,
+                outputMint: position.tokenB.mint,
+
+                amount: new Decimal(tokenAAccount.amount).mul(Decimal.pow(10, tokenAAccount.decimals)).toNumber(),
+                slippageBps: 1000,
+            });
+
+            const transaction = await getSwapTransactionVersioned(quote, publicKey!);
+
+            await sendTxn(transaction, undefined, {
+                notify: true,
+                onError: () => {
+                    txToast.error("Swap failed");
+                },
+                onSuccess: async (x) => {
+                    txToast.success("Swap successful", x);
+                }
+            });
+        }
+    }
     const poolContainsString = (pool: PoolPositionInfo, searchString: string): boolean => {
         const lowerSearch = searchString.toLowerCase();
         return pool.tokenA.name.toLowerCase().includes(lowerSearch) ||
@@ -233,22 +298,22 @@ const DammPositions: React.FC = () => {
 
             <div className="flex flex-row items-start justify-between gap-4">
                 <div className="flex flex-col items-stretch justify-start gap-4">
-                <button
-                    onClick={() => {
-                        refreshPositions()
-                        setSelectedPositions(new Set())
-                    }}
-                    disabled={loading}
-                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded-lg font-medium transition-colors w-auto justify-center"
-                >
-                    {loading ? (
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                    ) : (
-                        <RefreshCw className="w-4 h-4" />
-                    )}
-                    Refresh
-                </button>
-                
+                    <button
+                        onClick={() => {
+                            refreshPositions()
+                            setSelectedPositions(new Set())
+                        }}
+                        disabled={loading}
+                        className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded-lg font-medium transition-colors w-auto justify-center"
+                    >
+                        {loading ? (
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <RefreshCw className="w-4 h-4" />
+                        )}
+                        Refresh
+                    </button>
+
                     <button
                         onClick={() => {
                             setSelectedPositions(new Set([...positions]))
@@ -257,102 +322,102 @@ const DammPositions: React.FC = () => {
                         className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded-lg font-medium transition-colors w-auto justify-center"
                     >
                         Select All
-                    
+
                     </button>
-                    </div>
-                    {/* Sort Menu */}
-                    <div className="relative">
-                        <button
-                            onClick={() => setShowSortMenu(!showSortMenu)}
-                            className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white w-auto justify-center"
-                        >
-                            <Menu className="w-4 h-4" />
-                            Sort
-                            {showSortMenu ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                        </button>
-                        {showSortMenu && (
-                            <div className="absolute right-0 top-12 bg-gray-800 border border-gray-600 rounded-lg p-2 z-10 min-w-56 shadow-lg">
-                                <div className="text-xs text-gray-400 px-3 py-1 font-medium">Position Value</div>
-                                <button
-                                    onClick={() => handleSort(SortType.PositionValue, false)}
-                                    className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PositionValue && sortAscending === false ? 'bg-gray-700' : ''
-                                        }`}
-                                >
-                                    Highest to Lowest ↓
-                                </button>
-                                <button
-                                    onClick={() => handleSort(SortType.PositionValue, true)}
-                                    className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PositionValue && sortAscending === true ? 'bg-gray-700' : ''
-                                        }`}
-                                >
-                                    Lowest to Highest ↑
-                                </button>
+                </div>
+                {/* Sort Menu */}
+                <div className="relative">
+                    <button
+                        onClick={() => setShowSortMenu(!showSortMenu)}
+                        className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white w-auto justify-center"
+                    >
+                        <Menu className="w-4 h-4" />
+                        Sort
+                        {showSortMenu ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </button>
+                    {showSortMenu && (
+                        <div className="absolute right-0 top-12 bg-gray-800 border border-gray-600 rounded-lg p-2 z-10 min-w-56 shadow-lg">
+                            <div className="text-xs text-gray-400 px-3 py-1 font-medium">Position Value</div>
+                            <button
+                                onClick={() => handleSort(SortType.PositionValue, false)}
+                                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PositionValue && sortAscending === false ? 'bg-gray-700' : ''
+                                    }`}
+                            >
+                                Highest to Lowest ↓
+                            </button>
+                            <button
+                                onClick={() => handleSort(SortType.PositionValue, true)}
+                                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PositionValue && sortAscending === true ? 'bg-gray-700' : ''
+                                    }`}
+                            >
+                                Lowest to Highest ↑
+                            </button>
 
-                                <div className="text-xs text-gray-400 px-3 py-1 font-medium mt-2">Unclaimed Fees</div>
-                                <button
-                                    onClick={() => handleSort(SortType.PositionUnclaimedFee, false)}
-                                    className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PositionUnclaimedFee && sortAscending === false ? 'bg-gray-700' : ''
-                                        }`}
-                                >
-                                    Highest to Lowest ↓
-                                </button>
-                                <button
-                                    onClick={() => handleSort(SortType.PositionUnclaimedFee, true)}
-                                    className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PositionUnclaimedFee && sortAscending === true ? 'bg-gray-700' : ''
-                                        }`}
-                                >
-                                    Lowest to Highest ↑
-                                </button>
+                            <div className="text-xs text-gray-400 px-3 py-1 font-medium mt-2">Unclaimed Fees</div>
+                            <button
+                                onClick={() => handleSort(SortType.PositionUnclaimedFee, false)}
+                                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PositionUnclaimedFee && sortAscending === false ? 'bg-gray-700' : ''
+                                    }`}
+                            >
+                                Highest to Lowest ↓
+                            </button>
+                            <button
+                                onClick={() => handleSort(SortType.PositionUnclaimedFee, true)}
+                                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PositionUnclaimedFee && sortAscending === true ? 'bg-gray-700' : ''
+                                    }`}
+                            >
+                                Lowest to Highest ↑
+                            </button>
 
-                                <div className="text-xs text-gray-400 px-3 py-1 font-medium mt-2">Pool TVL</div>
-                                <button
-                                    onClick={() => handleSort(SortType.PoolValue, false)}
-                                    className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PoolValue && sortAscending === false ? 'bg-gray-700' : ''
-                                        }`}
-                                >
-                                    Highest to Lowest ↓
-                                </button>
-                                <button
-                                    onClick={() => handleSort(SortType.PoolValue, true)}
-                                    className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PoolValue && sortAscending === true ? 'bg-gray-700' : ''
-                                        }`}
-                                >
-                                    Lowest to Highest ↑
-                                </button>
+                            <div className="text-xs text-gray-400 px-3 py-1 font-medium mt-2">Pool TVL</div>
+                            <button
+                                onClick={() => handleSort(SortType.PoolValue, false)}
+                                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PoolValue && sortAscending === false ? 'bg-gray-700' : ''
+                                    }`}
+                            >
+                                Highest to Lowest ↓
+                            </button>
+                            <button
+                                onClick={() => handleSort(SortType.PoolValue, true)}
+                                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PoolValue && sortAscending === true ? 'bg-gray-700' : ''
+                                    }`}
+                            >
+                                Lowest to Highest ↑
+                            </button>
 
-                                <div className="text-xs text-gray-400 px-3 py-1 font-medium mt-2">Pool Fees</div>
-                                <button
-                                    onClick={() => handleSort(SortType.PoolCurrentFee, false)}
-                                    className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PoolCurrentFee && sortAscending === false ? 'bg-gray-700' : ''
-                                        }`}
-                                >
-                                    Current Fee ↓
-                                </button>
-                                <button
-                                    onClick={() => handleSort(SortType.PoolCurrentFee, true)}
-                                    className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PoolCurrentFee && sortAscending === true ? 'bg-gray-700' : ''
-                                        }`}
-                                >
-                                    Current Fee ↑
-                                </button>
-                                <button
-                                    onClick={() => handleSort(SortType.PoolBaseFee, false)}
-                                    className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PoolBaseFee && sortAscending === false ? 'bg-gray-700' : ''
-                                        }`}
-                                >
-                                    Base Fee ↓
-                                </button>
-                                <button
-                                    onClick={() => handleSort(SortType.PoolBaseFee, true)}
-                                    className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PoolBaseFee && sortAscending === true ? 'bg-gray-700' : ''
-                                        }`}
-                                >
-                                    Base Fee ↑
-                                </button>
-                            </div>
-                        )}
-                    </div>
-             
+                            <div className="text-xs text-gray-400 px-3 py-1 font-medium mt-2">Pool Fees</div>
+                            <button
+                                onClick={() => handleSort(SortType.PoolCurrentFee, false)}
+                                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PoolCurrentFee && sortAscending === false ? 'bg-gray-700' : ''
+                                    }`}
+                            >
+                                Current Fee ↓
+                            </button>
+                            <button
+                                onClick={() => handleSort(SortType.PoolCurrentFee, true)}
+                                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PoolCurrentFee && sortAscending === true ? 'bg-gray-700' : ''
+                                    }`}
+                            >
+                                Current Fee ↑
+                            </button>
+                            <button
+                                onClick={() => handleSort(SortType.PoolBaseFee, false)}
+                                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PoolBaseFee && sortAscending === false ? 'bg-gray-700' : ''
+                                    }`}
+                            >
+                                Base Fee ↓
+                            </button>
+                            <button
+                                onClick={() => handleSort(SortType.PoolBaseFee, true)}
+                                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PoolBaseFee && sortAscending === true ? 'bg-gray-700' : ''
+                                    }`}
+                            >
+                                Base Fee ↑
+                            </button>
+                        </div>
+                    )}
+                </div>
+
             </div>
 
             {/* Total Fees Summary */}
@@ -493,17 +558,30 @@ const DammPositions: React.FC = () => {
                                 </div>
 
                                 {/* Key Metrics Row */}
-                                <div className="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <div className="text-xs text-gray-400 mt-1">Your Liquidity</div>
-                                        <div className="text-lg font-bold text-white">${position.positionValue.toFixed(2)}</div>
-                                        <div className="text-xs text-gray-400">
-                                            {position.tokenA.positionAmount.toFixed(2)} {position.tokenA.symbol}
+                                <div className="grid grid-cols-2 gap-1">
+                                    <div className='flex'>
+                                        <div className='grid lg:min-w-40'>
+                                            <div className="text-xs text-gray-400 mt-1">Your Liquidity</div>
+                                            <div className="text-lg font-bold text-white">${position.positionValue.toFixed(2)}</div>
+                                            <div className="text-xs text-gray-400">
+                                                {position.tokenA.positionAmount.toFixed(2)} {position.tokenA.symbol}
+                                            </div>
+                                            <div className="text-xs text-gray-400">
+                                                {position.tokenB.positionAmount.toFixed(2)} {position.tokenB.symbol}
+                                            </div>
+                                            
                                         </div>
-                                        <div className="text-xs text-gray-400">
-                                            {position.tokenB.positionAmount.toFixed(2)} {position.tokenB.symbol}
-                                        </div>
+                                        <div className='items-start'>
+                                        <button
+                                                className="px-3 py-2 bg-red-600 hover:bg-red-700 rounded text-white text-sm font-medium"
+                                                onClick={async () => await handleClosePositionAndSwap(position)}
+                                            >
+                                                Close and Swap
+                                            </button>
+                                            </div>
                                     </div>
+
+
                                     <div className="text-right">
                                         <div className="text-xs text-gray-400 mt-1">Pool TVL</div>
                                         <div className="text-lg font-bold text-white">${position.poolValue.toFixed(2)}</div>

@@ -22,8 +22,8 @@
     "@solana/wallet-adapter-react-ui": "^0.9.39",
     "@solana/wallet-adapter-wallets": "^0.19.37",
     "@solana/web3.js": "^1.98.2",
-    "@tailwindcss/vite": "^4.1.11",
-    "@vercel/node": "^5.3.12",
+    "@tailwindcss/vite": "^4.1.12",
+    "@vercel/node": "^5.3.13",
     "buffer": "^6.0.3",
     "cross-fetch": "^4.1.0",
     "express": "^5.1.0",
@@ -34,7 +34,7 @@
     "react-dom": "^19.1.0",
     "sonner": "^2.0.6",
     "tailwindcss": "^4.1.11",
-    "vercel": "^45.0.9"
+    "vercel": "^46.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.29.0",

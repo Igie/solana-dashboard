@@ -1,12 +1,9 @@
-export const config = {
-  runtime: "nodejs"
-};
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-import { VercelRequest, VercelResponse } from '@vercel/node';
- 
-export const handler = (req: VercelRequest, res: VercelResponse) => {
-  const name = req.query.name ?? 'World';
-  res.writeHead(200);
-  res.write(`Hello ${name}!`);
-  res.end();
+export default function handler(req: VercelRequest, res: VercelResponse) {
+  try {
+    console.log(req);
+  } finally {
+    res.status(200).json({ message: "Hello from ESM!" });
+  }
 }
