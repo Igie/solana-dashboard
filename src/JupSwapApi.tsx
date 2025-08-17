@@ -66,9 +66,9 @@ export const getQuote = async (params: QuoteParams): Promise<QuoteResponse> => {
   }
 }
 
-export const getSwapTransactionVersioned = async (quoteResponse: QuoteResponse, publicKey:PublicKey):Promise<VersionedTransaction> => {
+export const getSwapTransactionVersioned = async (quoteResponse: QuoteResponse, publicKey: PublicKey): Promise<VersionedTransaction> => {
 
-  const {swapTransaction}  = await (
+  const { swapTransaction } = await (
     await fetch('https://quote-api.jup.ag/v6/swap', {
       method: 'POST',
       headers: {
@@ -85,7 +85,7 @@ export const getSwapTransactionVersioned = async (quoteResponse: QuoteResponse, 
   ).json();
 
   const swapTransactionBuf = Buffer.from(swapTransaction, 'base64');
-var transaction = VersionedTransaction.deserialize(swapTransactionBuf);
+  var transaction = VersionedTransaction.deserialize(swapTransactionBuf);
   return transaction;
 }
 

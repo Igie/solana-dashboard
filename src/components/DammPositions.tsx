@@ -385,34 +385,35 @@ const DammPositions: React.FC = () => {
                                 Lowest to Highest ↑
                             </button>
 
-                            <div className="text-xs text-gray-400 px-3 py-1 font-medium mt-2">Pool Fees</div>
+                            <div className="text-xs text-gray-400 px-3 py-1 font-medium mt-2">Current Fee</div>
                             <button
                                 onClick={() => handleSort(SortType.PoolCurrentFee, false)}
                                 className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PoolCurrentFee && sortAscending === false ? 'bg-gray-700' : ''
                                     }`}
                             >
-                                Current Fee ↓
+                                Highest to Lowest ↓
                             </button>
                             <button
                                 onClick={() => handleSort(SortType.PoolCurrentFee, true)}
                                 className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PoolCurrentFee && sortAscending === true ? 'bg-gray-700' : ''
                                     }`}
                             >
-                                Current Fee ↑
+                                Lowest to Highest ↑
                             </button>
+                             <div className="text-xs text-gray-400 px-3 py-1 font-medium mt-2">Base Fee</div>
                             <button
                                 onClick={() => handleSort(SortType.PoolBaseFee, false)}
                                 className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PoolBaseFee && sortAscending === false ? 'bg-gray-700' : ''
                                     }`}
                             >
-                                Base Fee ↓
+                                Highest to Lowest ↓
                             </button>
                             <button
                                 onClick={() => handleSort(SortType.PoolBaseFee, true)}
                                 className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PoolBaseFee && sortAscending === true ? 'bg-gray-700' : ''
                                     }`}
                             >
-                                Base Fee ↑
+                                Lowest to Highest ↑
                             </button>
                         </div>
                     )}
