@@ -6,6 +6,7 @@ import {
   TransactionMessage,
   Transaction,
 } from "@solana/web3.js";
+import { toast } from "sonner";
 
 
 interface QuoteParams {
@@ -45,6 +46,7 @@ export const getQuote = async (params: QuoteParams): Promise<QuoteResponse> => {
     url.searchParams.append("outputMint", params.outputMint);
     url.searchParams.append("amount", params.amount.toString());
     url.searchParams.append("slippageBps", params.slippageBps.toString());
+    url.searchParams.append("dynamicComputeUnitLimit", "true");
     //url.searchParams.append("asLegacyTransaction", "true");
     if (params.maxAccounts)
       url.searchParams.append("maxAccounts", params.maxAccounts.toString());
@@ -55,6 +57,7 @@ export const getQuote = async (params: QuoteParams): Promise<QuoteResponse> => {
 
     const response = await fetch(url.toString());
     if (!response.ok) {
+      toast.error("Failed to get quote!");
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
@@ -78,6 +81,7 @@ export const getSwapTransactionVersioned = async (quoteResponse: QuoteResponse, 
         quoteResponse,
         userPublicKey: publicKey.toBase58(),
         wrapAndUnwrapSol: true,
+        dynamicComputeUnitLimit: true,
         // Optional, use if you want to charge a fee.  feeBps must have been passed in /quote API.
         // feeAccount: "fee_account_public_key"
       })
@@ -85,7 +89,7 @@ export const getSwapTransactionVersioned = async (quoteResponse: QuoteResponse, 
   ).json();
 
   const swapTransactionBuf = Buffer.from(swapTransaction, 'base64');
-  var transaction = VersionedTransaction.deserialize(swapTransactionBuf);
+  var transaction = VersionedTransaction.deserialize(new Uint8Array(swapTransactionBuf.buffer));
   return transaction;
 }
 
@@ -141,6 +145,7 @@ export const getSwapTransaction = async (quoteParams: QuoteParams, connection: C
       body: JSON.stringify({
         quoteResponse,
         userPublicKey: pubKey.toBase58(),
+        dynamicComputeUnitLimit: true,
       })
     })
   ).json();

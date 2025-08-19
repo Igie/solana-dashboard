@@ -5,17 +5,12 @@ import Decimal from 'decimal.js'
 import { SortType, useDammUserPositions, type PoolPositionInfo } from '../contexts/DammUserPositionsContext'
 import { useTokenAccounts } from '../contexts/TokenAccountsContext'
 import { useTransactionManager } from '../contexts/TransactionManagerContext'
-import { getQuote, getSwapTransaction, getSwapTransactionVersioned } from '../JupSwapApi'
+import { getQuote, getSwapTransactionVersioned } from '../JupSwapApi'
 import { toast } from 'sonner'
 import { BN } from '@coral-xyz/anchor'
 import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-adapter'
 import { PublicKey } from '@solana/web3.js'
 import { txToast } from './Simple/TxToast'
-
-interface TwoMints {
-    base: string,
-    quote: string,
-}
 
 const DammPositions: React.FC = () => {
     const { connection } = useConnection()
@@ -27,9 +22,7 @@ const DammPositions: React.FC = () => {
     const { positions, totalLiquidityValue, loading, refreshPositions, sortPositionsBy } = useDammUserPositions();
     const [selectedPositions, setSelectedPositions] = useState<Set<PoolPositionInfo>>(new Set());
     const [lastSelectedPosition, setLastSelectedPosition] = useState<PoolPositionInfo | null>(null);
-    const { tokenAccounts, refreshTokenAccounts } = useTokenAccounts();
-
-    const [mintToMintSwap, setMintToMintSwap] = useState<TwoMints[]>([])
+    const { refreshTokenAccounts } = useTokenAccounts();
 
     const [searchString, setSearchString] = useState<string>("")
 
@@ -182,37 +175,6 @@ const DammPositions: React.FC = () => {
             pool.tokenB.symbol.toLowerCase().includes(lowerSearch) ||
             pool.tokenB.mint === lowerSearch;
     }
-
-    useEffect(() => {
-        if (!mintToMintSwap || mintToMintSwap.length === 0 || connection === null || publicKey === null) return;
-
-        const copy = [...mintToMintSwap]
-        const pair = copy.pop();
-        if (!pair) return;
-        const tokenAccount = tokenAccounts.find(x => x.mint === pair?.base);
-        if (!tokenAccount) return;
-
-        const t = getSwapTransaction({
-            inputMint: pair?.base,
-            outputMint: pair?.quote,
-            amount: tokenAccount.amount * (10 ** tokenAccount.decimals),
-            slippageBps: 1500
-        },
-            connection, publicKey!);
-
-        t.then(async (x) => {
-            if (!x) return;
-            await sendTxn(x, undefined,
-                {
-                    notify: true,
-                    onSuccess: async () => {
-                        setMintToMintSwap(copy);
-                    }
-                }
-            )
-        })
-
-    }, [mintToMintSwap])
 
     useEffect(() => {
         refreshPositions();

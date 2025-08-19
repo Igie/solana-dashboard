@@ -7,10 +7,15 @@ import { type TokenAccount } from '../tokenUtils'
 import { useTokenAccounts } from '../contexts/TokenAccountsContext'
 import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-adapter'
 import { toast } from 'sonner'
+import { getQuote, getSwapTransactionVersioned } from '../JupSwapApi'
+import { useTransactionManager } from '../contexts/TransactionManagerContext'
+import { txToast } from './Simple/TxToast'
+
 
 const Portfolio: React.FC = () => {
   const { connection } = useConnection()
   const { publicKey, connected } = useWallet()
+  const { sendTxn } = useTransactionManager();
 
   const [solBalance, setSolBalance] = useState<number | null>(null)
   const { tokenAccounts, tokenMetadata, refreshTokenAccounts } = useTokenAccounts()
@@ -42,6 +47,7 @@ const Portfolio: React.FC = () => {
   }
 
   const handleSwap = (ta: TokenAccount) => {
+    setPopupIndex(null);
     window.Jupiter.init({
       formProps: {
         initialInputMint: ta.mint,
@@ -51,8 +57,32 @@ const Portfolio: React.FC = () => {
       },
     });
 
-    window.Jupiter.onSuccess = async () => await fetchPortfolioData()
-    setPopupIndex(null)
+    window.Jupiter.onSuccess = async () => {
+      await fetchPortfolioData();
+    }
+  }
+
+  const handleSwapToSol = async (ta: TokenAccount) => {
+    const quote = await getQuote({
+      inputMint: ta.mint,
+      outputMint: 'So11111111111111111111111111111111111111112',
+      amount: ta.amount * (10 ** ta.decimals),
+      slippageBps: 1500,
+    })
+
+    const txn = await getSwapTransactionVersioned(quote, publicKey!);
+
+    await sendTxn(txn, undefined, {
+      notify: true,
+      onError: () => {
+        txToast.error("Swap failed");
+      },
+      onSuccess: async (x) => {
+        setPopupIndex(null);
+        txToast.success("Swap successful", x);
+        await refreshTokenAccounts();
+      }
+    });
   }
 
   const handleCopyMint = async (mint: string) => {
@@ -238,6 +268,13 @@ const Portfolio: React.FC = () => {
                           >
                             Swap via Jupiter
                           </button>
+
+                          <button
+                            onClick={() => handleSwapToSol(token)}
+                            className="block w-full text-left px-3 py-2 text-sm text-white hover:bg-purple-700 rounded-md"
+                          >
+                            Swap all to SOL
+                          </button>
                           <button
                             onClick={() => handleCopyMint(token.mint)}
                             className="block w-full text-left px-3 py-2 text-sm text-white hover:bg-gray-700 rounded-md"
@@ -260,7 +297,7 @@ const Portfolio: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                 
+
                   {/* Right Side */}
                   <div className="ml-auto text-right min-w-[6rem]">
                     <div className="font-semibold  text-white">
