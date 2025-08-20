@@ -201,7 +201,7 @@ const Dammv2Browser: React.FC = () => {
         const timer = setInterval(() => {
             setDummyBool(!b);
             b = !b;
-        }, 10000);
+        }, 20000);
 
         return () => {
             clearInterval(timer);
@@ -221,7 +221,7 @@ const Dammv2Browser: React.FC = () => {
         for (const pool of Object.entries(newPoolsLocal).map(x => x[1])) {
             poolInfoMap[pool.publicKey.toBase58()] = pool;
         }
-        
+
         //setPools(x => { poolsLocal = pools; return x });
         for (const pool of pools) {
             poolInfoMap[pool.publicKey.toBase58()] = pool;
