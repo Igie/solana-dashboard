@@ -21,7 +21,7 @@ export function AppLayout({
     <div className="min-h-screen bg-black text-white flex flex-col">
       <header className="bg-gray-900 border-b border-gray-700">
         <div className="max-w-screen-xl mx-auto px-4 flex items-center justify-between h-16">
-          <h1 className="text-xl font-bold">Solana Dashboard</h1>
+          <h1 className="text-xl font-bold">DAMMv2 Dashboard</h1>
 
           <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
 

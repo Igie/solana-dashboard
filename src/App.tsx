@@ -39,9 +39,9 @@ function App() {
           autoConnect: true,
           env: "mainnet-beta",
           metadata: {
-            name: "Solana Dashboard",
+            name: "DAMMv2 Dashboard",
             description: "Tool to help with your DAMMv2 life on Meteora",
-            url: "http://solana-dashboard-two.vercel.app/",
+            url: "https://www.dammv2.me/",
             iconUrls: ["http://solana-dashboard-two.vercel.app/favicon.ico"],
           },
           walletlistExplanation: {

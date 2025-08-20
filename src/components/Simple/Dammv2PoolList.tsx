@@ -183,31 +183,31 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
             render: (pool) => (
                 <div className="text-center font-mono">
                     <div className="grid w-max">
-                    {pool.tokenA.symbol || getShortMint(pool.poolInfo.account.tokenAMint)}/
-                    {pool.tokenB.symbol || getShortMint(pool.poolInfo.account.tokenBMint)}
-                    <div className="flex gap-1 w-max">
-                        <button
-                            className="bg-blue-600 hover:bg-blue-500 text-white text-xs py-1 px-1 rounded flex items-center gap-1"
-                            onClick={async () => {
-                                await navigator.clipboard.writeText(pool.poolInfo.account.tokenAMint.toBase58());
-                            }}
-                        >
-                            <div className="flex gap-1 items-center justify-center">
-                                <span>{getShortMint(pool.poolInfo.account.tokenAMint)}</span>
-                            </div>
-                        </button>
-                        <button
-                            disabled={!connected}
-                            className="bg-blue-600 hover:bg-blue-500 text-white text-xs py-1 px-1 rounded flex items-center gap-1"
-                            onClick={async () => {
-                                await navigator.clipboard.writeText(pool.poolInfo.account.tokenBMint.toBase58());
-                            }}
-                        >
-                            <div className="flex gap-1 items-center justify-center">
-                                <span>{getShortMint(pool.poolInfo.account.tokenBMint)}</span>
-                            </div>
-                        </button>
-                    </div>
+                        {pool.tokenA.symbol || getShortMint(pool.poolInfo.account.tokenAMint)}/
+                        {pool.tokenB.symbol || getShortMint(pool.poolInfo.account.tokenBMint)}
+                        <div className="flex gap-1 w-max">
+                            <button
+                                className="bg-blue-600 hover:bg-blue-500 text-white text-xs py-1 px-1 rounded flex items-center gap-1"
+                                onClick={async () => {
+                                    await navigator.clipboard.writeText(pool.poolInfo.account.tokenAMint.toBase58());
+                                }}
+                            >
+                                <div className="flex gap-1 items-center justify-center">
+                                    <span>{getShortMint(pool.poolInfo.account.tokenAMint)}</span>
+                                </div>
+                            </button>
+                            <button
+                                disabled={!connected}
+                                className="bg-blue-600 hover:bg-blue-500 text-white text-xs py-1 px-1 rounded flex items-center gap-1"
+                                onClick={async () => {
+                                    await navigator.clipboard.writeText(pool.poolInfo.account.tokenBMint.toBase58());
+                                }}
+                            >
+                                <div className="flex gap-1 items-center justify-center">
+                                    <span>{getShortMint(pool.poolInfo.account.tokenBMint)}</span>
+                                </div>
+                            </button>
+                        </div>
                     </div>
                 </div>
             )

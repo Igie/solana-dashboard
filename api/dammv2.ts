@@ -8,7 +8,7 @@ const supabase = createClient(
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   console.log(req.body)
-  console.log(req.headers);
+  console.log(req.headers.authorization);
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" })
   }

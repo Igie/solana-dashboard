@@ -40,6 +40,10 @@ export interface PoolDetailedInfoMap {
     [key: string]: PoolDetailedInfo
 }
 
+export interface PoolInfoMap {
+    [key: string]: PoolInfo
+}
+
 export const GetPoolDetailedInfoMap = (poolDetailedInfos: PoolDetailedInfo[]): PoolDetailedInfoMap => {
     const poolDetailedInfoMap: PoolDetailedInfoMap = {}
     poolDetailedInfos.map((x) => {
