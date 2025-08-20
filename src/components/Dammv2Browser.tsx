@@ -6,7 +6,7 @@ import { BN } from '@coral-xyz/anchor'
 import { fetchTokenMetadata, type TokenMetadataMap } from '../tokenUtils'
 import Decimal from 'decimal.js'
 
-import { type PoolDetailedInfo, type PoolInfo, type PoolInfoMap } from '../constants'
+import { PoolSortType, sortPools, type PoolDetailedInfo, type PoolInfo, type PoolInfoMap } from '../constants'
 import Dammv2PoolList from './Simple/Dammv2PoolList'
 import { useConnection } from '@jup-ag/wallet-adapter'
 
@@ -20,6 +20,9 @@ const Dammv2Browser: React.FC = () => {
     const [detailedPools, setDetailedPools] = useState<PoolDetailedInfo[]>([])
     const [fetchingPools, setFetchingPools] = useState(false)
     const [shouldRefreshPools, setShouldRefreshPools] = useState(false)
+
+    const [sortBy, setSortBy] = useState<PoolSortType>(PoolSortType.PoolActivationTime);
+    const [sortAscending, setSortAscending] = useState<boolean | undefined>(true);
 
     const [tokenMetadataMap, setTokenMetadataMap] = useState<TokenMetadataMap>({});
 
@@ -64,7 +67,7 @@ const Dammv2Browser: React.FC = () => {
         try {
             const pools = await cpAmm.getAllPools();
             pools.sort((x, y) => y.account.activationPoint.sub(x.account.activationPoint).toNumber())
-            const allPools = (pools).slice(0, 40); // Limit to first 40 pools
+            const allPools = pools.slice(0, 40); // Limit to first 40 pools
 
             mints.push(...allPools.map(p => p.account.tokenAMint.toBase58()));
             mints.push(...allPools.map(p => p.account.tokenBMint.toBase58()));
@@ -177,6 +180,7 @@ const Dammv2Browser: React.FC = () => {
                 totalFees: poolTokenA.totalFees.add(poolTokenB.totalFees),
             });
         };
+        sortPools(detailedPools, sortBy, sortAscending);
         setDetailedPools(detailedPools);
     };
 
@@ -197,18 +201,26 @@ const Dammv2Browser: React.FC = () => {
 
     const [dummyBool, setDummyBool] = useState(true)
     useEffect(() => {
+        if (!shouldRefreshPools) return;
         let b = true;
+        const timeout = setTimeout(() => {
+            setDummyBool(!b);
+            b = !b;
+            clearTimeout(timeout);
+        }, 5000);
         const timer = setInterval(() => {
             setDummyBool(!b);
             b = !b;
         }, 20000);
 
         return () => {
+            clearTimeout(timeout);
             clearInterval(timer);
         }
-    }, []);
+    }, [shouldRefreshPools]);
 
     useEffect(() => {
+        console.log(dummyBool, "changed");
         if (Object.entries(newPools).length == 0) return;
         setCurrentTime(new BN((Date.now())).divn(1000).toNumber());
         let mints: string[] = []
@@ -354,7 +366,11 @@ const Dammv2Browser: React.FC = () => {
             <Dammv2PoolList
                 cpAmm={cpAmm}
                 pools={detailedPools}
-                tokenMetadataMap={tokenMetadataMap} />
+                tokenMetadataMap={tokenMetadataMap}
+                sortParamsCallback={(sortType, ascending) => {
+                    setSortBy(sortType);
+                    setSortAscending(ascending);
+                }} />
         </div>
     )
 }

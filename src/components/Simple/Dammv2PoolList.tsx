@@ -7,7 +7,7 @@ import { useTokenAccounts } from "../../contexts/TokenAccountsContext";
 import type { CpAmm } from "@meteora-ag/cp-amm-sdk";
 import { useTransactionManager } from "../../contexts/TransactionManagerContext";
 import { GetTokenAccountMap, type TokenAccountMap, type TokenMetadataMap } from "../../tokenUtils";
-import { formatDuration, getShortMint, PoolSortType, sortPositions, type PoolDetailedInfo } from "../../constants";
+import { formatDuration, getShortMint, PoolSortType, sortPools, type PoolDetailedInfo } from "../../constants";
 import { useWallet } from "@jup-ag/wallet-adapter";
 import { getPoolPositionMap, useDammUserPositions, type PoolPositionInfoMap } from "../../contexts/DammUserPositionsContext";
 import { DynamicTable, type Column } from "./DynamicTable";
@@ -15,7 +15,8 @@ import { DynamicTable, type Column } from "./DynamicTable";
 interface Dammv2PoolListProps {
     cpAmm: CpAmm
     pools: PoolDetailedInfo[]
-    tokenMetadataMap: TokenMetadataMap
+    tokenMetadataMap: TokenMetadataMap,
+    sortParamsCallback?: (sortType: PoolSortType, ascending: boolean | undefined) => void,
 }
 
 const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
@@ -23,6 +24,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
         cpAmm,
         pools,
         tokenMetadataMap,
+        sortParamsCallback,
     }
 ) => {
     const { publicKey, connected } = useWallet();
@@ -40,14 +42,10 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [depositPool, setDepositPool] = useState<PoolDetailedInfo | null>(null);
 
-
-
-
-
     const handleSort = (sortType: PoolSortType, ascending?: boolean) => {
         setSortBy(sortType);
         setSortAscending(ascending);
-        sortPositions(pools, sortType, ascending)
+        sortPools(pools, sortType, ascending)
     };
 
     const handleDepositClick = async (e: React.MouseEvent) => {
@@ -301,6 +299,11 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
     useEffect(() => {
         setUserPoolPositionInfoMap(getPoolPositionMap(positions));
     }, [positions]);
+
+    useEffect(() => {
+        if (sortParamsCallback)
+            sortParamsCallback(sortBy, sortAscending)
+    }, [sortBy, sortAscending]);
 
     return (
         <div>
