@@ -115,8 +115,8 @@ const DammPositions: React.FC = () => {
             positionNftAccount: position.positionNftAccount,
             positionState: position.positionState,
             poolState: position.poolState,
-            tokenAAmountThreshold: new BN(0),
-            tokenBAmountThreshold: new BN(0),
+            tokenAAmountThreshold: new BN(position.tokenA.positionAmount * (10 ** position.tokenA.decimals)),
+            tokenBAmountThreshold: new BN(position.tokenB.positionAmount * (10 ** position.tokenB.decimals)),
             vestings: [],
             currentPoint: new BN(0),
         });
@@ -362,7 +362,7 @@ const DammPositions: React.FC = () => {
                             >
                                 Lowest to Highest ↑
                             </button>
-                             <div className="text-xs text-gray-400 px-3 py-1 font-medium mt-2">Base Fee</div>
+                            <div className="text-xs text-gray-400 px-3 py-1 font-medium mt-2">Base Fee</div>
                             <button
                                 onClick={() => handleSort(SortType.PoolBaseFee, false)}
                                 className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PoolBaseFee && sortAscending === false ? 'bg-gray-700' : ''
@@ -532,16 +532,16 @@ const DammPositions: React.FC = () => {
                                             <div className="text-xs text-gray-400">
                                                 {position.tokenB.positionAmount.toFixed(2)} {position.tokenB.symbol}
                                             </div>
-                                            
+
                                         </div>
                                         <div className='items-start'>
-                                        <button
+                                            <button
                                                 className="px-3 py-2 bg-red-600 hover:bg-red-700 rounded text-white text-sm font-medium"
                                                 onClick={async () => await handleClosePositionAndSwap(position)}
                                             >
                                                 Close and Swap
                                             </button>
-                                            </div>
+                                        </div>
                                     </div>
 
 

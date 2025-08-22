@@ -223,6 +223,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                 position.tokenA.name = tokenAMetadata?.name || 'Unknown Token';
                 position.tokenA.symbol = tokenAMetadata?.symbol || 'UNK';
                 position.tokenA.image = tokenAMetadata?.image;
+                position.tokenA.decimals = tokenAMetadata?.decimals;
                 position.tokenA.poolAmount = poolTokenAAmount;
                 position.tokenA.positionAmount = positionTokenAAmount;
                 position.tokenA.unclaimedFee = tokenAUnclaimedFees;
@@ -231,6 +232,8 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                 position.tokenB.name = tokenBMetadata?.name || 'Unknown Token';
                 position.tokenB.symbol = tokenBMetadata?.symbol || 'UNK';
                 position.tokenB.image = tokenBMetadata?.image;
+                position.tokenB.decimals = tokenBMetadata?.decimals;
+
                 position.tokenB.poolAmount = poolTokenBAmount;
                 position.tokenB.positionAmount = positionTokenBAmount;
                 position.tokenB.unclaimedFee = tokenBUnclaimedFees;

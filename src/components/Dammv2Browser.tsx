@@ -29,6 +29,7 @@ const Dammv2Browser: React.FC = () => {
     const [currentTime, setCurrentTime] = useState(new BN((Date.now())).divn(1000).toNumber());
     const [currentSlot, setCurrentSlot] = useState<number>(0);
     const [poolAddress, setPoolAddress] = useState('')
+    const [poolCreatorAddress, setPoolCreatorAddress] = useState('')
 
     const cpAmm = new CpAmm(connection);
 
@@ -41,7 +42,6 @@ const Dammv2Browser: React.FC = () => {
         setCurrentSlot(await connection.getSlot());
 
         const pool = await cpAmm.fetchPoolState(poolKey)
-
         const accountPool = {
             publicKey: poolKey,
             account: pool,
@@ -65,7 +65,17 @@ const Dammv2Browser: React.FC = () => {
         setCurrentSlot(await connection.getSlot());
         let mints: string[] = [];
         try {
-            const pools = await cpAmm.getAllPools();
+            if (poolCreatorAddress !== "") {
+
+            }
+            const pools = await cpAmm._program.account.pool.all(poolCreatorAddress !== "" ? [{
+                memcmp: {
+                    encoding: 'base58',
+                    offset: 648,
+                    bytes: poolCreatorAddress,
+                }
+            }] : undefined);
+
             pools.sort((x, y) => y.account.activationPoint.sub(x.account.activationPoint).toNumber())
             const allPools = pools.slice(0, 40); // Limit to first 40 pools
 
@@ -220,7 +230,6 @@ const Dammv2Browser: React.FC = () => {
     }, [shouldRefreshPools]);
 
     useEffect(() => {
-        console.log(dummyBool, "changed");
         if (Object.entries(newPools).length == 0) return;
         setCurrentTime(new BN((Date.now())).divn(1000).toNumber());
         let mints: string[] = []
@@ -231,7 +240,11 @@ const Dammv2Browser: React.FC = () => {
         newPoolsLocal = newPools;
         setNewPools({});
         for (const pool of Object.entries(newPoolsLocal).map(x => x[1])) {
-            poolInfoMap[pool.publicKey.toBase58()] = pool;
+            if (poolCreatorAddress === "") {
+                poolInfoMap[pool.publicKey.toBase58()] = pool;
+            } else if (pool?.account.creator.toBase58() === poolCreatorAddress) {
+                poolInfoMap[pool.publicKey.toBase58()] = pool;
+            }
         }
 
         //setPools(x => { poolsLocal = pools; return x });
@@ -255,7 +268,6 @@ const Dammv2Browser: React.FC = () => {
             mapPools(finalPools, oldTokenMetadataMap);
         });
     }, [dummyBool]);
-
 
     useEffect(() => {
         if (!connection.rpcEndpoint) return;
@@ -352,6 +364,27 @@ const Dammv2Browser: React.FC = () => {
                             placeholder="Enter pool address..."
                             value={poolAddress}
                             onChange={(e) => setPoolAddress(e.target.value.trim())}
+                        />
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div className="relative w-full">
+                    <label className="block text-sm text-gray-400 mb-1">Creator address</label>
+                    <div className="flex" >
+                        <button
+                            type="button"
+                            onClick={() => fetchPools()}
+                            className="flex items-center justify-center px-3 py-2  bg-gray-700 border border-gray-600 rounded-l-md hover:bg-gray-600 text-white"
+                            title="Refresh pools"
+                        >
+                            <RefreshCcw className="w-5 h-5" />
+                        </button>
+                        <input
+                            className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-r-md px-4 py-2 text-white placeholder-gray-500"
+                            placeholder="Filter new pools by creator..."
+                            value={poolCreatorAddress}
+                            onChange={(e) => setPoolCreatorAddress(e.target.value.trim())}
                         />
                     </div>
                 </div>
