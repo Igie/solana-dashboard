@@ -2,9 +2,14 @@ import { type PoolState } from "@meteora-ag/cp-amm-sdk";
 import { PublicKey } from "@solana/web3.js";
 
 import Decimal from 'decimal.js'
+import type { PoolPositionInfo } from "./contexts/DammUserPositionsContext";
 
 export const MAINNET_HELIUS_RPC: string = `https://mainnet.helius-rpc.com/?api-key=${import.meta.env.VITE_HELIUS_API_KEY}`;
 export const DEVNET_HELIUS_RPC: string = `https://devnet.helius-rpc.com?api-key=${import.meta.env.VITE_HELIUS_API_KEY}`;
+
+export const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+};
 
 export interface PoolInfo {
     publicKey: PublicKey;
@@ -129,3 +134,38 @@ export function formatDuration(seconds: number | null): string {
 
     return parts.join(' ')
 }
+
+export const getSchedulerType = (mode: number) => {
+    switch (mode) {
+        case 0: return 'Linear';
+        case 1: return 'Exponential';
+        default: return 'Unknown';
+    }
+};
+
+export const renderFeeTokenImages = (position: PoolPositionInfo) => {
+    if (position.poolState.collectFeeMode === 0) {
+        // Both tokens
+        return (
+            <div className="flex -space-x-1">
+                {position.tokenA.image ? (
+                    <img src={position.tokenA.image} alt="Token A" className="w-4 h-4 rounded-full border border-gray-600" />
+                ) : (
+                    <div className="w-4 h-4 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 border border-gray-600" />
+                )}
+                {position.tokenB.image ? (
+                    <img src={position.tokenB.image} alt="Token B" className="w-4 h-4 rounded-full border border-gray-600" />
+                ) : (
+                    <div className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 border border-gray-600" />
+                )}
+            </div>
+        );
+    } else {
+        // Quote token only (tokenB)
+        return position.tokenB.image ? (
+            <img src={position.tokenB.image} alt="Quote Token" className="w-4 h-4 rounded-full" />
+        ) : (
+            <div className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500" />
+        );
+    }
+};
