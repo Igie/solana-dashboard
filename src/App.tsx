@@ -42,7 +42,7 @@ function App() {
             name: "DAMMv2 Dashboard",
             description: "Tool to help with your DAMMv2 life on Meteora",
             url: "https://www.dammv2.me/",
-            iconUrls: ["http://solana-dashboard-two.vercel.app/favicon.ico"],
+            iconUrls: ["http://dammv2.me/favicon.ico"],
           },
           walletlistExplanation: {
             href: "https://station.jup.ag/docs/additional-topics/wallet-list",

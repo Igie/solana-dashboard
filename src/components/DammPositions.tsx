@@ -116,8 +116,8 @@ const DammPositions: React.FC = () => {
       positionNftAccount: position.positionNftAccount,
       positionState: position.positionState,
       poolState: position.poolState,
-      tokenAAmountThreshold: new BN(position.tokenA.positionAmount * (10 ** position.tokenA.decimals)),
-      tokenBAmountThreshold: new BN(position.tokenB.positionAmount * (10 ** position.tokenB.decimals)),
+      tokenAAmountThreshold: new BN(position.tokenA.positionAmount * (10 ** position.tokenA.decimals)).muln(0.9),
+      tokenBAmountThreshold: new BN(position.tokenB.positionAmount * (10 ** position.tokenB.decimals)).muln(0.9),
       vestings: [],
       currentPoint: new BN(0),
     });
@@ -215,44 +215,42 @@ const DammPositions: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen space-y-4 px-4 md:px-0">
+    <div className="flex flex-col h-[calc(100vh-140px)] lg:h-[calc(100vh-75px)] space-y-2 px-2 md:px-0">
       {/* Header */}
 
 
       {/* Pool Overview Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-700/50 rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-blue-300">Total Liquidity</h3>
+      <div className="grid grid-cols-2 gap-1">
+        <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-700/50 rounded-2xl p-2">
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="font-semibold text-blue-300">Liquidity</h3>
             <Droplets className="w-5 h-5 text-blue-400" />
           </div>
-          <div className="text-2xl sm:text-3xl font-bold text-white">
+          <div className="sm:text-3xl font-bold text-white">
             ${totalLiquidityValue.toFixed(2)}
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-900/30 to-purple-800/20 border border-purple-700/50 rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-purple-300">Active Pools</h3>
+        <div className="bg-gradient-to-br from-purple-900/30 to-purple-800/20 border border-purple-700/50 rounded-2xl p-2">
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="font-semibold text-purple-300">Pools</h3>
             <TrendingUp className="w-5 h-5 text-purple-400" />
           </div>
-          <div className="text-2xl sm:text-3xl font-bold text-white">
+          <div className="sm:text-3xl font-bold text-white">
             {positions.length}
           </div>
         </div>
       </div>
 
       {/* Search Bar */}
-      <div className="bg-gray-900 border border-gray-700 rounded-xl p-2">
-        <input
-          className="w-full bg-gray-800 border border-gray-600 px-4 py-3 rounded-lg text-white placeholder-gray-400 text-base"
-          type="text"
-          value={searchString}
-          onChange={(e) => setSearchString(e.target.value)}
-          placeholder="Search by token mint, name or symbol..."
-        />
-      </div>
 
+      <input
+        className="w-full bg-gray-800 border border-gray-600 px-2 py-1 rounded-lg text-white placeholder-gray-400 text-base"
+        type="text"
+        value={searchString}
+        onChange={(e) => setSearchString(e.target.value)}
+        placeholder="Search by token mint, name or symbol..."
+      />
       <div className="flex flex-row items-start justify-between gap-2">
         <div className="flex flex-col items-stretch justify-start gap-2">
           <button
@@ -261,7 +259,7 @@ const DammPositions: React.FC = () => {
               setSelectedPositions(new Set())
             }}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded-lg font-medium transition-colors w-auto justify-center"
+            className="flex items-center gap-2 px-2 py-1 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded-lg font-medium transition-colors w-auto justify-center"
           >
             {loading ? (
               <RefreshCw className="w-4 h-4 animate-spin" />
@@ -270,13 +268,12 @@ const DammPositions: React.FC = () => {
             )}
             Refresh
           </button>
-
           <button
             onClick={() => {
               setSelectedPositions(new Set([...positions]))
             }}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded-lg font-medium transition-colors w-auto justify-center"
+            className="flex items-center gap-2 px-2 py-1 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded-lg font-medium transition-colors w-auto justify-center"
           >
             Select All
 
@@ -286,7 +283,7 @@ const DammPositions: React.FC = () => {
         <div className="relative">
           <button
             onClick={() => setShowSortMenu(!showSortMenu)}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white w-auto justify-center"
+            className="flex items-center gap-2 px-4 py-1 bg-gray-700 hover:bg-gray-600 rounded-lg text-white w-auto justify-center"
           >
             <Menu className="w-4 h-4" />
             Sort
@@ -297,7 +294,7 @@ const DammPositions: React.FC = () => {
               <div className="text-xs text-gray-400 px-3 py-1 font-medium">Position Value</div>
               <button
                 onClick={() => handleSort(SortType.PositionValue, false)}
-                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PositionValue && sortAscending === false ? 'bg-gray-700' : ''
+                className={`block w-full text-left px-2 py-1 text-white hover:bg-gray-700 rounded text-sm ${sortBy === SortType.PositionValue && sortAscending === false ? 'bg-gray-700' : ''
                   }`}
               >
                 Highest to Lowest ↓
@@ -380,16 +377,16 @@ const DammPositions: React.FC = () => {
 
       {/* Total Fees Summary */}
       {positions.length > 0 && (
-        <div className="bg-green-900/20 border border-green-700/50 rounded-xl p-2">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="bg-green-900/20 border border-green-700/50 rounded-xl p-1">
+          <div className="sm:flex-row items-start sm:items-center justify-between gap-1">
             <div className="text-green-300">
-              <span className="text-lg font-semibold">
+              <span className="text-sm font-semibold">
                 Total Fees: ${positions.reduce((sum, pos) => sum + pos.positionUnclaimedFee, 0).toFixed(2)}
               </span>
             </div>
             <div className="flex gap-2 w-full sm:w-auto">
               <button
-                className="bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded text-white flex-1 sm:flex-none"
+                className="bg-purple-600 hover:bg-purple-500 px-4 py-1 rounded text-white flex-1 sm:flex-none"
                 onClick={async () => {
                   const selectedPositionsTemp = [...selectedPositions];
                   for (const pos of selectedPositionsTemp) {
@@ -402,7 +399,7 @@ const DammPositions: React.FC = () => {
                 Close All ({selectedPositions.size})
               </button>
               <button
-                className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-white flex-1 sm:flex-none"
+                className="bg-blue-600 hover:bg-blue-500 px-4 py-1 rounded text-white flex-1 sm:flex-none"
                 onClick={async () => {
                   const selectedPositionsTemp = [...selectedPositions];
                   for (const pos of selectedPositionsTemp) {
@@ -434,20 +431,22 @@ const DammPositions: React.FC = () => {
           </p>
         </div>
       ) : (
+
         <div className="flex flex-col bg-gray-900 border border-gray-700 rounded-xl overflow-hidden">
           {/* Desktop Table Header - Sticky */}
-          <div className="hidden md:block bg-gray-800 border-b border-gray-600 sticky top-0">
-            <div className="grid grid-cols-12 gap-2 px-4 py-3 text-xs font-medium text-gray-300 uppercase tracking-wider">
-              <div className="col-span-1"></div>
-              <div className="col-span-2">Pair</div>
-              <div className="col-span-2">Your Liquidity</div>
-              <div className="col-span-2">Fees</div>
-              <div className="col-span-2">Claimable</div>
-              <div className="col-span-2">Scheduler</div>
-              <div className="col-span-1"></div>
+          {(!loading) && (
+            <div className="hidden md:block bg-gray-800 border-b border-gray-600 sticky top-0">
+              <div className="grid grid-cols-12 gap-2 px-4 py-3 text-xs font-medium text-gray-300 uppercase tracking-wider">
+                <div className="col-span-1"></div>
+                <div className="col-span-2">Pair</div>
+                <div className="col-span-2">Your Liquidity</div>
+                <div className="col-span-2">Fees</div>
+                <div className="col-span-2">Claimable</div>
+                <div className="col-span-2">Scheduler</div>
+                <div className="col-span-1"></div>
+              </div>
             </div>
-          </div>
-
+          )}
           {/* Scrollable Content */}
           <div className="flex-grow overflow-y-auto">
             {positions.filter((x) => poolContainsString(x, searchString)).map((position, index) => (
@@ -583,10 +582,10 @@ const DammPositions: React.FC = () => {
 
                 {/* Mobile Card Layout */}
                 <div className="md:hidden border-b border-gray-700">
-                  <div className="p-4">
+                  <div className="p-2">
                     {/* Header Row with Checkbox and Token Pair */}
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-1">
                         <input
                           type="checkbox"
                           className="scale-125 accent-purple-600"
@@ -732,8 +731,18 @@ const DammPositions: React.FC = () => {
                           >
                             Axiom Chart <ExternalLink className="w-3 h-3" />
                           </a>
+                           <a
+                            href={`https://www.dextools.io/app/en/solana/pair-explorer/${position.poolAddress}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-purple-400 hover:text-purple-300 text-sm"
+                          >
+                            DEXTools Chart <ExternalLink className="w-3 h-3" />
+                          </a>
                         </div>
                       </div>
+
+                      
 
                       {/* Token Links */}
                       <div>
@@ -755,6 +764,23 @@ const DammPositions: React.FC = () => {
                           >
                             {position.tokenB.symbol} on GMGN <ExternalLink className="w-3 h-3" />
                           </a>
+                          <div className='y-1' />
+                          <a
+                            href={`https://axiom.trade/t/${position.tokenA.mint}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm"
+                          >
+                            {position.tokenA.symbol} on AXIOM <ExternalLink className="w-3 h-3" />
+                          </a>
+                          <a
+                            href={`https://axiom.trade/t/${position.tokenB.mint}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm"
+                          >
+                            {position.tokenB.symbol} on AXIOM <ExternalLink className="w-3 h-3" />
+                          </a>
                         </div>
                       </div>
 
@@ -764,17 +790,17 @@ const DammPositions: React.FC = () => {
                         <div className="space-y-2">
                           {position.positionUnclaimedFee > 0 && (
                             <button className="w-full bg-green-600 hover:bg-green-700 text-white text-sm px-3 py-2 rounded"
-                            onClick={()=> handleClaimFees(position)}>
+                              onClick={() => handleClaimFees(position)}>
                               Claim Fees
                             </button>
                           )}
                           <button className="w-full bg-red-600 hover:bg-red-700 text-white text-sm px-3 py-2 rounded"
-                          onClick={()=> handleClosePosition(position)}>
+                            onClick={() => handleClosePosition(position)}>
                             Close Position
                           </button>
 
-                           <button className="w-full bg-red-600 hover:bg-red-700 text-white text-sm px-3 py-2 rounded"
-                          onClick={()=> handleClosePositionAndSwap(position)}>
+                          <button className="w-full bg-red-600 hover:bg-red-700 text-white text-sm px-3 py-2 rounded"
+                            onClick={() => handleClosePositionAndSwap(position)}>
                             Close and Swap Position
                           </button>
                         </div>

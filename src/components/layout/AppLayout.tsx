@@ -18,7 +18,7 @@ export function AppLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col">
+    <div className="flex flex-col h-full bg-black text-white">
       <header className="bg-gray-900 border-b border-gray-700">
         <div className="max-w-screen-xl mx-auto px-4 flex items-center justify-between h-16">
           <h1 className="text-xl font-bold">DAMMv2 Dashboard</h1>
@@ -43,7 +43,7 @@ export function AppLayout({
         </div>
       </header>
 
-       <main className="flex-1 pb-[calc(4rem+var(--safe-bottom))] w-full px-4 py-6">
+       <main className="flex flex-col h-[calc(100vh-65px)] pb-[calc(4rem+var(10px))] w-full px-4 py-2">
         <div className="w-full max-w-screen-2xl mx-auto">
           {children}
         </div>

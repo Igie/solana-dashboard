@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 
 import { LAMPORTS_PER_SOL } from '@solana/web3.js'
 
-import { Coins, RefreshCw, TrendingUp, Wallet, ExternalLink } from 'lucide-react'
+import { Coins, RefreshCw, Wallet, ExternalLink } from 'lucide-react'
 import { type TokenAccount } from '../tokenUtils'
 import { useTokenAccounts } from '../contexts/TokenAccountsContext'
 import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-adapter'
@@ -18,10 +18,8 @@ const Portfolio: React.FC = () => {
   const { sendTxn } = useTransactionManager();
 
   const [solBalance, setSolBalance] = useState<number | null>(null)
-  const { tokenAccounts, tokenMetadata, refreshTokenAccounts } = useTokenAccounts()
+  const { tokenAccounts, refreshTokenAccounts } = useTokenAccounts()
   const [loading, setLoading] = useState(false)
-  const [totalValue, setTotalValue] = useState<number>(0)
-  const [solPrice, setSolPrice] = useState<number>(0)
   const [popupIndex, setPopupIndex] = useState<number | null>(null)
   const popupRef = useRef<HTMLDivElement | null>(null)
 
@@ -29,11 +27,9 @@ const Portfolio: React.FC = () => {
   const fetchPortfolioData = async () => {
     setLoading(true)
     try {
-      const solPrice = tokenMetadata.find(x => x?.mint === "So11111111111111111111111111111111111111112")?.price || 0
       const balance = await connection.getBalance(publicKey!)
 
       setSolBalance(balance / LAMPORTS_PER_SOL)
-      setSolPrice(solPrice)
 
       await refreshTokenAccounts();
     } catch (err) {
@@ -90,22 +86,6 @@ const Portfolio: React.FC = () => {
     setPopupIndex(null)
   }
 
-  // Calculate total portfolio value
-  useEffect(() => {
-    let total = 0
-    // Add SOL value
-    if (solBalance && solPrice) {
-      total += solBalance * solPrice
-    }
-
-    // Add token values
-    tokenAccounts.forEach(token => {
-      total += token.value
-    })
-
-    setTotalValue(total)
-  }, [solBalance, solPrice, tokenAccounts])
-
   // Fetch data when wallet connects
   useEffect(() => {
     if (connected && publicKey) {
@@ -141,13 +121,37 @@ const Portfolio: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col h-[calc(100vh-140px)] lg:h-[calc(100vh-75px)] space-y-2 px-2 md:px-0">
+
       {/* Header */}
+
+
+      {/* Portfolio Overview */}
+      <div className="grid grid-cols-2 gap-1">
+        <div className="bg-gradient-to-br from-green-900/30 to-green-800/20 border border-green-700/50 rounded-2xl p-2">
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="font-semibold text-green-300">SOL Balance</h3>
+            <Coins className="w-5 h-5 text-green-400" />
+          </div>
+          <div className="sm:text-3xl font-bold text-white">
+            {solBalance ? solBalance.toFixed(4) : '0.0000'}
+          </div>
+        </div>
+        <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-700/50 rounded-2xl p-2">
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="font-semibold text-blue-300">Token Types</h3>
+            <Coins className="w-5 h-5 text-blue-400" />
+          </div>
+          <div className="sm:text-3xl font-bold text-white">
+            {tokenAccounts.length}
+          </div>
+        </div>
+      </div>
       <div className="flex items-center justify-between">
         <button
           onClick={fetchPortfolioData}
           disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded-lg font-medium transition-colors"
+          className="flex items-center gap-1 px-2 py-1 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded-lg font-medium transition-colors"
         >
           {loading ? (
             <RefreshCw className="w-4 h-4 animate-spin" />
@@ -157,56 +161,8 @@ const Portfolio: React.FC = () => {
           Refresh
         </button>
       </div>
-
-      {/* Portfolio Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-        <div className="bg-gradient-to-br from-purple-900/30 to-purple-800/20 border border-purple-700/50 rounded-2xl p-2">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-purple-300">Total Value</h3>
-            <TrendingUp className="w-5 h-5 text-purple-400" />
-          </div>
-          <div className="text-3xl font-bold text-white">
-            ${totalValue.toFixed(2)}
-          </div>
-          <div className="text-sm text-purple-300 mt-2">
-            Estimated USD value
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-green-900/30 to-green-800/20 border border-green-700/50 rounded-2xl p-2">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-green-300">SOL Balance</h3>
-            <Coins className="w-5 h-5 text-green-400" />
-          </div>
-          <div className="text-3xl font-bold text-white">
-            {solBalance ? solBalance.toFixed(4) : '0.0000'}
-          </div>
-          <div className="text-sm text-green-300 mt-2">
-            Native SOL tokens
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-700/50 rounded-2xl p-2">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-blue-300">Token Types</h3>
-            <Coins className="w-5 h-5 text-blue-400" />
-          </div>
-          <div className="text-3xl font-bold text-white">
-            {tokenAccounts.length}
-          </div>
-          <div className="text-sm text-blue-300 mt-2">
-            Different tokens held
-          </div>
-        </div>
-      </div>
       {/* Token Holdings */}
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl">
-        <div className="p-6 border-b border-gray-700">
-          <h2 className="text-xl font-semibold text-white flex items-center gap-2">
-            <Coins className="w-5 h-5" />
-            Token Holdings
-          </h2>
-        </div>
+      <div className="flex flex-col bg-gray-900 border border-gray-700 rounded-2xl flex-1 min-h-0">
         {loading ? (
           <div className="p-8 text-center">
             <RefreshCw className="w-8 h-8 mx-auto mb-4 text-purple-400 animate-spin" />
@@ -221,106 +177,108 @@ const Portfolio: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-700">
-            {/* Token Entries */}
-            {tokenAccounts.map((token, index) => (
-              <div
-                key={index}
-                className="p-1 hover:bg-gray-800/50 transition-colors"
-              >
-                <div className="flex items-center">
-                  {/* Left Side */}
-                  <div className="flex items-center space-x-1 min-w-[10rem] flex-shrink-0">
-                    <div className="relative w-10 h-10">
-                      <div
-                        className="w-10 h-10 rounded-full overflow-hidden bg-gray-700 cursor-pointer"
-                        onClick={() => togglePopup(index)}
-                      >
-                        {token.image ? (
-                          <img
-                            src={token.image}
-                            alt={token.symbol}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement
-                              target.style.display = 'none'
-                              target.nextElementSibling?.classList.remove('hidden')
-                            }}
-                          />
-                        ) : null}
-                        <div className={`w-full h-full bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center ${token.image ? 'hidden' : ''}`}>
-                          <span className="text-white font-bold text-xs">
-                            {token.symbol.slice(0, 3).toUpperCase()}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Popup Menu */}
-                      {popupIndex === index && (
+          <div className="flex flex-col h-full overflow-hidden">
+            <div className="flex-1 overflow-y-auto divide-y divide-gray-700">
+              {/* Token Entries */}
+              {tokenAccounts.map((token, index) => (
+                <div
+                  key={index}
+                  className="p-1 hover:bg-gray-800/50 transition-colors"
+                >
+                  <div className="flex items-center">
+                    {/* Left Side */}
+                    <div className="flex items-center space-x-1 min-w-[10rem] flex-shrink-0">
+                      <div className="relative w-10 h-10">
                         <div
-                          ref={popupRef}
-                          className="absolute z-50 top-12 left-0 w-48 bg-gray-900 border border-gray-700 rounded-xl shadow-lg p-2 space-y-1"
+                          className="w-10 h-10 rounded-full overflow-hidden bg-gray-700 cursor-pointer"
+                          onClick={() => togglePopup(index)}
                         >
-                          <button
-                            onClick={() => handleSwap(token)}
-                            className="block w-full text-left px-3 py-2 text-sm text-white hover:bg-purple-700 rounded-md"
-                            aria-label={`Swap ${token.symbol} via Jupiter`}
-                          >
-                            Swap via Jupiter
-                          </button>
+                          {token.image ? (
+                            <img
+                              src={token.image}
+                              alt={token.symbol}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement
+                                target.style.display = 'none'
+                                target.nextElementSibling?.classList.remove('hidden')
+                              }}
+                            />
+                          ) : null}
+                          <div className={`w-full h-full bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center ${token.image ? 'hidden' : ''}`}>
+                            <span className="text-white font-bold text-xs">
+                              {token.symbol.slice(0, 3).toUpperCase()}
+                            </span>
+                          </div>
+                        </div>
 
-                          <button
-                            onClick={() => handleSwapToSol(token)}
-                            className="block w-full text-left px-3 py-2 text-sm text-white hover:bg-purple-700 rounded-md"
+                        {/* Popup Menu */}
+                        {popupIndex === index && (
+                          <div
+                            ref={popupRef}
+                            className="absolute z-50 top-12 left-0 w-48 bg-gray-900 border border-gray-700 rounded-xl shadow-lg p-2 space-y-1"
                           >
-                            Swap all to SOL
-                          </button>
+                            <button
+                              onClick={() => handleSwap(token)}
+                              className="block w-full text-left px-3 py-2 text-sm text-white hover:bg-purple-700 rounded-md"
+                              aria-label={`Swap ${token.symbol} via Jupiter`}
+                            >
+                              Swap via Jupiter
+                            </button>
+
+                            <button
+                              onClick={() => handleSwapToSol(token)}
+                              className="block w-full text-left px-3 py-2 text-sm text-white hover:bg-purple-700 rounded-md"
+                            >
+                              Swap all to SOL
+                            </button>
+                            <button
+                              onClick={() => handleCopyMint(token.mint)}
+                              className="block w-full text-left px-3 py-2 text-sm text-white hover:bg-gray-700 rounded-md"
+                            >
+                              Copy Mint Address
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1 truncate">
+                        <div className="text-white truncate">{token.name}</div>
+                        <div className="text-sm text-gray-400 flex items-center gap-2">
+                          <span>{token.symbol}</span>
                           <button
-                            onClick={() => handleCopyMint(token.mint)}
-                            className="block w-full text-left px-3 py-2 text-sm text-white hover:bg-gray-700 rounded-md"
+                            onClick={() => window.open(`https://solscan.io/token/${token.mint}`, '_blank')}
+                            className="text-purple-400 hover:text-purple-300 transition-colors"
                           >
-                            Copy Mint Address
+                            <ExternalLink className="w-3 h-3" />
                           </button>
                         </div>
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1 truncate">
-                      <div className="text-white truncate">{token.name}</div>
-                      <div className="text-sm text-gray-400 flex items-center gap-2">
-                        <span>{token.symbol}</span>
-                        <button
-                          onClick={() => window.open(`https://solscan.io/token/${token.mint}`, '_blank')}
-                          className="text-purple-400 hover:text-purple-300 transition-colors"
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                        </button>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Right Side */}
-                  <div className="ml-auto text-right min-w-[6rem]">
-                    <div className="font-semibold  text-white">
-                      {token.amount < 1
-                        ? token.amount.toFixed(Math.min(6, token.decimals))
-                        : token.amount.toLocaleString(undefined, {
-                          minimumFractionDigits: 0,
-                          maximumFractionDigits: Math.min(4, token.decimals)
-                        })
-                      }
-                    </div>
-                    <div className="text-sm text-gray-400 flex flex-col items-end">
-                      <span>${token.value.toFixed(2)}</span>
-                      {token.price > 0 && (
-                        <span className="text-xs">
-                          ${token.price < 0.01 ? token.price.toFixed(6) : token.price.toFixed(4)} each
-                        </span>
-                      )}
+                    {/* Right Side */}
+                    <div className="ml-auto text-right min-w-[6rem]">
+                      <div className="font-semibold  text-white">
+                        {token.amount < 1
+                          ? token.amount.toFixed(Math.min(6, token.decimals))
+                          : token.amount.toLocaleString(undefined, {
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: Math.min(4, token.decimals)
+                          })
+                        }
+                      </div>
+                      <div className="text-sm text-gray-400 flex flex-col items-end">
+                        <span>${token.value.toFixed(2)}</span>
+                        {token.price > 0 && (
+                          <span className="text-xs">
+                            ${token.price < 0.01 ? token.price.toFixed(6) : token.price.toFixed(4)} each
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
       </div>

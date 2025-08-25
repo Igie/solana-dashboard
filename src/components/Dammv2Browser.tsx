@@ -320,11 +320,11 @@ const Dammv2Browser: React.FC = () => {
     return (
         <div className="space-y-2">
             {/* Header */}
-            <div className="flex items-center gap-2 justify-start">
+            <div className="grid items-center gap-2">
                 <button
                     onClick={fetchPools}
                     disabled={fetchingPools}
-                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded-lg font-medium transition-colors"
+                    className="flex items-center gap-1 px-2 py-1 lg:max-w-40 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded-lg font-medium transition-colors"
                 >
                     {fetchingPools ? (
                         <RefreshCw className="w-4 h-4 animate-spin" />
@@ -337,7 +337,7 @@ const Dammv2Browser: React.FC = () => {
                         "Refresh"
                     )}
                 </button>
-                <label className='flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition-colors'>
+                <label className='flex items-center gap-1 px-2 py-1 lg:max-w-40 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition-colors'>
                     Auto Refresh <input type='checkbox'
                         checked={shouldRefreshPools}
                         onChange={(e) => setShouldRefreshPools(e.target.checked)}>

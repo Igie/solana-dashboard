@@ -10,7 +10,7 @@ export const tabs = [
   { id: 'dashboard', name: 'Dashboard', icon: Home, component: Dashboard },
   { id: 'portfolio', name: 'Portfolio', icon: TrendingUp, component: Portfolio },
   { id: 'dammv2', name: 'Positions', icon: BotIcon, component: DammPositions },
-  { id: 'dammv2PoolCreation', name: 'Pool Creation', icon: PlayIcon, component: Dammv2PoolCreation },
+  { id: 'dammv2PoolCreation', name: 'Creation', icon: PlayIcon, component: Dammv2PoolCreation },
   { id: 'dammv2browser', name: 'Browser', icon: DnaIcon, component: Dammv2Browser },
   { id: 'aboutPage', name: 'About', icon: HelpCircle, component: AboutPage },
 ] as const;
