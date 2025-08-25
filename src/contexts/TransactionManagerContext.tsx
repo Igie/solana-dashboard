@@ -24,7 +24,7 @@ type TransactionManagerContextType = {
 const TransactionManagerContext = createContext<TransactionManagerContextType | null>(null);
 
 export const TransactionManagerProvider = ({ children }: { children: ReactNode }) => {
-    const { sendTransaction, publicKey } = useWallet();
+    const { sendTransaction, signTransaction, publicKey } = useWallet();
     const { connection } = useConnection();
 
     const sendTxn = async (
@@ -50,7 +50,28 @@ export const TransactionManagerProvider = ({ children }: { children: ReactNode }
                     tx.message.recentBlockhash = blockhash;
                 }
 
-                const sig = await sendTransaction(tx, connection, { minContextSlot, preflightCommitment: 'confirmed', signers });
+                let sig = "";
+
+                if (signers) {
+                    if (signTransaction === undefined) {
+                        txToast.error("signTransaction is not available!");
+                        return null;
+                    }
+                    const signedTx = await signTransaction(tx);
+                    if (signedTx instanceof Transaction) {
+                        signedTx.partialSign(...signers);
+                } else if (signedTx instanceof VersionedTransaction) {
+                    signedTx.sign(signers);
+                }
+                sig = await connection.sendRawTransaction(signedTx.serialize(),{
+                    maxRetries:3,
+                    preflightCommitment: 'confirmed',
+                    minContextSlot: minContextSlot,
+                });
+
+                } else {
+                    sig = await sendTransaction(tx, connection, { minContextSlot, preflightCommitment: 'confirmed', signers });
+                }
                 const confirmation = await connection.confirmTransaction(
                     {
                         signature: sig,
