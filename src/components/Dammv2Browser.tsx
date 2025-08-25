@@ -318,7 +318,7 @@ const Dammv2Browser: React.FC = () => {
     }, [websocketPools]);
 
     return (
-        <div className="space-y-2">
+        <div className="flex flex-col h-[calc(100vh-140px)] lg:h-[calc(100vh-75px)] space-y-2 px-2 md:px-0">
             {/* Header */}
             <div className="grid items-center gap-2">
                 <button
@@ -360,7 +360,7 @@ const Dammv2Browser: React.FC = () => {
                             <RefreshCcw className="w-5 h-5" />
                         </button>
                         <input
-                            className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-r-md px-4 py-2 text-white placeholder-gray-500"
+                            className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-r-md px-2 py-1 text-white placeholder-gray-500"
                             placeholder="Enter pool address..."
                             value={poolAddress}
                             onChange={(e) => setPoolAddress(e.target.value.trim())}
@@ -375,13 +375,13 @@ const Dammv2Browser: React.FC = () => {
                         <button
                             type="button"
                             onClick={() => fetchPools()}
-                            className="flex items-center justify-center px-3 py-2  bg-gray-700 border border-gray-600 rounded-l-md hover:bg-gray-600 text-white"
+                            className="flex items-center justify-center px-3 py-1  bg-gray-700 border border-gray-600 rounded-l-md hover:bg-gray-600 text-white"
                             title="Refresh pools"
                         >
                             <RefreshCcw className="w-5 h-5" />
                         </button>
                         <input
-                            className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-r-md px-4 py-2 text-white placeholder-gray-500"
+                            className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-r-md px-2 py-1 text-white placeholder-gray-500"
                             placeholder="Filter new pools by creator..."
                             value={poolCreatorAddress}
                             onChange={(e) => setPoolCreatorAddress(e.target.value.trim())}

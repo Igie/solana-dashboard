@@ -216,9 +216,6 @@ const DammPositions: React.FC = () => {
 
   return (
     <div className="flex flex-col h-[calc(100vh-140px)] lg:h-[calc(100vh-75px)] space-y-2 px-2 md:px-0">
-      {/* Header */}
-
-
       {/* Pool Overview Stats */}
       <div className="grid grid-cols-2 gap-1">
         <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-700/50 rounded-2xl p-2">

@@ -116,6 +116,7 @@ const Dammv2PoolCreation: React.FC = () => {
 
     const fetchPools = async () => {
         if (!connection) return
+        setShowCreateForm(false);
         setTokenMetadataMap({});
         setPools([])
         mapPools([], {});
@@ -444,13 +445,12 @@ const Dammv2PoolCreation: React.FC = () => {
     }, []);
 
     return (
-        <div className="space-y-2">
-            {/* Snipe Form */}
-            <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 space-y-2">
+        <div className="flex flex-col h-[calc(100vh-140px)] lg:h-[calc(100vh-75px)] space-y-2 px-2 md:px-0">
+            <div className="bg-gray-900 border border-gray-700 rounded-2xl p-2 space-y-2">
 
                 <div>
                     <div className="relative w-full">
-                        <label className="block text-sm text-gray-400 mb-1">Token mint address of a pool</label>
+                        <label className="block text-sm text-gray-400">Token mint address of a pool</label>
                         <div className="flex" >
                             <button
                                 type="button"
@@ -461,7 +461,7 @@ const Dammv2PoolCreation: React.FC = () => {
                                 <RefreshCcw className="w-5 h-5" />
                             </button>
                             <input
-                                className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-4 py-2 text-white placeholder-gray-500"
+                                className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 py-1 text-white placeholder-gray-500"
                                 placeholder="Enter mint address..."
                                 value={searchMint}
                                 onChange={(e) => setSearchMint(e.target.value.trim())}
@@ -470,19 +470,19 @@ const Dammv2PoolCreation: React.FC = () => {
                     </div>
                 </div>
             </div>
-            <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 space-y-2">
+            <div className="bg-gray-900 border border-gray-700 rounded-2xl p-2 space-y-2">
                 {connected && (
                     <button
                         onClick={() => setShowCreateForm(!showCreateForm)}
-                        className="bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded-lg text-white font-medium"
+                        className="bg-purple-600 hover:bg-purple-500 px-2 py-1 rounded-lg text-white font-medium"
                     >
-                        {showCreateForm ? "Hide Create Pool Form" : "Create New DAMMv2 Pool"}
+                        {showCreateForm ? "Hide Create Pool Form" : "Show Create Pool Form"}
                     </button>
                 )}
                 {showCreateForm && connected && (
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                         <div className="relative">
-                            <label className="block text-sm text-gray-400 mb-1">Base Token</label>
+                            <label className="block text-sm text-gray-400">Base Token</label>
                             <MintSelectorInput
                                 tokenAccounts={commonTokens}
                                 mint={tokenAMint}
@@ -495,7 +495,7 @@ const Dammv2PoolCreation: React.FC = () => {
                         </div>
 
                         <div className="relative">
-                            <label className="block text-sm text-gray-400 mb-1">Quote Token</label>
+                            <label className="block text-sm text-gray-400">Quote Token</label>
                             <MintSelectorInput
                                 tokenAccounts={commonTokens}
                                 mint={tokenBMint}
@@ -507,19 +507,19 @@ const Dammv2PoolCreation: React.FC = () => {
                             />
                         </div>
                         <div className="relative w-full">
-                            <label className="block text-sm text-gray-400 mb-1">Initial Price</label>
+                            <label className="block text-sm text-gray-400">Initial Price</label>
                             <div className="flex">
                                 <button
                                     type="button"
                                     onClick={handleFetchPrice}
-                                    className="flex min-w-40 items-center justify-center px-3 py-2 bg-gray-700 border border-gray-600 rounded-l-md hover:bg-gray-600 text-white"
+                                    className="flex min-w-40 items-center justify-center px-2 py-1 bg-gray-700 border border-gray-600 rounded-l-md hover:bg-gray-600 text-white"
                                 >
                                     Get Price
                                 </button>
                                 <input
                                     type="text"
                                     pattern="^[0-9]*[.,]?[0-9]*$"
-                                    className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-4 py-2 text-white placeholder-gray-500"
+                                    className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 py-1 text-white placeholder-gray-500"
                                     placeholder="0"
                                     value={initialPriceInput}
                                     onChange={(e) => {
@@ -542,13 +542,13 @@ const Dammv2PoolCreation: React.FC = () => {
                         </div>
 
                         <div className="relative w-full">
-                            <label className="block text-sm text-gray-400 mb-1">Max Fee Percentage(50% is maximum)</label>
+                            <label className="block text-sm text-gray-400">Max Fee Percentage(50% is maximum)</label>
                             <div className="flex">
                                 <input
                                     type="text"
                                     inputMode="decimal"
                                     pattern="^[0-9]*[.,]?[0-9]*$"
-                                    className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-4 py-2 text-white placeholder-gray-500"
+                                    className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 py-1 text-white placeholder-gray-500"
                                     placeholder="50"
                                     value={maxBaseFeePercentageInput}
                                     onChange={(e) => {
@@ -572,13 +572,13 @@ const Dammv2PoolCreation: React.FC = () => {
                         </div>
 
                         <div className="relative w-full">
-                            <label className="block text-sm text-gray-400 mb-1">Base Fee Percentage</label>
+                            <label className="block text-sm text-gray-400">Base Fee Percentage</label>
                             <div className="flex">
                                 <input
                                     type="text"
                                     inputMode="decimal"
                                     pattern="^[0-9]*[.,]?[0-9]*$"
-                                    className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-4 py-2 text-white placeholder-gray-500"
+                                    className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 py-1 text-white placeholder-gray-500"
                                     placeholder="6"
                                     value={baseFeePercentageInput}
                                     onChange={(e) => {
@@ -601,13 +601,13 @@ const Dammv2PoolCreation: React.FC = () => {
                             </div>
                         </div>
                         <div className="relative w-full">
-                            <label className="block text-sm text-gray-400 mb-1">Scheduler Total Duration</label>
+                            <label className="block text-sm text-gray-400">Scheduler Total Duration</label>
                             <div className="flex">
                                 <input
                                     type="text"
                                     inputMode="decimal"
                                     pattern="^[0-9]*[.,]?[0-9]*$"
-                                    className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-4 py-2 text-white placeholder-gray-500"
+                                    className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 py-1 text-white placeholder-gray-500"
                                     placeholder="60"
                                     value={totalSchedulerDurationInput}
                                     onChange={(e) => {
@@ -630,13 +630,13 @@ const Dammv2PoolCreation: React.FC = () => {
                             </div>
                         </div>
                         <div className="relative w-full">
-                            <label className="block text-sm text-gray-400 mb-1">Scheduler Reduction Period (how many x minutes reduction happens)</label>
+                            <label className="block text-sm text-gray-400">Scheduler Reduction Period (how many x minutes reduction happens)</label>
                             <div className="flex">
                                 <input
                                     type="text"
                                     inputMode="decimal"
                                     pattern="^[0-9]*[.,]?[0-9]*$"
-                                    className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-4 py-2 text-white placeholder-gray-500"
+                                    className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 py-1 text-white placeholder-gray-500"
                                     placeholder="2"
                                     value={schedulerReductionPeriodInput}
                                     onChange={(e) => {
@@ -659,12 +659,12 @@ const Dammv2PoolCreation: React.FC = () => {
                         </div>
 
                         <div className="relative w-full">
-                            <label className="block text-sm text-gray-400 mb-1">Fee Schedule Mode</label>
+                            <label className="block text-sm text-gray-400">Fee Schedule Mode</label>
 
                             <button
                                 type="button"
                                 onClick={() => setFeeSchedulerDropdownOpen(!feeSchedulerDropdownOpen)}
-                                className="w-full bg-gray-800 border border-gray-700 rounded-md px-4 py-2 text-white text-left flex justify-between items-center"
+                                className="w-full bg-gray-800 border border-gray-700 rounded-md px-2 py-1 text-white text-left flex justify-between items-center"
                             >
                                 {FeeSchedulerMode[selectedFeeScheduler]} {/* Converts numeric value to string name */}
                                 <svg className="w-4 h-4 text-gray-400 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -683,7 +683,7 @@ const Dammv2PoolCreation: React.FC = () => {
                                                     setSelectedFeeScheduler(Number(val))
                                                     setFeeSchedulerDropdownOpen(false)
                                                 }}
-                                                className={`px-4 py-2 cursor-pointer hover:bg-gray-700 text-white ${selectedFeeScheduler === Number(val) ? 'bg-gray-700' : ''
+                                                className={`px-2 py-1 cursor-pointer hover:bg-gray-700 text-white ${selectedFeeScheduler === Number(val) ? 'bg-gray-700' : ''
                                                     }`}
                                             >
                                                 {key}
@@ -694,12 +694,12 @@ const Dammv2PoolCreation: React.FC = () => {
                         </div>
 
                         <div className="relative w-full">
-                            <label className="block text-sm text-gray-400 mb-1">Fee Collection Mode</label>
+                            <label className="block text-sm text-gray-400">Fee Collection Mode</label>
 
                             <button
                                 type="button"
                                 onClick={() => setFeeModeDropdownOpen(!feeModeDropdownOpen)}
-                                className="w-full bg-gray-800 border border-gray-700 rounded-md px-4 py-2 text-white text-left flex justify-between items-center"
+                                className="w-full bg-gray-800 border border-gray-700 rounded-md px-2 py-1 text-white text-left flex justify-between items-center"
                             >
                                 {CollectFeeMode[selectedFeeMode]} {/* Converts numeric value to string name */}
                                 <svg className="w-4 h-4 text-gray-400 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -718,7 +718,7 @@ const Dammv2PoolCreation: React.FC = () => {
                                                     setSelectedFeeMode(Number(val))
                                                     setFeeModeDropdownOpen(false)
                                                 }}
-                                                className={`px-4 py-2 cursor-pointer hover:bg-gray-700 text-white ${selectedFeeMode === Number(val) ? 'bg-gray-700' : ''
+                                                className={`px-2 py-1 cursor-pointer hover:bg-gray-700 text-white ${selectedFeeMode === Number(val) ? 'bg-gray-700' : ''
                                                     }`}
                                             >
                                                 {key}
@@ -731,14 +731,14 @@ const Dammv2PoolCreation: React.FC = () => {
                         </div>
                         {!newPoolAddressExists && connected ?
                             <button
-                                className="bg-green-600 hover:bg-green-500 px-4 py-2 rounded-lg text-white font-semibold"
+                                className="bg-green-600 hover:bg-green-500 px-2 py-1 rounded-lg text-white font-semibold"
                                 onClick={(e) =>handleCreatePool(e.shiftKey)}
                             >
                                 Create Pool
                             </button>
                             :
                             <a
-                                className="h-full bg-red-600 hover:bg-red-500 px-4 py-2 rounded-lg text-white font-semibold text-sm"
+                                className="h-full bg-red-600 hover:bg-red-500 px-2 py-1 rounded-lg text-white font-semibold text-sm"
                                 href={`https://edge.meteora.ag/dammv2/${newPoolAddress}`}
                                 target="_blank"
                                 rel="noopener noreferrer"

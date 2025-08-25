@@ -1,4 +1,4 @@
-import { ExternalLink, PanelsTopLeft, TrendingUp } from "lucide-react";
+import { ExternalLink, PanelsTopLeft } from "lucide-react";
 import { SortArrow } from "./SortArrow";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { DepositPopover } from "./Dammv2DepositPopover";
@@ -306,17 +306,10 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
     }, [sortBy, sortAscending]);
 
     return (
-        <div>
+        <div className="flex flex-col overflow-hidden">
             {pools.length > 0 && (
-                <div className="bg-gray-900 border border-gray-700 rounded-2xl p-3 md:p-6 space-y-4">
-                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                        <TrendingUp className="w-5 h-5 text-purple-400" />
-                        <span className="text-sm md:text-lg">
-                            DAMMv2 Pools {pools.length > 60 && 'Showing first 60 (total ' + pools.length + ')'}
-                        </span>
-                    </h3>
-
-                    <DynamicTable tableClassName="hidden lg:table" data={pools} columns={poolColumns} />
+                <div className="flex-grow overflow-y-auto bg-gray-900 border border-gray-700 rounded-2xl p-3 md:p-3 space-y-2">
+                    <DynamicTable tableClassName="hidden lg:table sticky" data={pools} columns={poolColumns} />
 
                     {/* Mobile Sort Controls */}
                     <div className="lg:hidden mb-4">
@@ -363,7 +356,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                         />
                     )}
 
-                    <div className="space-y-4 lg:space-y-0">
+                    <div className="flex-grow overflow-y-auto">
                         {pools.slice(0, Math.min(60, pools.length)).map((pool, index) => (
                             <div key={index} className="lg:hidden space-y-3">
                                 {/* Token Info */}
