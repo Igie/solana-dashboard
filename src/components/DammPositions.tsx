@@ -110,62 +110,6 @@ const DammPositions: React.FC = () => {
       return;
     }
     removeLiquidityAndSwapToQuote(position);
-    // const txn = await cpAmm.removeAllLiquidityAndClosePosition({
-    //   owner: publicKey!,
-    //   position: position.positionAddress,
-    //   positionNftAccount: position.positionNftAccount,
-    //   positionState: position.positionState,
-    //   poolState: position.poolState,
-    //   tokenAAmountThreshold: new BN(position.tokenA.positionAmount * (10 ** position.tokenA.decimals)).muln(0.9),
-    //   tokenBAmountThreshold: new BN(position.tokenB.positionAmount * (10 ** position.tokenB.decimals)).muln(0.9),
-    //   vestings: [],
-    //   currentPoint: new BN(0),
-    // });
-
-    // let closed = false;
-    // try {
-    //   await sendTxn(txn, undefined, {
-    //     notify: true,
-    //     onSuccess: () => {
-    //       removePosition(position.positionAddress);
-    //       if (expandedIndex)
-    //         setExpandedIndex(null);
-
-    //       closed = true;
-    //     }
-    //   })
-
-    // } catch (e) {
-    //   console.log(e);
-    // }
-
-    // if (closed) {
-    //   const { tokenAccounts } = await refreshTokenAccounts();
-    //   const tokenAAccount = tokenAccounts.find(x => x.mint == position.tokenA.mint);
-    //   if (!tokenAAccount) {
-    //     txToast.error("Could not find token account");
-    //     return;
-    //   }
-    //   const quote = await getQuote({
-    //     inputMint: position.tokenA.mint,
-    //     outputMint: position.tokenB.mint,
-
-    //     amount: new Decimal(tokenAAccount.amount).mul(Decimal.pow(10, tokenAAccount.decimals)).toNumber(),
-    //     slippageBps: 1000,
-    //   });
-
-    //   const transaction = await getSwapTransactionVersioned(quote, publicKey!);
-
-    //   await sendTxn(transaction, undefined, {
-    //     notify: true,
-    //     onError: () => {
-    //       txToast.error("Swap failed");
-    //     },
-    //     onSuccess: async (x) => {
-    //       txToast.success("Swap successful", x);
-    //     }
-    //   });
-    // }
   }
   const poolContainsString = (pool: PoolPositionInfo, searchString: string): boolean => {
     const lowerSearch = searchString.toLowerCase();
