@@ -60,14 +60,14 @@ export const TransactionManagerProvider = ({ children }: { children: ReactNode }
                     const signedTx = await signTransaction(tx);
                     if (signedTx instanceof Transaction) {
                         signedTx.partialSign(...signers);
-                } else if (signedTx instanceof VersionedTransaction) {
-                    signedTx.sign(signers);
-                }
-                sig = await connection.sendRawTransaction(signedTx.serialize(),{
-                    maxRetries:3,
-                    preflightCommitment: 'confirmed',
-                    minContextSlot: minContextSlot,
-                });
+                    } else if (signedTx instanceof VersionedTransaction) {
+                        signedTx.sign(signers);
+                    }
+                    sig = await connection.sendRawTransaction(signedTx.serialize(), {
+                        maxRetries: 3,
+                        preflightCommitment: 'confirmed',
+                        minContextSlot: minContextSlot,
+                    });
 
                 } else {
                     sig = await sendTransaction(tx, connection, { minContextSlot, preflightCommitment: 'confirmed', signers });

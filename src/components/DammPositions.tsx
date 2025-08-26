@@ -690,7 +690,7 @@ const DammPositions: React.FC = () => {
                         <h4 className="text-white font-medium mb-2 text-sm">Token Analytics</h4>
                         <div className="space-y-2">
                           <a
-                            href={`https://gmgn.ai/sol/token/${position.tokenA.mint}`}
+                            href={`https://gmgn.ai/sol/token/NQhHUcmQ_${position.tokenA.mint}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm"
@@ -698,7 +698,7 @@ const DammPositions: React.FC = () => {
                             {position.tokenA.symbol} on GMGN <ExternalLink className="w-3 h-3" />
                           </a>
                           <a
-                            href={`https://gmgn.ai/sol/token/${position.tokenB.mint}`}
+                            href={`https://gmgn.ai/sol/token/NQhHUcmQ_${position.tokenB.mint}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm"
