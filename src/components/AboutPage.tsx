@@ -3,10 +3,10 @@ import { toast } from "sonner";
 
 export default function AboutPage() {
   const wallet = "CDsSZvpGNYmmMVhjMTsqtS4j9iFfu9G9R8sJLRT4zZfx";
-
-  const copyToClipboard = async () => {
+  const token = "83YPDRtSkNv79ctSn2iWcs5JeD86YNi3UZYxVxubbREV";
+  const copyToClipboard = async (text: string) => {
     try {
-      await navigator.clipboard.writeText(wallet);
+      await navigator.clipboard.writeText(text);
       toast.message("Copied!");
     } catch (err) {
       toast.error("Failed to copy!");
@@ -42,7 +42,6 @@ export default function AboutPage() {
           Wallet integration is being worked on with providers, so for now you
           might see warnings when signing transactions.
         </p>
-
         <div className="space-y-2 mb-6">
           <p className="text-gray-300">You can check out some helpful links:</p>
           <ul className="list-disc pl-6 space-y-1">
@@ -66,9 +65,6 @@ export default function AboutPage() {
                 DAMMv2 Dashboard source code <ExternalLink size={14} />
               </a>
             </li>
-
-
-
             <li>
               <a
                 href="https://meteora.ag"
@@ -113,9 +109,6 @@ export default function AboutPage() {
             </li>
           </ul>
         </div>
-
-
-
         <div className="pt-4 border-t border-gray-700 mb-6 flex flex-col space-y-2">
           <div className="flex items-center flex-wrap gap-x-2 gap-y-1 text-gray-300">
             <span>I am open to suggestions — you can message me on Discord at</span>
@@ -138,13 +131,12 @@ export default function AboutPage() {
             </a>
             <span>channel.</span>
           </div>
-
           <div className="grid items-center gap-2 text-gray-300">
             <span>If you’d like to support my work, you can send SOL or tokens to this wallet:</span>
             <div className="flex items-center gap-2 bg-gray-800 p-2 rounded-md font-mono text-sm text-purple-300">
               <span className="break-all">{wallet}</span>
               <button
-                onClick={copyToClipboard}
+                onClick={async () => await copyToClipboard(wallet)}
                 className="p-1 rounded hover:bg-gray-700"
                 title="Copy to clipboard"
               >
@@ -152,9 +144,29 @@ export default function AboutPage() {
               </button>
             </div>
           </div>
+          <div className="grid items-center gap-2 text-gray-300">
+            <span>If you want to support me indirectly, here is a token I made:</span>
+            <div className="flex items-center gap-2 bg-gray-800 p-2 rounded-md font-mono text-sm text-purple-300">
+              <span className="break-all">83YPDRtSkNv79ctSn2iWcs5JeD86YNi3UZYxVxubbREV</span>
+              <button
+                onClick={async () => await copyToClipboard(token)}
+                className="p-1 rounded hover:bg-gray-700"
+                title="Copy to clipboard"
+              >
+                <Copy size={16} />
+              </button>
+              <a
+                href={`https://gmgn.ai/sol/token/NQhHUcmQ_${token}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center p-1 gap-2 rounded hover:bg-gray-700"
+                title="GMGN"
+              >
+                GMGN <ExternalLink size={16} />
+              </a>
+            </div>
+          </div>
         </div>
-
-
         <div className="pt-4 border-t border-gray-700">
           <h2 className="flex items-center gap-2 text-lg font-semibold mb-2">
             <Users className="text-purple-400" /> Special Thanks
