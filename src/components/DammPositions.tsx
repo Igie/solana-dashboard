@@ -9,14 +9,14 @@ import { useTransactionManager } from '../contexts/TransactionManagerContext'
 import { toast } from 'sonner'
 import { BN } from '@coral-xyz/anchor'
 import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-adapter'
-import { PublicKey } from '@solana/web3.js'
+import { PublicKey, Transaction } from '@solana/web3.js'
 //import { txToast } from './Simple/TxToast'
 import { copyToClipboard, getSchedulerType, renderFeeTokenImages } from '../constants'
 
 const DammPositions: React.FC = () => {
   const { connection } = useConnection()
   const { publicKey, connected } = useWallet()
-  const { sendTxn } = useTransactionManager();
+  const { sendTxn, sendMultiTxn } = useTransactionManager();
   const { updatePosition, removePosition } = useDammUserPositions()
 
   //const { tokenAccounts, refreshTokenAccounts } = useTokenAccounts();
@@ -71,6 +71,28 @@ const DammPositions: React.FC = () => {
     }
   }
 
+  const getClaimFeesTx = async (position: PoolPositionInfo) => {
+    if (position.positionUnclaimedFee <= 0) return;
+
+    const txn = await cpAmm.claimPositionFee2({
+      receiver: publicKey!,
+      owner: publicKey!,
+      feePayer: publicKey!,
+      pool: position.poolAddress,
+      position: position.positionAddress,
+      positionNftAccount: position.positionNftAccount,
+      tokenAMint: position.poolState.tokenAMint,
+      tokenBMint: position.poolState.tokenBMint,
+      tokenAProgram: new PublicKey(position.tokenA.tokenProgram),
+      tokenBProgram: new PublicKey(position.tokenB.tokenProgram),
+      tokenAVault: position.poolState.tokenAVault,
+      tokenBVault: position.poolState.tokenBVault,
+    })
+
+    return txn;
+  }
+
+
   const handleClosePosition = async (position: PoolPositionInfo) => {
     if (cpAmm.isLockedPosition(position.positionState)) {
       toast.error("Cannot close a locked position");
@@ -104,6 +126,27 @@ const DammPositions: React.FC = () => {
     }
   };
 
+  const getClosePositionTx = async (position: PoolPositionInfo) => {
+    if (cpAmm.isLockedPosition(position.positionState)) {
+      toast.error("Cannot close a locked position");
+      return;
+    }
+
+    const txn = await cpAmm.removeAllLiquidityAndClosePosition({
+      owner: publicKey!,
+      position: position.positionAddress,
+      positionNftAccount: position.positionNftAccount,
+      positionState: position.positionState,
+      poolState: position.poolState,
+      tokenAAmountThreshold: new BN(0),
+      tokenBAmountThreshold: new BN(0),
+      vestings: [],
+      currentPoint: new BN(0),
+    });
+
+    return txn;
+  };
+
   const handleClosePositionAndSwap = async (position: PoolPositionInfo) => {
     if (cpAmm.isLockedPosition(position.positionState)) {
       toast.error("Cannot close a locked position");
@@ -111,6 +154,7 @@ const DammPositions: React.FC = () => {
     }
     removeLiquidityAndSwapToQuote(position);
   }
+  
   const poolContainsString = (pool: PoolPositionInfo, searchString: string): boolean => {
     const lowerSearch = searchString.toLowerCase();
     return pool.tokenA.name.toLowerCase().includes(lowerSearch) ||
@@ -330,11 +374,24 @@ const DammPositions: React.FC = () => {
                 className="bg-purple-600 hover:bg-purple-500 px-4 py-1 rounded text-white flex-1 sm:flex-none"
                 onClick={async () => {
                   const selectedPositionsTemp = [...selectedPositions];
+                                    const txns: Transaction[] = [];
                   for (const pos of selectedPositionsTemp) {
-                    await handleClosePosition(pos);
+                    const txn = await getClosePositionTx(pos)
+                    if (txn)
+                      txns.push(txn);
                   }
                   setSelectedPositions(new Set());
-                  await refreshPositions();
+
+                  if (txns.length > 0)
+                    await sendMultiTxn(txns.map(x => {
+                      return {
+                        tx: x,
+                      }
+                    }), {
+                      onSuccess: async () => {
+                        await refreshPositions();
+                      }
+                    })
                 }}
               >
                 Close All ({selectedPositions.size})
@@ -343,11 +400,27 @@ const DammPositions: React.FC = () => {
                 className="bg-blue-600 hover:bg-blue-500 px-4 py-1 rounded text-white flex-1 sm:flex-none"
                 onClick={async () => {
                   const selectedPositionsTemp = [...selectedPositions];
+
+                  const txns: Transaction[] = [];
                   for (const pos of selectedPositionsTemp) {
-                    await handleClaimFees(pos);
+                    const txn = await getClaimFeesTx(pos)
+                    if (txn)
+                      txns.push(txn);
                   }
                   setSelectedPositions(new Set());
-                }}
+
+                  if (txns.length > 0)
+                    await sendMultiTxn(txns.map(x => {
+                      return {
+                        tx: x,
+                      }
+                    }), {
+                      onSuccess: async () => {
+                        await refreshPositions();
+                      }
+                    })
+                }
+                }
               >
                 Claim Fees ({selectedPositions.size})
               </button>
@@ -672,7 +745,7 @@ const DammPositions: React.FC = () => {
                           >
                             Axiom Chart <ExternalLink className="w-3 h-3" />
                           </a>
-                           <a
+                          <a
                             href={`https://www.dextools.io/app/en/solana/pair-explorer/${position.poolAddress}`}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -683,7 +756,7 @@ const DammPositions: React.FC = () => {
                         </div>
                       </div>
 
-                      
+
 
                       {/* Token Links */}
                       <div>
