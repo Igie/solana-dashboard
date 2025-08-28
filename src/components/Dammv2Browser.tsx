@@ -318,13 +318,13 @@ const Dammv2Browser: React.FC = () => {
     }, [websocketPools]);
 
     return (
-        <div className="flex flex-col h-[calc(100vh-140px)] lg:h-[calc(100vh-75px)] space-y-2 px-2 md:px-0">
+        <div className="flex flex-col h-[calc(100vh-140px)] lg:h-[calc(100vh-75px)] space-y-1 px-2 md:px-0">
             {/* Header */}
-            <div className="grid items-center gap-2">
+            <div className="flex md:grid justify-start items-stretch gap-1">
                 <button
                     onClick={fetchPools}
                     disabled={fetchingPools}
-                    className="flex items-center gap-1 px-2 py-1 lg:max-w-40 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded-lg font-medium transition-colors"
+                    className="flex items-center gap-1 px-2 w-full lg:max-w-40 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded-md md:text-sm transition-colors"
                 >
                     {fetchingPools ? (
                         <RefreshCw className="w-4 h-4 animate-spin" />
@@ -337,30 +337,29 @@ const Dammv2Browser: React.FC = () => {
                         "Refresh"
                     )}
                 </button>
-                <label className='flex items-center gap-1 px-2 py-1 lg:max-w-40 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition-colors'>
-                    Auto Refresh <input type='checkbox'
+                <label className='flex items-center gap-1 px-2 w-full lg:max-w-40 bg-purple-600 hover:bg-purple-700 rounded-md md:text-sm transition-colors'>
+                     <input type='checkbox'
                         checked={shouldRefreshPools}
                         onChange={(e) => setShouldRefreshPools(e.target.checked)}>
-
                     </input>
+                    Auto Refresh
                 </label>
-                <span className='text-sm'>Automatically adds new pools to the list and refreshes metadata every 20 seconds, state changes happen automatically</span>
             </div>
 
             <div>
                 <div className="relative w-full">
-                    <label className="block text-sm text-gray-400 mb-1">Pool address</label>
+                    <label className="block text-sm text-gray-400">Pool address</label>
                     <div className="flex" >
                         <button
                             type="button"
                             onClick={() => fetchPool(poolAddress)}
-                            className="flex items-center justify-center px-3 py-2  bg-gray-700 border border-gray-600 rounded-l-md hover:bg-gray-600 text-white"
+                            className="flex items-center justify-center px-2 bg-gray-700 border border-gray-600 rounded-l-md md:text-sm hover:bg-gray-600 text-white"
                             title="Refresh pools"
                         >
-                            <RefreshCcw className="w-5 h-5" />
+                            <RefreshCcw className="w-4 h-4" />
                         </button>
                         <input
-                            className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-r-md px-2 py-1 text-white placeholder-gray-500"
+                            className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-r-md px-2 py-1 text-white md:text-sm placeholder-gray-500"
                             placeholder="Enter pool address..."
                             value={poolAddress}
                             onChange={(e) => setPoolAddress(e.target.value.trim())}
@@ -370,18 +369,18 @@ const Dammv2Browser: React.FC = () => {
             </div>
             <div>
                 <div className="relative w-full">
-                    <label className="block text-sm text-gray-400 mb-1">Creator address</label>
+                    <label className="block text-sm text-gray-400">Creator address</label>
                     <div className="flex" >
                         <button
                             type="button"
                             onClick={() => fetchPools()}
-                            className="flex items-center justify-center px-3 py-1  bg-gray-700 border border-gray-600 rounded-l-md hover:bg-gray-600 text-white"
+                            className="flex items-center justify-center px-2 bg-gray-700 border border-gray-600 rounded-l-md md:text-sm hover:bg-gray-600 text-white"
                             title="Refresh pools"
                         >
-                            <RefreshCcw className="w-5 h-5" />
+                            <RefreshCcw className="w-4 h-4" />
                         </button>
                         <input
-                            className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-r-md px-2 py-1 text-white placeholder-gray-500"
+                            className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-r-md px-2 py-1 text-white md:text-sm placeholder-gray-500"
                             placeholder="Filter new pools by creator..."
                             value={poolCreatorAddress}
                             onChange={(e) => setPoolCreatorAddress(e.target.value.trim())}

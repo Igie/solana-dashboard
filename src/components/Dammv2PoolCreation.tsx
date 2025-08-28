@@ -413,10 +413,10 @@ const Dammv2PoolCreation: React.FC = () => {
                                 className="flex items-center justify-center px-3 py-2  bg-gray-700 border border-gray-600 rounded-l-md hover:bg-gray-600 text-white"
                                 title="Refresh pools"
                             >
-                                <RefreshCcw className="w-5 h-5" />
+                                <RefreshCcw className="w-4 h-4" />
                             </button>
                             <input
-                                className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 py-1 text-white placeholder-gray-500"
+                                className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 py-1 text-white md:text-xs placeholder-gray-500"
                                 placeholder="Enter mint address..."
                                 value={searchMint}
                                 onChange={(e) => setSearchMint(e.target.value.trim())}

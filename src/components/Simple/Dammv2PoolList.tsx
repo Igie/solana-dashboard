@@ -213,10 +213,35 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
         {
             header: 'Fee Mode',
             render: (pool) => (
-                <div className="text-center">
-                    {pool.poolInfo.account.collectFeeMode === 0 ? "Both Tokens" :
-                        pool.poolInfo.account.collectFeeMode === 1 ? "Quote Token" : "Unknown"}
+                <div className="flex justify-center gap-1">
+                    <div className="text-center">
+                        {pool.poolInfo.account.collectFeeMode === 0 ? <div className="text-red-400">Both </div> :
+                            pool.poolInfo.account.collectFeeMode === 1 ? <div className="text-green-400">Quote </div> : "Unknown"}
+                    </div>
+                    <div className="flex justify-center -space-x-2">
+
+                        {pool.poolInfo.account.collectFeeMode === 0 && (
+                            <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-700 border border-gray-600">
+                                {pool.tokenA.image ? (
+                                    <img src={pool.tokenA.image} alt={pool.tokenA.symbol} className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-[10px]">
+                                        {pool.tokenA.symbol.slice(0, 2)}
+                                    </div>
+                                )}
+                            </div>)}
+                        <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-700 border border-gray-600">
+                            {pool.tokenB.image ? (
+                                <img src={pool.tokenB.image} alt={pool.tokenB.symbol} className="w-full h-full object-cover" />
+                            ) : (
+                                <div className="w-full h-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold text-[10px]">
+                                    {pool.tokenB.symbol.slice(0, 2)}
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
+
             )
         },
         {
@@ -356,9 +381,9 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                         />
                     )}
 
-                    <div className="flex-grow overflow-y-auto">
+                    <div className="flex-grow space-y-2 divide-y-2 overflow-y-auto">
                         {pools.slice(0, Math.min(60, pools.length)).map((pool, index) => (
-                            <div key={index} className="lg:hidden space-y-3">
+                            <div key={index} className="lg:hidden space-y-1">
                                 {/* Token Info */}
                                 <div className="flex justify-between items-start">
                                     <div className="space-y-1 w-full">
@@ -400,7 +425,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                 </div>
 
                                 {/* Pool Stats */}
-                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div className="grid grid-cols-2 gap-1 text-xs">
                                     <div>
                                         <span className="text-gray-400">TVL: </span>
                                         <span className="truncate">${pool.TVL.toFixed(2)}</span>
@@ -448,15 +473,15 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
 
                                 {/* Fee Info */}
                                 <div className="grid grid-cols-3 gap-1 text-xs">
-                                    <div className="text-center p-1 bg-gray-700 rounded">
+                                    <div className="text-center bg-gray-700 rounded">
                                         <div className="text-gray-400">Token A Fees</div>
                                         <div>${pool.tokenA.totalFees.toFixed(2)}</div>
                                     </div>
-                                    <div className="text-center p-1 bg-gray-700 rounded">
+                                    <div className="text-center bg-gray-700 rounded">
                                         <div className="text-gray-400">Token B Fees</div>
                                         <div>${pool.tokenB.totalFees.toFixed(2)}</div>
                                     </div>
-                                    <div className="text-center p-1 bg-gray-700 rounded">
+                                    <div className="text-center bg-gray-700 rounded">
                                         <div className="text-gray-400">Total Fees</div>
                                         <div>${pool.totalFees.toFixed(2)}</div>
                                     </div>
@@ -466,7 +491,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                 <div className="grid grid-cols-2 gap-2">
                                     <div className="grid grid-cols-2 gap-1">
                                         <a
-                                            className="bg-purple-600 hover:bg-purple-500 text-white text-xs py-2 px-2 rounded flex items-center justify-center gap-1"
+                                            className="bg-purple-600 hover:bg-purple-500 text-white text-xs py-1 px-1 rounded flex items-center justify-center gap-1"
                                             href={`https://edge.meteora.ag/dammv2/${pool.poolInfo.publicKey.toBase58()}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
@@ -475,7 +500,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                             <ExternalLink size={12} />
                                         </a>
                                         <a
-                                            className="bg-purple-600 hover:bg-purple-500 text-white text-xs py-2 px-2 rounded flex items-center justify-center gap-1"
+                                            className="bg-purple-600 hover:bg-purple-500 text-white text-xs py-1 px-1 rounded flex items-center justify-center gap-1"
                                             href={`https://gmgn.ai/sol/token/NQhHUcmQ_${pool.tokenA.mint}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
@@ -487,7 +512,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                     <div className="grid grid-cols-2 gap-1">
                                         <button
                                             disabled={!connected}
-                                            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white text-xs py-2 px-2 rounded flex items-center justify-center gap-1"
+                                            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white text-xs py-1 px-1 rounded flex items-center justify-center gap-1"
                                             onClick={() => {
                                                 window.Jupiter.init({
                                                     formProps: {
@@ -506,7 +531,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                         </button>
                                         <button
                                             disabled={!connected}
-                                            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white text-xs py-2 px-2 rounded flex items-center justify-center gap-1"
+                                            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white text-xs py-1 px-1 rounded flex items-center justify-center gap-1"
                                             onClick={(e) => {
                                                 setDepositPool(pool);
                                                 handleDepositClick(e);
