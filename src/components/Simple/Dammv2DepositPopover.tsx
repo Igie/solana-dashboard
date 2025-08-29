@@ -193,7 +193,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
     return (
       <div
         ref={ref}
-        className="absolute z-50 w-80 bg-[#0d111c] text-gray-100 border border-gray-700 rounded-xl shadow-xl p-4 text-sm"
+        className="absolute z-50 w-80 bg-[#0d111c] text-gray-100 border border-gray-700 rounded-md p-2 text-sm"
         style={{ top: position.y, left: position.x }}
       >
         <div className="mb-3 text-sm text-gray-700">Pool does not exist</div>
@@ -202,27 +202,26 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
   }
 
   return (
-
     <div
       ref={ref}
-      className="absolute z-50 bg-[#0d111c] text-gray-100 border border-gray-700 rounded-xl shadow-xl p-4 text-sm justify-center"
+      className="absolute z-50 bg-[#0d111c] text-gray-100 border border-gray-700 rounded-md p-2 text-sm justify-center"
       style={{ top: position.y, left: position.x }}
     >
-      <div className="flex gap-2 text-sm font-semibold text-gray-100">
+      <div className="flex gap-1 text-sm font-semibold text-gray-100">
         <DecimalInput
-          className='flex-1 bg-[#1a1e2d] border border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500'
+          className='flex-1 bg-[#1a1e2d] border border-gray-600 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500'
           value={swapSolAmount.toFixed()}
           onChange={() => { }}
           onBlur={(v) => setSwapSolAmount(v)}
         />
         <button
-          className="bg-green-600 hover:bg-green-700 text-white py-2 rounded text-sm"
+          className="bg-green-600 hover:bg-green-700 text-white p-1 rounded text-sm"
           onClick={() => swapSOLAndDeposit()}>
           Swap SOL
         </button>
       </div>
       {(!tokenA || !tokenB) && (
-        <div className="mb-3 justify-self-center text-sm text-gray-700">Could not find one of tokens</div>
+        <div className="justify-self-center text-sm text-gray-700">Could not find one of tokens</div>
       )}
 
       {(tokenA && tokenB) && (
@@ -230,16 +229,16 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
         <div className="flex flex-col gap-2">
           {/* Token A */}
           <div>
-            <div className="mb-1 text-sm text-gray-400">{tokenA!.symbol} Balance: {tokenA!.amount}</div>
+            <div className="text-sm text-gray-400">{tokenA!.symbol} Balance: {tokenA!.amount}</div>
             <div className="flex">
               <DecimalInput
-                className="flex-1 bg-[#1a1e2d] border border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
+                className="flex-1 bg-[#1a1e2d] border border-gray-600 rounded p-1 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
                 value={amountA.toFixed(10)}
                 onChange={() => { }}
                 onBlur={(v) => getDepositAmountB(v)}
               />
               <button
-                className="text-xs px-2 py-1 ml-2 rounded bg-blue-600 hover:bg-blue-700 text-white"
+                className="text-xs py-1 px-2 ml-1 rounded-md bg-blue-600 hover:bg-blue-700 text-white"
                 onClick={() => getDepositAmountB(new Decimal(tokenA!.amount.toString()))}
               >
                 Max
@@ -249,10 +248,10 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
 
           {/* Token B */}
           <div>
-            <div className="mb-1 text-sm text-gray-400">{tokenB!.symbol} Balance: {tokenB!.amount}</div>
+            <div className="text-sm text-gray-400">{tokenB!.symbol} Balance: {tokenB!.amount}</div>
             <div className="flex">
               <DecimalInput
-                className="flex-1 bg-[#1a1e2d] border border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
+                className="flex-1 bg-[#1a1e2d] border border-gray-600 rounded p-1 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
                 value={amountB.toFixed(10)}
                 onChange={() => { }}
                 onBlur={async (v) => {
@@ -260,7 +259,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
                 }}
               />
               <button
-                className="text-xs px-2 py-1 ml-2 rounded bg-blue-600 hover:bg-blue-700 text-white"
+                className="text-xs py-1  px-2 ml-1 rounded-md bg-blue-600 hover:bg-blue-700 text-white"
                 onClick={async () => await getDepositAmountA(new Decimal(tokenB!.amount.toString()))}
               >
                 Max
@@ -270,7 +269,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
 
           {/* Submit Button */}
           <button
-            className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded text-sm"
+            className="w-full bg-green-600 hover:bg-green-700 text-white py-1 rounded text-sm"
             disabled={!amountA || !amountB}
             onClick={handleDeposit}
           >

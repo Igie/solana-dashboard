@@ -12,6 +12,7 @@ import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-ad
 import { PublicKey, Transaction } from '@solana/web3.js'
 //import { txToast } from './Simple/TxToast'
 import { copyToClipboard, getSchedulerType, renderFeeTokenImages } from '../constants'
+import { FeeSchedulerGraph } from './Simple/FeeSchedulerGraph'
 
 const DammPositions: React.FC = () => {
   const { connection } = useConnection()
@@ -154,7 +155,7 @@ const DammPositions: React.FC = () => {
     }
     removeLiquidityAndSwapToQuote(position);
   }
-  
+
   const poolContainsString = (pool: PoolPositionInfo, searchString: string): boolean => {
     const lowerSearch = searchString.toLowerCase();
     return pool.tokenA.name.toLowerCase().includes(lowerSearch) ||
@@ -374,7 +375,7 @@ const DammPositions: React.FC = () => {
                 className="bg-purple-600 hover:bg-purple-500 px-4 py-1 rounded text-white flex-1 sm:flex-none"
                 onClick={async () => {
                   const selectedPositionsTemp = [...selectedPositions];
-                                    const txns: Transaction[] = [];
+                  const txns: Transaction[] = [];
                   for (const pos of selectedPositionsTemp) {
                     const txn = await getClosePositionTx(pos)
                     if (txn)
@@ -466,7 +467,7 @@ const DammPositions: React.FC = () => {
             {positions.filter((x) => poolContainsString(x, searchString)).map((position, index) => (
               <div key={index}>
                 {/* Desktop Table Row */}
-                <div className="hidden md:grid grid-cols-12 gap-2 px-4 py-3 border-b border-gray-700 hover:bg-gray-800/50 items-center">
+                <div className="hidden md:grid grid-cols-12 gap-1 px-4 py-1 border-b border-gray-700 hover:bg-gray-800/50 items-center">
                   {/* Checkbox */}
                   <div className="col-span-1">
                     <input
@@ -716,7 +717,7 @@ const DammPositions: React.FC = () => {
                 {/* Expanded Panel (Same for both desktop and mobile) */}
                 {expandedIndex == index && (
                   <div className="px-4 py-3 bg-gray-800 border-b border-gray-700">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       {/* Pool Links */}
                       <div>
                         <h4 className="text-white font-medium mb-2 text-sm">Pool Analytics</h4>
@@ -797,7 +798,10 @@ const DammPositions: React.FC = () => {
                           </a>
                         </div>
                       </div>
-
+                      {/* Scheduler */}
+                      <div>
+                        <FeeSchedulerGraph poolState={position.poolState} />
+                      </div>
                       {/* Actions */}
                       <div>
                         <h4 className="text-white font-medium mb-2 text-sm">Actions</h4>
