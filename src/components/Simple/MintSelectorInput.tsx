@@ -94,13 +94,13 @@ export const MintSelectorInput: React.FC<Props> = ({
     const selectedTokenAccount = tokenAccounts.find(x => x.mint === mintInput);
 
     return (
-        <div className="relative w-full max-w-full p-2 bg-gray-900 rounded-lg text-white space-y-2 border border-gray-700">
+        <div className="relative w-full max-w-full p-1 bg-gray-900 rounded-md text-white space-y-1 border border-gray-700">
 
             {/* Mint Selector */}
-            <div className="flex items-center justify-between gap-2">
-                <div className="relative flex-shrink-0">
+            <div className="flex items-center justify-between gap-1">
+                <div className="relative">
                     <button
-                        className="flex items-center gap-2 px-3 py-1 bg-gray-800 rounded-md hover:bg-gray-700 max-w-full truncate"
+                        className="flex items-center gap-1 px-1 py-1 bg-gray-800 rounded-md hover:bg-gray-700 max-w-full truncate"
                         onMouseUp={() => {
                             if (!dropdownOpen && onOpenDropdown) {
                                 onOpenDropdown()
@@ -110,11 +110,11 @@ export const MintSelectorInput: React.FC<Props> = ({
                     >
                         {selectedTokenAccount ? (
                             <>
-                                <img src={selectedTokenAccount.image} alt="" className="w-5 h-5 rounded-full" />
-                                <span className="truncate">{selectedTokenAccount.symbol}</span>
+                                <img src={selectedTokenAccount.image} alt="" className="w-4 h-4 rounded-full" />
+                                <span className="text-xs truncate">{selectedTokenAccount.symbol}</span>
                             </>
                         ) : (
-                            <span>Select</span>
+                            <span className="text-xs truncate">Select</span>
                         )}
                     </button>
 
@@ -137,7 +137,7 @@ export const MintSelectorInput: React.FC<Props> = ({
                                         return (
                                             <button
                                                 key={account.mint}
-                                                className="w-full flex items-start px-3 py-2 hover:bg-gray-700 text-sm gap-3 text-left"
+                                                className="w-full flex items-start px-3 py-1 hover:bg-gray-700 text-sm gap-3 text-left"
                                                 onClick={() => {
                                                     setMintInput(account.mint);
                                                     onMintChange(account.mint);
@@ -154,7 +154,7 @@ export const MintSelectorInput: React.FC<Props> = ({
                                                                 className="w-4 h-4 rounded-full flex-shrink-0"
                                                             />
                                                         )}
-                                                        <span className="truncate">
+                                                        <span className="text-xs truncate">
                                                             {account.symbol || account.mint.slice(0, 4) + '...'}
                                                         </span>
                                                     </div>
@@ -178,16 +178,16 @@ export const MintSelectorInput: React.FC<Props> = ({
                 <input
                     type="text"
                     placeholder="Paste mint address"
-                    className="flex-1 min-w-0 px-2 py-1 bg-gray-800 rounded-md text-sm outline-none overflow-hidden"
+                    className="flex-1 min-w-0 px-2 py-1 bg-gray-800 rounded-md text-xs outline-none overflow-hidden"
                     value={mintInput}
                     onChange={handleMintChange}
                 />
             </div>
 
             {/* Amount Input */}
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center justify-start gap-1">
                 <button
-                    className="gap-2 px-2 min-w-0 py-1 text-xs bg-gray-700 rounded hover:bg-gray-600 overflow-hidden"
+                    className="gap-2 px-2 min-w-10 py-1 text-xs bg-gray-700 rounded-md hover:bg-gray-600 overflow-hidden"
                     onClick={handleMax}
                     disabled={!mintInput}
                 >
@@ -198,7 +198,7 @@ export const MintSelectorInput: React.FC<Props> = ({
                     type="number"
                     min="0"
                     step="any"
-                    className="flex-1 gap-2 px-3 py-1 bg-gray-800 rounded-md text-sm outline-none"
+                    className="flex-1 min-w-0 px-2 py-1 bg-gray-800 rounded-md text-xs outline-none overflow-hidden"
                     placeholder="0.0"
                     value={amountInternalInput}
                     onChange={(e) => handleAmountInternalChange(e.target.value)}

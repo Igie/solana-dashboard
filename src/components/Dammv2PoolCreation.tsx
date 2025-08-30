@@ -426,7 +426,7 @@ const Dammv2PoolCreation: React.FC = () => {
     }, []);
 
     return (
-        <div className="flex flex-col h-[calc(100vh-140px)] lg:h-[calc(100vh-75px)] space-y-2 px-2 md:px-0">
+        <div className="flex flex-col h-[calc(100vh-160px)] lg:h-[calc(100vh-10px)] space-y-2 px-2 md:px-0">
             <div className="bg-gray-900 border border-gray-700 rounded-2xl p-2 space-y-2">
 
                 <div>
@@ -436,13 +436,13 @@ const Dammv2PoolCreation: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => fetchPools()}
-                                className="flex items-center justify-center px-3 py-2  bg-gray-700 border border-gray-600 rounded-l-md hover:bg-gray-600 text-white"
+                                className="flex items-center justify-center px-3 py-1  bg-gray-700 border border-gray-600 rounded-l-md hover:bg-gray-600 text-white"
                                 title="Refresh pools"
                             >
                                 <RefreshCcw className="w-4 h-4" />
                             </button>
                             <input
-                                className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 py-1 text-white md:text-xs placeholder-gray-500"
+                                className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 text-white md:text-xs placeholder-gray-500"
                                 placeholder="Enter mint address..."
                                 value={searchMint}
                                 onChange={(e) => setSearchMint(e.target.value.trim())}
@@ -455,37 +455,37 @@ const Dammv2PoolCreation: React.FC = () => {
                 {connected && (
                     <button
                         onClick={() => setShowCreateForm(!showCreateForm)}
-                        className="bg-purple-600 hover:bg-purple-500 px-2 py-1 rounded-lg text-white font-medium"
+                        className="bg-purple-600 hover:bg-purple-500 px-2 py-1 rounded-md text-white text-sm font-medium"
                     >
                         {showCreateForm ? "Hide Create Pool Form" : "Show Create Pool Form"}
                     </button>
                 )}
                 {showCreateForm && connected && (
                     <div className="space-y-2">
-                        <div className="relative">
-                            <label className="block text-sm text-gray-400">Base Token</label>
-                            <MintSelectorInput
-                                tokenAccounts={commonTokens}
-                                mint={tokenAMint}
-                                amount={tokenBaseAmount}
-                                onMintChange={(e) => setTokenAMint(e)}
-                                onAmountChange={(e) => setTokenBaseAmount(e)}
-                                onOpenDropdown={async () => await updateCommonTokens()}
-                            />
+                        <div className='grid grid-cols-2 gap-1'>
+                            <div className="relative">
+                                <label className="block text-sm text-gray-400">Base Token</label>
+                                <MintSelectorInput
+                                    tokenAccounts={commonTokens}
+                                    mint={tokenAMint}
+                                    amount={tokenBaseAmount}
+                                    onMintChange={(e) => setTokenAMint(e)}
+                                    onAmountChange={(e) => setTokenBaseAmount(e)}
+                                    onOpenDropdown={async () => await updateCommonTokens()}
+                                />
+                            </div>
+                            <div className="relative">
+                                <label className="block text-sm text-gray-400">Quote Token</label>
+                                <MintSelectorInput
+                                    tokenAccounts={commonTokens}
+                                    mint={tokenBMint}
+                                    amount={tokenQuoteAmount}
+                                    onMintChange={(e) => setTokenBMint(e)}
+                                    onAmountChange={(e) => setTokenQuoteAmount(e)}
 
-                        </div>
-
-                        <div className="relative">
-                            <label className="block text-sm text-gray-400">Quote Token</label>
-                            <MintSelectorInput
-                                tokenAccounts={commonTokens}
-                                mint={tokenBMint}
-                                amount={tokenQuoteAmount}
-                                onMintChange={(e) => setTokenBMint(e)}
-                                onAmountChange={(e) => setTokenQuoteAmount(e)}
-
-                                onOpenDropdown={async () => await updateCommonTokens()}
-                            />
+                                    onOpenDropdown={async () => await updateCommonTokens()}
+                                />
+                            </div>
                         </div>
                         <div className="relative w-full">
                             <label className="block text-sm text-gray-400">Initial Price</label>
@@ -493,14 +493,14 @@ const Dammv2PoolCreation: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={handleFetchPrice}
-                                    className="flex min-w-40 items-center justify-center px-2 py-1 bg-gray-700 border border-gray-600 rounded-l-md hover:bg-gray-600 text-white"
+                                    className="flex min-w-20 items-center justify-center px-2 bg-gray-700 border border-gray-600 rounded-l-md hover:bg-gray-600 text-white text-xs"
                                 >
                                     Get Price
                                 </button>
                                 <input
                                     type="text"
                                     pattern="^[0-9]*[.,]?[0-9]*$"
-                                    className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 py-1 text-white placeholder-gray-500"
+                                    className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 text-xs text-white placeholder-gray-500"
                                     placeholder="0"
                                     value={initialPriceInput}
                                     onChange={(e) => {
@@ -521,78 +521,79 @@ const Dammv2PoolCreation: React.FC = () => {
                                 />
                             </div>
                         </div>
+                        <div className='grid grid-cols-2 gap-1'>
+                            <div className="relative w-full">
+                                <div className='flex flex-cols gap-1'>
+                                    <input type='checkbox'
+                                        checked={useMaxPrice}
+                                        onChange={(e) => setUseMaxPrice(e.target.checked)}>
+                                    </input>
+                                    <label className="block text-sm text-gray-400">Max Price</label>
 
-                        <div className="relative w-full">
-                            <div className='flex flex-cols gap-1'>
-                                <input type='checkbox'
-                                    checked={useMaxPrice}
-                                    onChange={(e) => setUseMaxPrice(e.target.checked)}>
-                                </input>
-                            <label className="block text-sm text-gray-400">Max Price</label>
-
+                                </div>
+                                <div className="flex">
+                                    <input
+                                        type="text"
+                                        pattern="^[0-9]*[.,]?[0-9]*$"
+                                        className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 text-xs text-white placeholder-gray-500"
+                                        placeholder="0"
+                                        value={maxPriceInput}
+                                        onChange={(e) => {
+                                            const val = e.target.value
+                                            // Allow only valid decimal patterns
+                                            if (/^\d*\.?\d*$/.test(val)) {
+                                                setMaxPriceInput(val)
+                                            }
+                                        }}
+                                        onBlur={() => {
+                                            try {
+                                                const d = new Decimal(maxPriceInput || "0")
+                                                setMaxPrice(d)
+                                            } catch {
+                                                setMaxPrice(new Decimal(0))
+                                            }
+                                        }}
+                                    />
+                                </div>
                             </div>
-                            <div className="flex">
-                                <input
-                                    type="text"
-                                    pattern="^[0-9]*[.,]?[0-9]*$"
-                                    className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 py-1 text-white placeholder-gray-500"
-                                    placeholder="0"
-                                    value={maxPriceInput}
-                                    onChange={(e) => {
-                                        const val = e.target.value
-                                        // Allow only valid decimal patterns
-                                        if (/^\d*\.?\d*$/.test(val)) {
-                                            setMaxPriceInput(val)
-                                        }
-                                    }}
-                                    onBlur={() => {
-                                        try {
-                                            const d = new Decimal(maxPriceInput || "0")
-                                            setMaxPrice(d)
-                                        } catch {
-                                            setMaxPrice(new Decimal(0))
-                                        }
-                                    }}
-                                />
+
+                            <div className="relative w-full">
+                                <div className='flex flex-cols gap-1'>
+                                    <input type='checkbox'
+                                        checked={useMinPrice}
+                                        onChange={(e) => setUseMinPrice(e.target.checked)}>
+                                    </input>
+                                    <label className="block text-sm text-gray-400">Min Price</label>
+                                </div>
+                                <div className="flex">
+                                    <input
+                                        type="text"
+                                        pattern="^[0-9]*[.,]?[0-9]*$"
+                                        className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 text-xs text-white placeholder-gray-500"
+                                        placeholder="0"
+                                        value={minPriceInput}
+                                        onChange={(e) => {
+                                            const val = e.target.value
+                                            // Allow only valid decimal patterns
+                                            if (/^\d*\.?\d*$/.test(val)) {
+                                                setMinPriceInput(val)
+                                            }
+                                        }}
+                                        onBlur={() => {
+                                            try {
+                                                const d = new Decimal(minPriceInput || "0")
+                                                setMinPrice(d)
+                                            } catch {
+                                                setMinPrice(new Decimal(0))
+                                            }
+                                        }}
+                                    />
+                                </div>
                             </div>
                         </div>
+                        <div className="relative flex flex-cols w-full">
 
-                        <div className="relative w-full">
-                            <div className='flex flex-cols gap-1'>
-                                <input type='checkbox'
-                                    checked={useMinPrice}
-                                    onChange={(e) => setUseMinPrice(e.target.checked)}>
-                                </input>
-                                <label className="block text-sm text-gray-400">Min Price</label>
-                            </div>
-                            <div className="flex">
-                                <input
-                                    type="text"
-                                    pattern="^[0-9]*[.,]?[0-9]*$"
-                                    className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 py-1 text-white placeholder-gray-500"
-                                    placeholder="0"
-                                    value={minPriceInput}
-                                    onChange={(e) => {
-                                        const val = e.target.value
-                                        // Allow only valid decimal patterns
-                                        if (/^\d*\.?\d*$/.test(val)) {
-                                            setMinPriceInput(val)
-                                        }
-                                    }}
-                                    onBlur={() => {
-                                        try {
-                                            const d = new Decimal(minPriceInput || "0")
-                                            setMinPrice(d)
-                                        } catch {
-                                            setMinPrice(new Decimal(0))
-                                        }
-                                    }}
-                                />
-                            </div>
-                        </div>
-                        <div className="relative w-full">
-
-                            <label className="w-full select-none text-reado bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 py-1 text-white">
+                            <label className="w-full select-none text-reado bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 text-white text-xs">
                                 <input type='checkbox'
                                     checked={useDynamicFee}
                                     onChange={(e) => setUseDynamicFee(e.target.checked)}>
@@ -600,63 +601,65 @@ const Dammv2PoolCreation: React.FC = () => {
                                 Use Dynamic Fee
                             </label>
                         </div>
-                        <div className="relative w-full">
-                            <label className="block text-sm text-gray-400">Max Fee Percentage(50% is maximum)</label>
-                            <div className="flex">
-                                <input
-                                    type="text"
-                                    inputMode="decimal"
-                                    pattern="^[0-9]*[.,]?[0-9]*$"
-                                    className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 py-1 text-white placeholder-gray-500"
-                                    placeholder="50"
-                                    value={maxBaseFeePercentageInput}
-                                    onChange={(e) => {
-                                        const val = e.target.value
-                                        // Allow only valid decimal patterns
-                                        if (/^\d*\.?\d*$/.test(val)) {
-                                            setMaxBaseFeePercentageInput(val)
-                                        }
-                                    }}
-                                    onBlur={() => {
-                                        // When leaving input, convert to Decimal
-                                        try {
-                                            const d = new Decimal(maxBaseFeePercentageInput || "0")
-                                            setMaxBaseFeePercentage(d)
-                                        } catch {
-                                            setMaxBaseFeePercentage(new Decimal(6))
-                                        }
-                                    }}
-                                />
+                        <div className='grid grid-cols-2 gap-1'>
+                            <div className="relative w-full">
+                                <label className="block text-sm text-gray-400">Max Fee Percentage</label>
+                                <div className="flex">
+                                    <input
+                                        type="text"
+                                        inputMode="decimal"
+                                        pattern="^[0-9]*[.,]?[0-9]*$"
+                                        className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 text-xs text-white placeholder-gray-500"
+                                        placeholder="50"
+                                        value={maxBaseFeePercentageInput}
+                                        onChange={(e) => {
+                                            const val = e.target.value
+                                            // Allow only valid decimal patterns
+                                            if (/^\d*\.?\d*$/.test(val)) {
+                                                setMaxBaseFeePercentageInput(val)
+                                            }
+                                        }}
+                                        onBlur={() => {
+                                            // When leaving input, convert to Decimal
+                                            try {
+                                                const d = new Decimal(maxBaseFeePercentageInput || "0")
+                                                setMaxBaseFeePercentage(d)
+                                            } catch {
+                                                setMaxBaseFeePercentage(new Decimal(6))
+                                            }
+                                        }}
+                                    />
+                                </div>
                             </div>
-                        </div>
 
-                        <div className="relative w-full">
-                            <label className="block text-sm text-gray-400">Base Fee Percentage</label>
-                            <div className="flex">
-                                <input
-                                    type="text"
-                                    inputMode="decimal"
-                                    pattern="^[0-9]*[.,]?[0-9]*$"
-                                    className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 py-1 text-white placeholder-gray-500"
-                                    placeholder="6"
-                                    value={baseFeePercentageInput}
-                                    onChange={(e) => {
-                                        const val = e.target.value
-                                        // Allow only valid decimal patterns
-                                        if (/^\d*\.?\d*$/.test(val)) {
-                                            setBaseFeePercentageInput(val)
-                                        }
-                                    }}
-                                    onBlur={() => {
-                                        // When leaving input, convert to Decimal
-                                        try {
-                                            const d = new Decimal(baseFeePercentageInput || "0")
-                                            setBaseFeePercentage(d)
-                                        } catch {
-                                            setBaseFeePercentage(new Decimal(6))
-                                        }
-                                    }}
-                                />
+                            <div className="relative w-full">
+                                <label className="block text-sm text-gray-400">Base Fee Percentage</label>
+                                <div className="flex">
+                                    <input
+                                        type="text"
+                                        inputMode="decimal"
+                                        pattern="^[0-9]*[.,]?[0-9]*$"
+                                        className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 text-xs text-white placeholder-gray-500"
+                                        placeholder="6"
+                                        value={baseFeePercentageInput}
+                                        onChange={(e) => {
+                                            const val = e.target.value
+                                            // Allow only valid decimal patterns
+                                            if (/^\d*\.?\d*$/.test(val)) {
+                                                setBaseFeePercentageInput(val)
+                                            }
+                                        }}
+                                        onBlur={() => {
+                                            // When leaving input, convert to Decimal
+                                            try {
+                                                const d = new Decimal(baseFeePercentageInput || "0")
+                                                setBaseFeePercentage(d)
+                                            } catch {
+                                                setBaseFeePercentage(new Decimal(6))
+                                            }
+                                        }}
+                                    />
+                                </div>
                             </div>
                         </div>
                         <div className="relative w-full">
@@ -666,7 +669,7 @@ const Dammv2PoolCreation: React.FC = () => {
                                     type="text"
                                     inputMode="decimal"
                                     pattern="^[0-9]*[.,]?[0-9]*$"
-                                    className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 py-1 text-white placeholder-gray-500"
+                                    className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 text-xs text-white placeholder-gray-500"
                                     placeholder="60"
                                     value={totalSchedulerDurationInput}
                                     onChange={(e) => {
@@ -689,13 +692,13 @@ const Dammv2PoolCreation: React.FC = () => {
                             </div>
                         </div>
                         <div className="relative w-full">
-                            <label className="block text-sm text-gray-400">Scheduler Reduction Period (how many x minutes reduction happens)</label>
+                            <label className="block text-sm text-gray-400">Scheduler Reduction Period</label>
                             <div className="flex">
                                 <input
                                     type="text"
                                     inputMode="decimal"
                                     pattern="^[0-9]*[.,]?[0-9]*$"
-                                    className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 py-1 text-white placeholder-gray-500"
+                                    className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 text-xs text-white placeholder-gray-500"
                                     placeholder="2"
                                     value={schedulerReductionPeriodInput}
                                     onChange={(e) => {
@@ -716,88 +719,87 @@ const Dammv2PoolCreation: React.FC = () => {
                                 />
                             </div>
                         </div>
+                        <div className='grid grid-cols-2 gap-1'>
+                            <div className="relative w-full">
+                                <label className="block text-sm text-gray-400">Fee Schedule Mode</label>
 
-                        <div className="relative w-full">
-                            <label className="block text-sm text-gray-400">Fee Schedule Mode</label>
+                                <button
+                                    type="button"
+                                    onClick={() => setFeeSchedulerDropdownOpen(!feeSchedulerDropdownOpen)}
+                                    className="w-full bg-gray-800 border border-gray-700 rounded-md px-2 text-xs text-white text-left flex justify-between items-center"
+                                >
+                                    {FeeSchedulerMode[selectedFeeScheduler]} {/* Converts numeric value to string name */}
+                                    <svg className="w-4 h-4 text-gray-400 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
 
-                            <button
-                                type="button"
-                                onClick={() => setFeeSchedulerDropdownOpen(!feeSchedulerDropdownOpen)}
-                                className="w-full bg-gray-800 border border-gray-700 rounded-md px-2 py-1 text-white text-left flex justify-between items-center"
-                            >
-                                {FeeSchedulerMode[selectedFeeScheduler]} {/* Converts numeric value to string name */}
-                                <svg className="w-4 h-4 text-gray-400 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </button>
+                                {feeSchedulerDropdownOpen && (
+                                    <div className="absolute z-50 mt-1 w-full bg-gray-800 border border-gray-700 rounded-md shadow-lg">
+                                        {Object.entries(FeeSchedulerMode)
+                                            .filter(([, val]) => !isNaN(Number(val))) // Only numeric entries (skip reverse keys)
+                                            .map(([key, val]) => (
+                                                <div
+                                                    key={val}
+                                                    onClick={() => {
+                                                        setSelectedFeeScheduler(Number(val))
+                                                        setFeeSchedulerDropdownOpen(false)
+                                                    }}
+                                                    className={`px-2 cursor-pointer hover:bg-gray-700 text-white text-xs ${selectedFeeScheduler === Number(val) ? 'bg-gray-700' : ''
+                                                        }`}
+                                                >
+                                                    {key}
+                                                </div>
+                                            ))}
+                                    </div>
+                                )}
+                            </div>
 
-                            {feeSchedulerDropdownOpen && (
-                                <div className="absolute z-50 mt-1 w-full bg-gray-800 border border-gray-700 rounded-md shadow-lg">
-                                    {Object.entries(FeeSchedulerMode)
-                                        .filter(([, val]) => !isNaN(Number(val))) // Only numeric entries (skip reverse keys)
-                                        .map(([key, val]) => (
-                                            <div
-                                                key={val}
-                                                onClick={() => {
-                                                    setSelectedFeeScheduler(Number(val))
-                                                    setFeeSchedulerDropdownOpen(false)
-                                                }}
-                                                className={`px-2 py-1 cursor-pointer hover:bg-gray-700 text-white ${selectedFeeScheduler === Number(val) ? 'bg-gray-700' : ''
-                                                    }`}
-                                            >
-                                                {key}
-                                            </div>
-                                        ))}
-                                </div>
-                            )}
-                        </div>
+                            <div className="relative w-full">
+                                <label className="block text-sm text-gray-400">Fee Collection Mode</label>
 
-                        <div className="relative w-full">
-                            <label className="block text-sm text-gray-400">Fee Collection Mode</label>
+                                <button
+                                    type="button"
+                                    onClick={() => setFeeModeDropdownOpen(!feeModeDropdownOpen)}
+                                    className="w-full bg-gray-800 border border-gray-700 rounded-md px-2 text-white text-xs text-left flex justify-between items-center"
+                                >
+                                    {CollectFeeMode[selectedFeeMode]} {/* Converts numeric value to string name */}
+                                    <svg className="w-4 h-4 text-gray-400 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
 
-                            <button
-                                type="button"
-                                onClick={() => setFeeModeDropdownOpen(!feeModeDropdownOpen)}
-                                className="w-full bg-gray-800 border border-gray-700 rounded-md px-2 py-1 text-white text-left flex justify-between items-center"
-                            >
-                                {CollectFeeMode[selectedFeeMode]} {/* Converts numeric value to string name */}
-                                <svg className="w-4 h-4 text-gray-400 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </button>
-
-                            {feeModeDropdownOpen && (
-                                <div className="absolute z-50 mt-1 w-full bg-gray-800 border border-gray-700 rounded-md shadow-lg">
-                                    {Object.entries(CollectFeeMode)
-                                        .filter(([, val]) => !isNaN(Number(val))) // Only numeric entries (skip reverse keys)
-                                        .map(([key, val]) => (
-                                            <div
-                                                key={val}
-                                                onClick={() => {
-                                                    setSelectedFeeMode(Number(val))
-                                                    setFeeModeDropdownOpen(false)
-                                                }}
-                                                className={`px-2 py-1 cursor-pointer hover:bg-gray-700 text-white ${selectedFeeMode === Number(val) ? 'bg-gray-700' : ''
-                                                    }`}
-                                            >
-                                                {key}
-                                            </div>
-                                        ))}
-                                </div>
-                            )}
-
-
+                                {feeModeDropdownOpen && (
+                                    <div className="absolute z-50 mt-1 w-full bg-gray-800 border border-gray-700 rounded-md shadow-lg">
+                                        {Object.entries(CollectFeeMode)
+                                            .filter(([, val]) => !isNaN(Number(val))) // Only numeric entries (skip reverse keys)
+                                            .map(([key, val]) => (
+                                                <div
+                                                    key={val}
+                                                    onClick={() => {
+                                                        setSelectedFeeMode(Number(val))
+                                                        setFeeModeDropdownOpen(false)
+                                                    }}
+                                                    className={`px-2 cursor-pointer hover:bg-gray-700 text-white text-xs ${selectedFeeMode === Number(val) ? 'bg-gray-700' : ''
+                                                        }`}
+                                                >
+                                                    {key}
+                                                </div>
+                                            ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                         {!newPoolAddressExists && connected ?
                             <button
-                                className="bg-green-600 hover:bg-green-500 px-2 py-1 rounded-lg text-white font-semibold"
+                                className="bg-green-600 hover:bg-green-500 px-2 rounded-lg text-white font-semibold"
                                 onClick={(e) => handleCreatePool(e.shiftKey)}
                             >
                                 Create Pool
                             </button>
                             :
                             <a
-                                className="h-full bg-red-600 hover:bg-red-500 px-2 py-1 rounded-lg text-white font-semibold text-sm"
+                                className="h-full bg-red-600 hover:bg-red-500 px-2 rounded-lg text-white font-semibold text-sm"
                                 href={`https://edge.meteora.ag/dammv2/${newPoolAddress}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
