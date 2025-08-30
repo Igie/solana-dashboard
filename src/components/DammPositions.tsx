@@ -717,113 +717,129 @@ const DammPositions: React.FC = () => {
                 {/* Expanded Panel (Same for both desktop and mobile) */}
                 {expandedIndex == index && (
                   <div className="px-4 py-3 bg-gray-800 border-b border-gray-700">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    {/* Pool + Token Links */}
+                    <div className="space-y-6">
                       {/* Pool Links */}
-                      <div>
-                        <h4 className="text-white font-medium mb-2 text-sm">Pool Analytics</h4>
-                        <div className="space-y-2">
-                          <a
-                            href={`https://edge.meteora.ag/dammv2/${position.poolAddress}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 text-purple-400 hover:text-purple-300 text-sm"
-                          >
-                            Meteora Pool <ExternalLink className="w-3 h-3" />
-                          </a>
-                          <a
-                            href={`https://dexscreener.com/solana/${position.poolAddress}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 text-purple-400 hover:text-purple-300 text-sm"
-                          >
-                            DexScreener <ExternalLink className="w-3 h-3" />
-                          </a>
-                          <a
-                            href={`https://axiom.trade/meme/${position.poolAddress}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 text-purple-400 hover:text-purple-300 text-sm"
-                          >
-                            Axiom Chart <ExternalLink className="w-3 h-3" />
-                          </a>
-                          <a
-                            href={`https://www.dextools.io/app/en/solana/pair-explorer/${position.poolAddress}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 text-purple-400 hover:text-purple-300 text-sm"
-                          >
-                            DEXTools Chart <ExternalLink className="w-3 h-3" />
-                          </a>
+                      <div className='md:flex grid gap-2'>
+                        <div className='flex gap-2'>
+                          <div className='grid'>
+                            <div className="space-y-1">
+                              <h4 className="text-white font-medium mb-2 text-sm">Pool Analytics</h4>
+                              <a
+                                href={`https://edge.meteora.ag/dammv2/${position.poolAddress}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 text-purple-400 hover:text-purple-300 text-sm"
+                              >
+                                Meteora Pool <ExternalLink className="w-3 h-3" />
+                              </a>
+                              <a
+                                href={`https://dexscreener.com/solana/${position.poolAddress}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 text-purple-400 hover:text-purple-300 text-sm"
+                              >
+                                DexScreener <ExternalLink className="w-3 h-3" />
+                              </a>
+                              <a
+                                href={`https://axiom.trade/meme/${position.poolAddress}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 text-purple-400 hover:text-purple-300 text-sm"
+                              >
+                                Axiom Chart <ExternalLink className="w-3 h-3" />
+                              </a>
+                              <a
+                                href={`https://www.dextools.io/app/en/solana/pair-explorer/${position.poolAddress}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 text-purple-400 hover:text-purple-300 text-sm"
+                              >
+                                DEXTools Chart <ExternalLink className="w-3 h-3" />
+                              </a>
+                            </div>
+                            <div className="space-y-1">
+                              <h4 className="text-white font-medium mb-2 text-sm">Token Analytics</h4>
+                              <a
+                                href={`https://gmgn.ai/sol/token/NQhHUcmQ_${position.tokenA.mint}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm"
+                              >
+                                {position.tokenA.symbol} on GMGN <ExternalLink className="w-3 h-3" />
+                              </a>
+                              <a
+                                href={`https://gmgn.ai/sol/token/NQhHUcmQ_${position.tokenB.mint}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm"
+                              >
+                                {position.tokenB.symbol} on GMGN <ExternalLink className="w-3 h-3" />
+                              </a>
+                              <div className="y-1" />
+                              <a
+                                href={`https://axiom.trade/t/${position.tokenA.mint}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm"
+                              >
+                                {position.tokenA.symbol} on AXIOM <ExternalLink className="w-3 h-3" />
+                              </a>
+                              <a
+                                href={`https://axiom.trade/t/${position.tokenB.mint}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm"
+                              >
+                                {position.tokenB.symbol} on AXIOM <ExternalLink className="w-3 h-3" />
+                              </a>
+                            </div>
+                            {/* Actions */}
+                            <div>
+                              <h4 className="text-white font-medium mb-2 text-sm">Actions</h4>
+                              <div className="space-y-2">
+                                {position.positionUnclaimedFee > 0 && (
+                                  <button
+                                    className="w-full bg-green-600 hover:bg-green-700 text-white text-sm px-3 py-2 rounded"
+                                    onClick={() => handleClaimFees(position)}
+                                  >
+                                    Claim Fees
+                                  </button>
+                                )}
+                                <button
+                                  className="w-full bg-red-600 hover:bg-red-700 text-white text-sm px-3 py-2 rounded"
+                                  onClick={() => handleClosePosition(position)}
+                                >
+                                  Close Position
+                                </button>
+                                <button
+                                  className="w-full bg-red-600 hover:bg-red-700 text-white text-sm px-3 py-2 rounded"
+                                  onClick={() => handleClosePositionAndSwap(position)}
+                                >
+                                  Close and Swap Position
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                          {/* Scheduler (expands in width) */}
                         </div>
-                      </div>
-
-
-
-                      {/* Token Links */}
-                      <div>
-                        <h4 className="text-white font-medium mb-2 text-sm">Token Analytics</h4>
-                        <div className="space-y-2">
-                          <a
-                            href={`https://gmgn.ai/sol/token/NQhHUcmQ_${position.tokenA.mint}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm"
-                          >
-                            {position.tokenA.symbol} on GMGN <ExternalLink className="w-3 h-3" />
-                          </a>
-                          <a
-                            href={`https://gmgn.ai/sol/token/NQhHUcmQ_${position.tokenB.mint}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm"
-                          >
-                            {position.tokenB.symbol} on GMGN <ExternalLink className="w-3 h-3" />
-                          </a>
-                          <div className='y-1' />
-                          <a
-                            href={`https://axiom.trade/t/${position.tokenA.mint}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm"
-                          >
-                            {position.tokenA.symbol} on AXIOM <ExternalLink className="w-3 h-3" />
-                          </a>
-                          <a
-                            href={`https://axiom.trade/t/${position.tokenB.mint}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm"
-                          >
-                            {position.tokenB.symbol} on AXIOM <ExternalLink className="w-3 h-3" />
-                          </a>
+                        <div className='flex md:grid w-full grid-cols-3'>
+                          <div className='col-span-2 min-h-60'>
+                            <iframe
+                              src={`https://www.gmgn.cc/kline/sol/${position.tokenA.mint}`}
+                              className="w-full h-full rounded border border-gray-700"
+                            />
+                          </div>
+                          <div className="w-full min-h-[110px] flex-1">
+                            <FeeSchedulerGraph poolState={position.poolState} />
+                          </div>
                         </div>
-                      </div>
-                      {/* Scheduler */}
-                      <div>
-                        <FeeSchedulerGraph poolState={position.poolState} />
-                      </div>
-                      {/* Actions */}
-                      <div>
-                        <h4 className="text-white font-medium mb-2 text-sm">Actions</h4>
-                        <div className="space-y-2">
-                          {position.positionUnclaimedFee > 0 && (
-                            <button className="w-full bg-green-600 hover:bg-green-700 text-white text-sm px-3 py-2 rounded"
-                              onClick={() => handleClaimFees(position)}>
-                              Claim Fees
-                            </button>
-                          )}
-                          <button className="w-full bg-red-600 hover:bg-red-700 text-white text-sm px-3 py-2 rounded"
-                            onClick={() => handleClosePosition(position)}>
-                            Close Position
-                          </button>
 
-                          <button className="w-full bg-red-600 hover:bg-red-700 text-white text-sm px-3 py-2 rounded"
-                            onClick={() => handleClosePositionAndSwap(position)}>
-                            Close and Swap Position
-                          </button>
-                        </div>
+
                       </div>
                     </div>
+                    {/* GMGN Pool Chart */}
+
                   </div>
                 )}
               </div>

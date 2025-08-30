@@ -95,7 +95,8 @@ export const FeeSchedulerGraph: React.FC<FeeSchedulerGraphProps> = ({ poolState 
                             value: "Fee (%)",
                             angle: -90,
                             position: "insideLeft",
-                            offset: 20, // increase this value to move label to the right
+                            offset: 20,
+
                         }}
                     />
 
