@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useEffect } from 'react'
 import { RefreshCcw } from 'lucide-react'
-import { CollectFeeMode, CpAmm, deriveCustomizablePoolAddress, feeNumeratorToBps, FeeSchedulerMode, getBaseFeeNumerator, getBaseFeeParams, getDynamicFeeParams, getFeeNumerator, getPriceFromSqrtPrice, MAX_SQRT_PRICE, MIN_SQRT_PRICE } from '@meteora-ag/cp-amm-sdk'
+import { CollectFeeMode, CpAmm, deriveCustomizablePoolAddress, feeNumeratorToBps, FeeSchedulerMode, getBaseFeeNumerator, getBaseFeeParams, getDynamicFeeParams, getFeeNumerator, getPriceFromSqrtPrice, getSqrtPriceFromPrice, MAX_SQRT_PRICE, MIN_SQRT_PRICE } from '@meteora-ag/cp-amm-sdk'
 import { Keypair, PublicKey } from '@solana/web3.js'
 import { BN } from '@coral-xyz/anchor'
 import { fetchTokenMetadataJup, metadataToAccounts, type TokenAccount, type TokenMetadataMap } from '../tokenUtils'
@@ -46,6 +46,16 @@ const Dammv2PoolCreation: React.FC = () => {
     const [initialPrice, setInitialPrice] = useState(new Decimal(0))
     const [initialPriceInput, setInitialPriceInput] = useState("0")
 
+    const [useMaxPrice, setUseMaxPrice] = useState(false)
+    const [maxPrice, setMaxPrice] = useState(new Decimal(0))
+    const [maxPriceInput, setMaxPriceInput] = useState("0")
+
+    const [useMinPrice, setUseMinPrice] = useState(false)
+    const [minPrice, setMinPrice] = useState(new Decimal(0))
+    const [minPriceInput, setMinPriceInput] = useState("0")
+
+    const [useDynamicFee, setUseDynamicFee] = useState(true)
+
     const [maxBaseFeePercentage, setMaxBaseFeePercentage] = useState(new Decimal(40))
     const [maxBaseFeePercentageInput, setMaxBaseFeePercentageInput] = useState("40")
 
@@ -87,6 +97,14 @@ const Dammv2PoolCreation: React.FC = () => {
     useEffect(() => {
         setInitialPriceInput(initialPrice.toFixed())
     }, [initialPrice])
+
+    useEffect(() => {
+        setMaxPriceInput(maxPrice.toFixed())
+    }, [maxPrice])
+
+    useEffect(() => {
+        setMinPriceInput(minPrice.toFixed())
+    }, [minPrice])
 
     const cpAmm = new CpAmm(connection);
 
@@ -297,12 +315,20 @@ const Dammv2PoolCreation: React.FC = () => {
             const tokenAAmount = new BN(tokenBaseAmount.toNumber() * (10 ** tokenAMetadata.decimals));
             const tokenBAmount = new BN(tokenQuoteAmount.toNumber() * (10 ** tokenBMetadata.decimals));
 
+            console.log(tokenAMetadata.decimals);
+            console.log(minPrice.toString());
+            console.log(minPrice.mul(Decimal.pow(10, tokenAMetadata.decimals)).toNumber());
+            console.log(new BN(maxPrice.mul(Decimal.pow(10, tokenAMetadata.decimals)).toNumber()));
+
+            const minSqrtPrice = (minPrice.greaterThan(0) && useMinPrice) ? getSqrtPriceFromPrice(minPrice.toString(), tokenAMetadata.decimals, tokenBMetadata.decimals) : MIN_SQRT_PRICE;
+            const maxSqrtPrice = (maxPrice.greaterThan(0) && useMinPrice) ? getSqrtPriceFromPrice(maxPrice.toString(), tokenAMetadata.decimals, tokenBMetadata.decimals) : MAX_SQRT_PRICE;
+
             const { liquidityDelta: initPoolLiquidityDelta, initSqrtPrice } =
                 cpAmm.preparePoolCreationParams({
                     tokenAAmount,
                     tokenBAmount,
-                    minSqrtPrice: MIN_SQRT_PRICE,
-                    maxSqrtPrice: MAX_SQRT_PRICE,
+                    minSqrtPrice: minSqrtPrice,
+                    maxSqrtPrice: maxSqrtPrice,
                 });
 
             const maxFee = maxBaseFeePercentage.toNumber();
@@ -312,7 +338,7 @@ const Dammv2PoolCreation: React.FC = () => {
             const poolFees = {
                 baseFee: getBaseFeeParams(maxFee * 100, minFee * 100, selectedFeeScheduler, totalDuration.div(new BN(reductionPeriod)).toNumber(), totalDuration.toNumber()),
                 padding: [],
-                dynamicFee: getDynamicFeeParams(0, 1500),
+                dynamicFee: useDynamicFee ? getDynamicFeeParams(0, 1500) : null,
             };
 
             const positionNft = Keypair.generate();
@@ -326,8 +352,8 @@ const Dammv2PoolCreation: React.FC = () => {
                 tokenAAmount: tokenAAmount,
                 tokenBAmount: tokenBAmount,
                 initSqrtPrice: initSqrtPrice,
-                sqrtMinPrice: MIN_SQRT_PRICE,
-                sqrtMaxPrice: MAX_SQRT_PRICE,
+                sqrtMinPrice: minSqrtPrice,
+                sqrtMaxPrice: maxSqrtPrice,
                 liquidityDelta: initPoolLiquidityDelta,
                 poolFees,
                 hasAlphaVault: false,
@@ -496,6 +522,84 @@ const Dammv2PoolCreation: React.FC = () => {
                             </div>
                         </div>
 
+                        <div className="relative w-full">
+                            <div className='flex flex-cols gap-1'>
+                                <input type='checkbox'
+                                    checked={useMaxPrice}
+                                    onChange={(e) => setUseMaxPrice(e.target.checked)}>
+                                </input>
+                            <label className="block text-sm text-gray-400">Max Price</label>
+
+                            </div>
+                            <div className="flex">
+                                <input
+                                    type="text"
+                                    pattern="^[0-9]*[.,]?[0-9]*$"
+                                    className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 py-1 text-white placeholder-gray-500"
+                                    placeholder="0"
+                                    value={maxPriceInput}
+                                    onChange={(e) => {
+                                        const val = e.target.value
+                                        // Allow only valid decimal patterns
+                                        if (/^\d*\.?\d*$/.test(val)) {
+                                            setMaxPriceInput(val)
+                                        }
+                                    }}
+                                    onBlur={() => {
+                                        try {
+                                            const d = new Decimal(maxPriceInput || "0")
+                                            setMaxPrice(d)
+                                        } catch {
+                                            setMaxPrice(new Decimal(0))
+                                        }
+                                    }}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="relative w-full">
+                            <div className='flex flex-cols gap-1'>
+                                <input type='checkbox'
+                                    checked={useMinPrice}
+                                    onChange={(e) => setUseMinPrice(e.target.checked)}>
+                                </input>
+                                <label className="block text-sm text-gray-400">Min Price</label>
+                            </div>
+                            <div className="flex">
+                                <input
+                                    type="text"
+                                    pattern="^[0-9]*[.,]?[0-9]*$"
+                                    className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 py-1 text-white placeholder-gray-500"
+                                    placeholder="0"
+                                    value={minPriceInput}
+                                    onChange={(e) => {
+                                        const val = e.target.value
+                                        // Allow only valid decimal patterns
+                                        if (/^\d*\.?\d*$/.test(val)) {
+                                            setMinPriceInput(val)
+                                        }
+                                    }}
+                                    onBlur={() => {
+                                        try {
+                                            const d = new Decimal(minPriceInput || "0")
+                                            setMinPrice(d)
+                                        } catch {
+                                            setMinPrice(new Decimal(0))
+                                        }
+                                    }}
+                                />
+                            </div>
+                        </div>
+                        <div className="relative w-full">
+
+                            <label className="w-full select-none text-reado bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 py-1 text-white">
+                                <input type='checkbox'
+                                    checked={useDynamicFee}
+                                    onChange={(e) => setUseDynamicFee(e.target.checked)}>
+                                </input>
+                                Use Dynamic Fee
+                            </label>
+                        </div>
                         <div className="relative w-full">
                             <label className="block text-sm text-gray-400">Max Fee Percentage(50% is maximum)</label>
                             <div className="flex">
