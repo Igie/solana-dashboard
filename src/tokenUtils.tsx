@@ -19,7 +19,6 @@ export interface TokenMetadata {
     price: number
     decimals: number
     image?: string
-    description?: string
 }
 
 export interface TokenAccount {
@@ -40,6 +39,17 @@ export interface JupData {
     decimals: number,
     priceChange24h: number,
     usdPrice: number
+}
+
+export interface JupTokenMetadata {
+    id: string,
+    name: string,
+    symbol: string,
+    icon?: string,
+    decimals?: number,
+    tokenProgram: string,
+    usdPrice?: number,
+
 }
 
 export interface JupDataMap {
@@ -70,7 +80,41 @@ export const GetTokenAccountMap = (tokenAccounts: TokenAccount[]): TokenAccountM
     return tokenAccountMap;
 }
 
-export const fetchTokenMetadata = async (c: Connection, mintAddresses: string[]): Promise<{ [key: string]: TokenMetadata }> => {
+export const fetchTokenMetadataJup = async (mintAddresses: string[]): Promise<{ [key: string]: TokenMetadata }> => {
+    const metadataMap: { [key: string]: TokenMetadata } = {}
+    if (mintAddresses.length === 0)
+        return metadataMap;
+
+    try {
+        let i = 0;
+        while (i < mintAddresses.length) {
+            const end = Math.min(i + 100, mintAddresses.length);
+            const response = await fetch("https://lite-api.jup.ag/tokens/v2/search?query=" + mintAddresses.slice(i, end).join(','));
+            const tokenMetadata: JupTokenMetadata[] = await response.json();
+            for (const tm of tokenMetadata) {
+                metadataMap[tm.id] = {
+                    mint: tm.id,
+                    name: tm.name || 'Unknown Token',
+                    tokenProgram: tm.tokenProgram,
+                    symbol: tm.symbol || 'UNK',
+                    price: tm.usdPrice || 0,
+                    decimals: tm.decimals || 0,
+                    image: tm.icon,
+                }
+            }
+            i = end;
+        }
+
+        return metadataMap;
+    } catch (error) {
+        console.error('Error in batch metadata fetch:', error)
+        return {}
+    }
+}
+
+export const fetchTokenMetadataJ = async (c: Connection, mintAddresses: string[]): Promise<{ [key: string]: TokenMetadata }> => {
+
+    return await fetchTokenMetadataJup(mintAddresses);
     const metadataMap: { [key: string]: TokenMetadata } = {}
     if (mintAddresses.length === 0)
         return metadataMap;
@@ -123,7 +167,6 @@ export const fetchTokenMetadata = async (c: Connection, mintAddresses: string[])
                     price: prices[mint]?.usdPrice || r.token_info?.price_info?.price_per_token || 0,
                     decimals: r.token_info?.decimals || 0,
                     image: r.content.files?.[0]?.uri || metadata.image,
-                    description: metadata.description
                 }
             }
         }
@@ -190,7 +233,7 @@ export const fetchTokenAccounts = async (c: Connection, publicKey: PublicKey): P
 
     if (mintAddresses.length > 0) {
 
-        const metadataMap = await fetchTokenMetadata(c, mintAddresses);
+        const metadataMap = await fetchTokenMetadataJup(mintAddresses );
         const priceMap = await fetchTokenPrices(mintAddresses, metadataMap);
 
         const metadataArray: TokenMetadata[] = [];

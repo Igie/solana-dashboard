@@ -3,7 +3,7 @@ import { RefreshCcw, RefreshCw } from 'lucide-react'
 import { CpAmm, feeNumeratorToBps, getBaseFeeNumerator, getFeeNumerator, getPriceFromSqrtPrice, getTokenProgram } from '@meteora-ag/cp-amm-sdk'
 import { PublicKey, type KeyedAccountInfo, } from '@solana/web3.js'
 import { BN } from '@coral-xyz/anchor'
-import { fetchTokenMetadata, type TokenMetadataMap } from '../tokenUtils'
+import { fetchTokenMetadataJup, type TokenMetadataMap } from '../tokenUtils'
 import Decimal from 'decimal.js'
 
 import { PoolSortType, sortPools, type PoolDetailedInfo, type PoolInfo, type PoolInfoMap } from '../constants'
@@ -47,7 +47,7 @@ const Dammv2Browser: React.FC = () => {
             account: pool,
         };
 
-        const tm = await fetchTokenMetadata(connection, [pool.tokenAMint.toBase58(), pool.tokenBMint.toBase58()]);
+        const tm = await fetchTokenMetadataJup([pool.tokenAMint.toBase58(), pool.tokenBMint.toBase58()]);
         setTokenMetadataMap(tm);
         setPools([accountPool]);
         mapPools([accountPool], tm);
@@ -82,7 +82,7 @@ const Dammv2Browser: React.FC = () => {
             mints.push(...allPools.map(p => p.account.tokenAMint.toBase58()));
             mints.push(...allPools.map(p => p.account.tokenBMint.toBase58()));
             mints = [...new Set(mints)]
-            const tm = await fetchTokenMetadata(connection, mints);
+            const tm = await fetchTokenMetadataJup(mints);
             setTokenMetadataMap(tm);
             setPools(allPools);
             mapPools(allPools, tm);
@@ -217,11 +217,11 @@ const Dammv2Browser: React.FC = () => {
             setDummyBool(!b);
             b = !b;
             clearTimeout(timeout);
-        }, 5000);
+        }, 1000);
         const timer = setInterval(() => {
             setDummyBool(!b);
             b = !b;
-        }, 20000);
+        }, 2000);
 
         return () => {
             clearTimeout(timeout);
@@ -253,12 +253,12 @@ const Dammv2Browser: React.FC = () => {
         }
 
         let entries = Object.entries(poolInfoMap)
-        const finalPools = entries.map(x => x[1]).sort((x, y) => y.account.activationPoint.sub(x.account.activationPoint).toNumber()).slice(0, 40);
+        const finalPools = entries.map(x => x[1]).sort((x, y) => y.account.activationPoint.sub(x.account.activationPoint).toNumber()).slice(0, 100);
         setPools(finalPools);
         mints.push(...finalPools.map(x => x.account.tokenAMint.toBase58()));
         mints.push(...finalPools.map(x => x.account.tokenBMint.toBase58()));
         mints = [...new Set(mints)]
-        const newTokenMetadataMap = fetchTokenMetadata(connection, mints);
+        const newTokenMetadataMap = fetchTokenMetadataJup(mints);
         const oldTokenMetadataMap = tokenMetadataMap;
         newTokenMetadataMap.then((x) => {
 

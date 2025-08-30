@@ -7,7 +7,6 @@ import {
     CartesianGrid,
     ResponsiveContainer,
     ReferenceLine,
-    Label,
 } from "recharts";
 import BN from "bn.js";
 import { feeNumeratorToBps, FeeSchedulerMode, type PoolState } from "@meteora-ag/cp-amm-sdk";

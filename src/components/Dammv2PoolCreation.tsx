@@ -4,7 +4,7 @@ import { RefreshCcw } from 'lucide-react'
 import { CollectFeeMode, CpAmm, deriveCustomizablePoolAddress, feeNumeratorToBps, FeeSchedulerMode, getBaseFeeNumerator, getBaseFeeParams, getDynamicFeeParams, getFeeNumerator, getPriceFromSqrtPrice, MAX_SQRT_PRICE, MIN_SQRT_PRICE } from '@meteora-ag/cp-amm-sdk'
 import { Keypair, PublicKey } from '@solana/web3.js'
 import { BN } from '@coral-xyz/anchor'
-import { fetchTokenMetadata, metadataToAccounts, type TokenAccount, type TokenMetadataMap } from '../tokenUtils'
+import { fetchTokenMetadataJup, metadataToAccounts, type TokenAccount, type TokenMetadataMap } from '../tokenUtils'
 import Decimal from 'decimal.js'
 import { MintSelectorInput } from './Simple/MintSelectorInput'
 import { useTokenAccounts } from '../contexts/TokenAccountsContext'
@@ -132,7 +132,7 @@ const Dammv2PoolCreation: React.FC = () => {
                 mints.push(...allPools.map(p => p.account.tokenAMint.toBase58()));
                 mints.push(...allPools.map(p => p.account.tokenBMint.toBase58()));
                 mints = [...new Set(mints)]
-                const tm = await fetchTokenMetadata(connection, mints);
+                const tm = await fetchTokenMetadataJup(mints);
                 setTokenMetadataMap(tm);
                 setPools(allPools);
                 mapPools(allPools, tm);
@@ -171,7 +171,7 @@ const Dammv2PoolCreation: React.FC = () => {
             mints.push(...related.map(p => p.account.tokenAMint.toBase58()));
             mints.push(...related.map(p => p.account.tokenBMint.toBase58()));
             mints = [...new Set(mints)];
-            const tm = await fetchTokenMetadata(connection, mints);
+            const tm = await fetchTokenMetadataJup(mints);
             setTokenMetadataMap(tm);
             setPools(related)
             mapPools(related, tm);
@@ -289,7 +289,7 @@ const Dammv2PoolCreation: React.FC = () => {
             const tokenA = new PublicKey(tokenAMint)
             const tokenB = new PublicKey(tokenBMint)
 
-            const metadata = await fetchTokenMetadata(connection, [tokenAMint, tokenBMint])
+            const metadata = await fetchTokenMetadataJup([tokenAMint, tokenBMint])
 
             const tokenAMetadata = metadata[tokenAMint];
             const tokenBMetadata = metadata[tokenBMint];

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState } from 'react'
 import { PublicKey } from '@solana/web3.js'
 import { CpAmm, feeNumeratorToBps, getBaseFeeNumerator, getFeeNumerator, getUnClaimReward, type PoolState, type PositionState } from '@meteora-ag/cp-amm-sdk'
-import { fetchTokenMetadata } from '../tokenUtils'
+import { fetchTokenMetadataJup } from '../tokenUtils'
 import Decimal from 'decimal.js'
 import { BN } from '@coral-xyz/anchor'
 import { useConnection, useWallet } from '@jup-ag/wallet-adapter'
@@ -182,7 +182,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
             const mintAddresses = Array.from(allMints)
 
             // Fetch metadata and prices for all tokens
-            const metadataMap = await fetchTokenMetadata(connection, mintAddresses);
+            const metadataMap = await fetchTokenMetadataJup(mintAddresses);
             const positionsParsed: PoolPositionInfo[] = [];
             for (const position of positionsTemp) {
 
@@ -393,7 +393,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
         position.positionState = await cpAmm.fetchPositionState(position.positionAddress);
         position.poolState = await cpAmm.fetchPoolState(position.poolAddress);
 
-        const metadataMap = await fetchTokenMetadata(connection, [position.tokenA.mint, position.tokenB.mint]);
+        const metadataMap = await fetchTokenMetadataJup([position.tokenA.mint, position.tokenB.mint]);
 
         const tokenAMetadata = metadataMap[position.tokenA.mint];
         const tokenBMetadata = metadataMap[position.tokenB.mint];
