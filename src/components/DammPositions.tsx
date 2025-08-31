@@ -365,38 +365,12 @@ const DammPositions: React.FC = () => {
       {positions.length > 0 && (
         <div className="bg-green-900/20 border border-green-700/50 rounded-xl p-1">
           <div className="sm:flex-row items-start sm:items-center justify-between gap-1">
-            <div className="text-green-300">
+            <div className="px-2 text-green-300">
               <span className="text-sm font-semibold">
                 Total Fees: ${positions.reduce((sum, pos) => sum + pos.positionUnclaimedFee, 0).toFixed(2)}
               </span>
             </div>
-            <div className="flex gap-2 w-full sm:w-auto">
-              <button
-                className="bg-purple-600 hover:bg-purple-500 px-4 py-1 rounded text-white flex-1 sm:flex-none"
-                onClick={async () => {
-                  const selectedPositionsTemp = [...selectedPositions];
-                  const txns: Transaction[] = [];
-                  for (const pos of selectedPositionsTemp) {
-                    const txn = await getClosePositionTx(pos)
-                    if (txn)
-                      txns.push(txn);
-                  }
-                  setSelectedPositions(new Set());
-
-                  if (txns.length > 0)
-                    await sendMultiTxn(txns.map(x => {
-                      return {
-                        tx: x,
-                      }
-                    }), {
-                      onSuccess: async () => {
-                        await refreshPositions();
-                      }
-                    })
-                }}
-              >
-                Close All ({selectedPositions.size})
-              </button>
+            <div className="flex justify-between px-2 w-full sm:w-auto">
               <button
                 className="bg-blue-600 hover:bg-blue-500 px-4 py-1 rounded text-white flex-1 sm:flex-none"
                 onClick={async () => {
@@ -425,6 +399,33 @@ const DammPositions: React.FC = () => {
               >
                 Claim Fees ({selectedPositions.size})
               </button>
+              <button
+                className="bg-purple-600 hover:bg-purple-500 px-4 py-1 rounded text-white flex-1 sm:flex-none"
+                onClick={async () => {
+                  const selectedPositionsTemp = [...selectedPositions];
+                  const txns: Transaction[] = [];
+                  for (const pos of selectedPositionsTemp) {
+                    const txn = await getClosePositionTx(pos)
+                    if (txn)
+                      txns.push(txn);
+                  }
+                  setSelectedPositions(new Set());
+
+                  if (txns.length > 0)
+                    await sendMultiTxn(txns.map(x => {
+                      return {
+                        tx: x,
+                      }
+                    }), {
+                      onSuccess: async () => {
+                        await refreshPositions();
+                      }
+                    })
+                }}
+              >
+                Close All ({selectedPositions.size})
+              </button>
+              
             </div>
           </div>
         </div>
