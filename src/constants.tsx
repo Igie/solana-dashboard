@@ -66,7 +66,7 @@ export enum PoolSortType {
     PoolTotalFees,
 }
 
-export const sortPools = (pools: PoolDetailedInfo[], sortType: PoolSortType, ascending?: boolean, currentSlot?: number) => {
+export const sortPools = (pools: PoolDetailedInfo[], sortType: PoolSortType, ascending?: boolean) => {
 
     const p = pools.sort((x, y) => {
         let r = 0;
