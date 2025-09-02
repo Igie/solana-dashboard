@@ -111,7 +111,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                 <div className="flex w-full justify-center gap-1">
                     <div className="grid gap-1">
                         <a
-                            className="bg-purple-600 hover:bg-purple-500 text-white text-xs py-1 px-1 rounded flex items-center justify-end gap-1"
+                            className="bg-purple-600 hover:bg-purple-500 text-white text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
                             href={`https://edge.meteora.ag/dammv2/${pool.poolInfo.publicKey.toBase58()}`}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -120,7 +120,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                             <ExternalLink size={12} />
                         </a>
                         <a
-                            className="bg-purple-600 hover:bg-purple-500 text-white text-xs py-1 px-1 rounded flex items-center justify-end gap-1"
+                            className="bg-purple-600 hover:bg-purple-500 text-white text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
                             href={`https://gmgn.ai/sol/token/NQhHUcmQ_${pool.tokenA.mint}`}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -132,7 +132,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                     <div className="grid w-full gap-1">
                         <button
                             disabled={!connected}
-                            className="bg-blue-600 hover:bg-blue-500 text-white text-xs py-1 px-1 rounded flex items-center justify-start gap-1"
+                            className="bg-blue-600 hover:bg-blue-500 text-white text-xs py-0.5 px-1 rounded flex items-center justify-start gap-1"
                             onClick={() => {
                                 window.Jupiter.init({
                                     formProps: {
@@ -156,7 +156,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                         </button>
                         <button
                             disabled={!connected}
-                            className="bg-blue-600 hover:bg-blue-500 text-white text-xs py-1 px-1 rounded flex items-center justify-start gap-1"
+                            className="bg-blue-600 hover:bg-blue-500 text-white text-xs py-0.5 px-1 rounded flex items-center justify-start gap-1"
                             onClick={(e) => {
                                 setDepositPool(pool);
                                 handleDepositClick(e);
@@ -181,11 +181,14 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
             render: (pool) => (
                 <div className="text-center font-mono">
                     <div className="grid w-max">
-                        {pool.tokenA.symbol || getShortMint(pool.poolInfo.account.tokenAMint)}/
-                        {pool.tokenB.symbol || getShortMint(pool.poolInfo.account.tokenBMint)}
+                        <div>
+                            {pool.tokenA.symbol.slice(0, 10) + (pool.tokenA.symbol.length > 10 ? "..." : "")}/
+                            {pool.tokenB.symbol.slice(0, 10) + (pool.tokenB.symbol.length > 10 ? "..." : "")}
+                        </div>
+
                         <div className="flex gap-1 w-max">
                             <button
-                                className="bg-blue-600 hover:bg-blue-500 text-white text-xs py-1 px-1 rounded flex items-center gap-1"
+                                className="bg-blue-600 hover:bg-blue-500 text-white text-xs py-0.5 px-1 rounded flex items-center gap-1"
                                 onClick={async () => {
                                     await navigator.clipboard.writeText(pool.poolInfo.account.tokenAMint.toBase58());
                                 }}
@@ -196,7 +199,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                             </button>
                             <button
                                 disabled={!connected}
-                                className="bg-blue-600 hover:bg-blue-500 text-white text-xs py-1 px-1 rounded flex items-center gap-1"
+                                className="bg-blue-600 hover:bg-blue-500 text-white text-xs py-0.5 px-1 rounded flex items-center gap-1"
                                 onClick={async () => {
                                     await navigator.clipboard.writeText(pool.poolInfo.account.tokenBMint.toBase58());
                                 }}
@@ -260,7 +263,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
             </div>,
             render: (pool) => (
                 <div className="text-center">
-                    {formatDuration(pool.activationTime)} ago
+                    {formatDuration(pool.age)}
                 </div>
             )
         },
@@ -433,10 +436,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                     <div className="min-w-0 flex gap-1 justify-end">
                                         <span className="text-gray-400">Activation: </span>
                                         <span className="truncate">
-                                            {formatDuration(pool.activationTime).length > 8
-                                                ? formatDuration(pool.activationTime).slice(0, 8) + '...'
-                                                : formatDuration(pool.activationTime)
-                                            } ago
+                                            {formatDuration(pool.age)}
                                         </span>
                                     </div>
                                     <div>

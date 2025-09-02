@@ -10,6 +10,9 @@ import { PoolSortType, sortPools, type PoolDetailedInfo, type PoolInfo, type Poo
 import Dammv2PoolList from './Simple/Dammv2PoolList'
 import { useConnection } from '@jup-ag/wallet-adapter'
 
+const MainPoolFilters = ["Include", "Exclude", "Only"];
+const bn0 = new BN(0);
+
 const Dammv2Browser: React.FC = () => {
     const { connection } = useConnection()
 
@@ -23,6 +26,8 @@ const Dammv2Browser: React.FC = () => {
 
     const [sortBy, setSortBy] = useState<PoolSortType>(PoolSortType.PoolActivationTime);
     const [sortAscending, setSortAscending] = useState<boolean | undefined>(true);
+
+    const [mainPoolFilter, setMainPoolFilter] = useState("Exclude");
 
     const [tokenMetadataMap, setTokenMetadataMap] = useState<TokenMetadataMap>({});
 
@@ -61,14 +66,17 @@ const Dammv2Browser: React.FC = () => {
         setPools([])
         mapPools([], {});
         setFetchingPools(true)
-        setCurrentTime(new BN((Date.now())).divn(1000).toNumber());
-        setCurrentSlot(await connection.getSlot());
+
+        const timeNow = new BN((Date.now())).divn(1000);
+        const slotNow = await connection.getSlot();
+
+
+        setCurrentTime(timeNow.toNumber());
+        setCurrentSlot(slotNow);
+
         let mints: string[] = [];
         try {
-            if (poolCreatorAddress !== "") {
-
-            }
-            const pools = await cpAmm._program.account.pool.all(poolCreatorAddress !== "" ? [{
+            let pools = await cpAmm._program.account.pool.all(poolCreatorAddress !== "" ? [{
                 memcmp: {
                     encoding: 'base58',
                     offset: 648,
@@ -76,6 +84,29 @@ const Dammv2Browser: React.FC = () => {
                 }
             }] : undefined);
 
+            if (mainPoolFilter !== "Include")
+                pools = pools.filter(x => {
+                    const currentFee = feeNumeratorToBps(getFeeNumerator(
+                        x.account.activationType === 0 ? currentSlot :
+                            x.account.activationType === 1 ? currentTime : 0,
+                        x.account.activationPoint,
+                        x.account.poolFees.baseFee.numberOfPeriod,
+                        x.account.poolFees.baseFee.periodFrequency,
+                        x.account.poolFees.baseFee.feeSchedulerMode,
+                        x.account.poolFees.baseFee.cliffFeeNumerator,
+                        x.account.poolFees.baseFee.reductionFactor,
+                        x.account.poolFees.dynamicFee
+                    ));
+
+                    if (mainPoolFilter === "Exclude")
+                        return currentFee > 1000;
+                    if (mainPoolFilter === "Only")
+                        return currentFee <= 1000;
+                    return true;
+
+                }
+                )
+            pools = pools.filter(x => timeNow.sub(x.account.activationPoint).gte(bn0));
             pools.sort((x, y) => y.account.activationPoint.sub(x.account.activationPoint).toNumber())
             const allPools = pools.slice(0, 40); // Limit to first 40 pools
 
@@ -97,7 +128,6 @@ const Dammv2Browser: React.FC = () => {
     }
 
     const mapPools = (p: PoolInfo[], tm: TokenMetadataMap) => {
-
         const detailedPools: PoolDetailedInfo[] = []
         for (const x of p) {
 
@@ -157,7 +187,7 @@ const Dammv2Browser: React.FC = () => {
 
             let activationTime = 0;
             if (x.account.activationType === 0) {
-                activationTime = ((currentSlot - x.account.activationPoint.toNumber()) * 400);
+                activationTime = ((currentSlot - x.account.activationPoint.toNumber()) * 400 / 1000);
             } else {
                 activationTime = currentTime - x.account.activationPoint.toNumber();
             }
@@ -166,7 +196,7 @@ const Dammv2Browser: React.FC = () => {
                 poolInfo: x,
                 tokenA: poolTokenA,
                 tokenB: poolTokenB,
-                activationTime: activationTime,
+                age: activationTime,
                 baseFeeBPS: feeNumeratorToBps(getBaseFeeNumerator(
                     x.account.poolFees.baseFee.feeSchedulerMode,
                     x.account.poolFees.baseFee.cliffFeeNumerator,
@@ -239,12 +269,42 @@ const Dammv2Browser: React.FC = () => {
         //setNewPools(x => { newPoolsLocal = newPools; return x });
         newPoolsLocal = newPools;
         setNewPools({});
+
+
         for (const pool of Object.entries(newPoolsLocal).map(x => x[1])) {
-            if (poolCreatorAddress === "") {
-                poolInfoMap[pool.publicKey.toBase58()] = pool;
-            } else if (pool?.account.creator.toBase58() === poolCreatorAddress) {
-                poolInfoMap[pool.publicKey.toBase58()] = pool;
+
+            if (pool.account.activationType === 0 && pool.account.activationPoint.ltn(currentSlot))
+                continue;
+
+
+            if (pool.account.activationType === 1 && pool.account.activationPoint.ltn(currentTime))
+                continue
+
+
+            if (poolCreatorAddress !== "" && pool?.account.creator.toBase58() !== poolCreatorAddress)
+                continue
+
+
+            const currentFee = feeNumeratorToBps(getFeeNumerator(
+                pool.account.activationType === 0 ? currentSlot :
+                    pool.account.activationType === 1 ? currentTime : 0,
+                pool.account.activationPoint,
+                pool.account.poolFees.baseFee.numberOfPeriod,
+                pool.account.poolFees.baseFee.periodFrequency,
+                pool.account.poolFees.baseFee.feeSchedulerMode,
+                pool.account.poolFees.baseFee.cliffFeeNumerator,
+                pool.account.poolFees.baseFee.reductionFactor,
+                pool.account.poolFees.dynamicFee
+            ));
+            if (mainPoolFilter === "Exclude" && currentFee <= 1000) {
+                continue;
             }
+
+            if (mainPoolFilter === "Only" && currentFee > 1000) {
+                continue;
+            }
+
+            poolInfoMap[pool.publicKey.toBase58()] = pool;
         }
 
         //setPools(x => { poolsLocal = pools; return x });
@@ -338,7 +398,7 @@ const Dammv2Browser: React.FC = () => {
                     )}
                 </button>
                 <label className='flex items-center gap-1 px-2 w-full lg:max-w-40 bg-purple-600 hover:bg-purple-700 rounded-md md:text-sm transition-colors'>
-                     <input type='checkbox'
+                    <input type='checkbox'
                         checked={shouldRefreshPools}
                         onChange={(e) => setShouldRefreshPools(e.target.checked)}>
                     </input>
@@ -346,7 +406,7 @@ const Dammv2Browser: React.FC = () => {
                 </label>
             </div>
 
-            <div>
+            <div className='grid grid-cols-2 gap-1'>
                 <div className="relative w-full">
                     <label className="block text-sm text-gray-400">Pool address</label>
                     <div className="flex" >
@@ -359,15 +419,15 @@ const Dammv2Browser: React.FC = () => {
                             <RefreshCcw className="w-4 h-4" />
                         </button>
                         <input
-                            className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-r-md px-2 py-1 text-white md:text-sm placeholder-gray-500"
+                            className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-r-md px-2 py-0.5 text-white md:text-sm placeholder-gray-500"
                             placeholder="Enter pool address..."
                             value={poolAddress}
                             onChange={(e) => setPoolAddress(e.target.value.trim())}
                         />
                     </div>
                 </div>
-            </div>
-            <div>
+
+
                 <div className="relative w-full">
                     <label className="block text-sm text-gray-400">Creator address</label>
                     <div className="flex" >
@@ -380,11 +440,38 @@ const Dammv2Browser: React.FC = () => {
                             <RefreshCcw className="w-4 h-4" />
                         </button>
                         <input
-                            className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-r-md px-2 py-1 text-white md:text-sm placeholder-gray-500"
+                            className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-r-md px-2 py-0.5 text-white md:text-sm placeholder-gray-500"
                             placeholder="Filter new pools by creator..."
                             value={poolCreatorAddress}
                             onChange={(e) => setPoolCreatorAddress(e.target.value.trim())}
                         />
+                    </div>
+                </div>
+
+            </div>
+            <div className='grid md:grid-cols-2 lg:grid-cols-4 gap-1'>
+
+                <div className="relative w-full">
+
+                    <div className="grid grid-cols-2" >
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setMainPoolFilter(MainPoolFilters[(MainPoolFilters.indexOf(mainPoolFilter)! + 1) % 3]);
+                                setTokenMetadataMap({});
+                                setPools([])
+                                mapPools([], {});
+                            }}
+                            className="flex items-center justify-center px-2 bg-gray-700 border border-gray-600 rounded-l-md md:text-sm hover:bg-gray-600 text-white"
+                            title="Main Pool < 10% current fee"
+                        >
+                            {mainPoolFilter.toString()}
+                        </button>
+                        <div
+                            className="bg-gray-800 border-t border-b border-r border-gray-700 rounded-r-md px-2 py-0.5 text-white md:text-sm"
+                        >
+                            Main Pools
+                        </div>
                     </div>
                 </div>
             </div>

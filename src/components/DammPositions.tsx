@@ -425,7 +425,7 @@ const DammPositions: React.FC = () => {
               >
                 Close All ({selectedPositions.size})
               </button>
-              
+
             </div>
           </div>
         </div>
@@ -541,11 +541,14 @@ const DammPositions: React.FC = () => {
                   </div>
 
                   {/* Your Liquidity */}
-                  <div className="col-span-2">
-                    <div className="text-white font-medium">${position.positionValue.toFixed(2)}</div>
+                  <div className="grid col-span-2">
+                    <div className="flex text-md">
+                      <div className="text-white font-medium">{`$${position.positionValue.toFixed(2)} / $${position.poolValue.toFixed(2)}`}</div>
+                    </div>
                     <div className="text-xs text-gray-400">
                       ({position.shareOfPoolPercentage.toFixed(2)}%)
                     </div>
+
                   </div>
 
                   {/* Current/Base Fees */}

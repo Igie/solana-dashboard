@@ -14,6 +14,7 @@ import Dammv2PoolList from './Simple/Dammv2PoolList'
 import type { PoolDetailedInfo, PoolInfo } from '../constants'
 import { toast } from 'sonner'
 import { useConnection, useWallet } from '@jup-ag/wallet-adapter'
+import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from '@solana/spl-token'
 
 
 const Dammv2PoolCreation: React.FC = () => {
@@ -238,7 +239,7 @@ const Dammv2PoolCreation: React.FC = () => {
                 symbol: tokenAMetadata.symbol || 'UNK',
                 name: tokenAMetadata.name || 'Unknown',
                 poolAmount: poolTokenAAmount,
-                decimals: tokenAMetadata.decimals,
+                decimals: tokenAMetadata?.decimals || 9,
                 price: tokenAMetadata.price,
                 image: tokenAMetadata.image || undefined,
                 totalFees: new Decimal(x.account.metrics.totalLpAFee.add(x.account.metrics.totalProtocolAFee).toString()).div(Decimal.pow(10, tokenAMetadata?.decimals)).mul(tokenAMetadata?.price)
@@ -250,23 +251,24 @@ const Dammv2PoolCreation: React.FC = () => {
                 symbol: tokenBMetadata.symbol || 'UNK',
                 name: tokenBMetadata.name || 'Unknown',
                 poolAmount: poolTokenBAmount,
-                decimals: tokenBMetadata.decimals,
+                decimals: tokenBMetadata?.decimals || 9,
                 price: tokenBMetadata.price,
                 image: tokenBMetadata.image || undefined,
                 totalFees: new Decimal(x.account.metrics.totalLpBFee.add(x.account.metrics.totalProtocolBFee).toString()).div(Decimal.pow(10, tokenBMetadata?.decimals)).mul(tokenBMetadata?.price)
             }
 
-            const activationTime = currentTime - (new BN(x.account.activationType === 0
-                ? await connection.getBlockTime(x.account.activationPoint.toNumber()) || 0 :
-                x.account.activationType === 1
-                    ? x.account.activationPoint.toNumber()
-                    : 0)).toNumber();
+           let activationTime = 0;
+            if (x.account.activationType === 0) {
+                activationTime = ((currentSlot - x.account.activationPoint.toNumber()) * 400 / 1000);
+            } else {
+                activationTime = currentTime - x.account.activationPoint.toNumber();
+            }
 
             detailedPools.push({
                 poolInfo: x,
                 tokenA: poolTokenA,
                 tokenB: poolTokenB,
-                activationTime: activationTime,
+                age: activationTime,
                 baseFeeBPS: feeNumeratorToBps(getBaseFeeNumerator(
                     x.account.poolFees.baseFee.feeSchedulerMode,
                     x.account.poolFees.baseFee.cliffFeeNumerator,
@@ -312,16 +314,18 @@ const Dammv2PoolCreation: React.FC = () => {
             const tokenAMetadata = metadata[tokenAMint];
             const tokenBMetadata = metadata[tokenBMint];
 
-            const tokenAAmount = new BN(tokenBaseAmount.toNumber() * (10 ** tokenAMetadata.decimals));
-            const tokenBAmount = new BN(tokenQuoteAmount.toNumber() * (10 ** tokenBMetadata.decimals));
+            const decimalsA = tokenAMetadata?.decimals
+            const decimalsB = tokenBMetadata?.decimals
 
-            console.log(tokenAMetadata.decimals);
+            const tokenAAmount = new BN(tokenBaseAmount.toNumber() * (10 ** decimalsA));
+            const tokenBAmount = new BN(tokenQuoteAmount.toNumber() * (10 ** decimalsB));
+
             console.log(minPrice.toString());
-            console.log(minPrice.mul(Decimal.pow(10, tokenAMetadata.decimals)).toNumber());
-            console.log(new BN(maxPrice.mul(Decimal.pow(10, tokenAMetadata.decimals)).toNumber()));
+            console.log(minPrice.mul(Decimal.pow(10, decimalsA)).toNumber());
+            console.log(new BN(maxPrice.mul(Decimal.pow(10, decimalsA)).toNumber()));
 
-            const minSqrtPrice = (minPrice.greaterThan(0) && useMinPrice) ? getSqrtPriceFromPrice(minPrice.toString(), tokenAMetadata.decimals, tokenBMetadata.decimals) : MIN_SQRT_PRICE;
-            const maxSqrtPrice = (maxPrice.greaterThan(0) && useMinPrice) ? getSqrtPriceFromPrice(maxPrice.toString(), tokenAMetadata.decimals, tokenBMetadata.decimals) : MAX_SQRT_PRICE;
+            const minSqrtPrice = (minPrice.greaterThan(0) && useMinPrice) ? getSqrtPriceFromPrice(minPrice.toString(), decimalsA, decimalsB) : MIN_SQRT_PRICE;
+            const maxSqrtPrice = (maxPrice.greaterThan(0) && useMinPrice) ? getSqrtPriceFromPrice(maxPrice.toString(), decimalsA, decimalsB) : MAX_SQRT_PRICE;
 
             const { liquidityDelta: initPoolLiquidityDelta, initSqrtPrice } =
                 cpAmm.preparePoolCreationParams({
@@ -360,8 +364,8 @@ const Dammv2PoolCreation: React.FC = () => {
                 collectFeeMode: selectedFeeMode, // 0: BothToken, 1: onlyB
                 activationPoint: null,
                 activationType: 1, // 0: slot, 1: timestamp
-                tokenAProgram: new PublicKey(tokenAMetadata.tokenProgram),
-                tokenBProgram: new PublicKey(tokenBMetadata.tokenProgram),
+                tokenAProgram: new PublicKey(tokenAMetadata?.tokenProgram || TOKEN_2022_PROGRAM_ID),
+                tokenBProgram: new PublicKey(tokenBMetadata?.tokenProgram || TOKEN_PROGRAM_ID),
             });
             try {
                 await sendTxn(tx, [positionNft],
@@ -427,7 +431,7 @@ const Dammv2PoolCreation: React.FC = () => {
 
     return (
         <div className="flex flex-col h-[calc(100vh-160px)] lg:h-[calc(100vh-10px)] space-y-2 px-2 md:px-0">
-            <div className="bg-gray-900 border border-gray-700 rounded-2xl p-2 space-y-2">
+            <div className="bg-gray-900 border border-gray-700 rounded-2xl p-2 space-y-1">
 
                 <div>
                     <div className="relative w-full">
@@ -436,7 +440,7 @@ const Dammv2PoolCreation: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => fetchPools()}
-                                className="flex items-center justify-center px-3 py-1  bg-gray-700 border border-gray-600 rounded-l-md hover:bg-gray-600 text-white"
+                                className="flex items-center justify-center px-3 py-0.5  bg-gray-700 border border-gray-600 rounded-l-md hover:bg-gray-600 text-white"
                                 title="Refresh pools"
                             >
                                 <RefreshCcw className="w-4 h-4" />
@@ -455,7 +459,7 @@ const Dammv2PoolCreation: React.FC = () => {
                 {connected && (
                     <button
                         onClick={() => setShowCreateForm(!showCreateForm)}
-                        className="bg-purple-600 hover:bg-purple-500 px-2 py-1 rounded-md text-white text-sm font-medium"
+                        className="bg-purple-600 hover:bg-purple-500 px-2 py-0.5 rounded-md text-white text-sm font-medium"
                     >
                         {showCreateForm ? "Hide Create Pool Form" : "Show Create Pool Form"}
                     </button>

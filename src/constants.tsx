@@ -32,7 +32,7 @@ export interface PoolDetailedInfo {
     poolInfo: PoolInfo
     tokenA: PoolTokenInfo
     tokenB: PoolTokenInfo
-    activationTime: number
+    age: number
     baseFeeBPS: number
     totalFeeBPS: number
     price: Decimal
@@ -66,17 +66,17 @@ export enum PoolSortType {
     PoolTotalFees,
 }
 
-export const sortPools = (pools: PoolDetailedInfo[], sortType: PoolSortType, ascending?: boolean) => {
+export const sortPools = (pools: PoolDetailedInfo[], sortType: PoolSortType, ascending?: boolean, currentSlot?: number) => {
 
     const p = pools.sort((x, y) => {
         let r = 0;
         if (ascending === null) {
-            return (x.activationTime - y.activationTime);
+            return (x.age - y.age);
         }
         switch (sortType) {
 
             case PoolSortType.PoolActivationTime:
-                r = (x.activationTime - y.activationTime);
+                r = (x.age - y.age);
                 break;
 
             case PoolSortType.PoolBaseFee:
@@ -118,9 +118,13 @@ export const getShortMintS = (mint: string) => {
 }
 
 export function formatDuration(seconds: number | null): string {
-    if (!seconds) return "0s"
+    if (seconds === null) return "0s"
 
-    if (seconds < 0) return seconds.toString() + "s"
+    const future: Boolean = seconds < 0;
+
+    if (seconds < 0)
+        seconds *= -1;
+        if (seconds < 0) return seconds.toString() + "s"
     const d = Math.floor(seconds / 86400)
     const h = Math.floor((seconds % 86400) / 3600)
     const m = Math.floor((seconds % 3600) / 60)
@@ -132,7 +136,10 @@ export function formatDuration(seconds: number | null): string {
     if (m > 0 || h > 0 || d > 0) parts.push(`${m}m`)
     if (d === 0 && h === 0 && m === 0) parts.push(`${s}s`)
 
-    return parts.join(' ')
+        const full = parts.join(' ');
+
+    if (future) return "in " + full;
+    else return full + " ago";
 }
 
 export const getSchedulerType = (mode: number) => {
