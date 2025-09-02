@@ -19,6 +19,7 @@ export interface TokenMetadata {
     price: number
     decimals: number
     image?: string
+    launchpad?:string;
 }
 
 export interface TokenAccount {
@@ -49,6 +50,7 @@ export interface JupTokenMetadata {
     decimals?: number,
     tokenProgram: string,
     usdPrice?: number,
+    launchpad?: string,
 
 }
 
@@ -100,6 +102,7 @@ export const fetchTokenMetadataJup = async (mintAddresses: string[]): Promise<{ 
                     price: tm.usdPrice || 0,
                     decimals: tm.decimals || 0,
                     image: tm.icon,
+                    launchpad: tm.launchpad,
                 }
             }
             i = end;

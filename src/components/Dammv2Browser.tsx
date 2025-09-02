@@ -31,8 +31,8 @@ const Dammv2Browser: React.FC = () => {
 
     const [tokenMetadataMap, setTokenMetadataMap] = useState<TokenMetadataMap>({});
 
-    const [currentTime, setCurrentTime] = useState(new BN((Date.now())).divn(1000).toNumber());
-    const [currentSlot, setCurrentSlot] = useState<number>(0);
+    const [currentTime, setCurrentTime] = useState(0);
+    const [currentSlot, setCurrentSlot] = useState(0);
     const [poolAddress, setPoolAddress] = useState('')
     const [poolCreatorAddress, setPoolCreatorAddress] = useState('')
 
@@ -87,7 +87,7 @@ const Dammv2Browser: React.FC = () => {
             if (mainPoolFilter !== "Include")
                 pools = pools.filter(x => {
                     const currentFee = feeNumeratorToBps(getFeeNumerator(
-                        x.account.activationType === 0 ? currentSlot :
+                        x.account.activationType === 0 ? slotNow :
                             x.account.activationType === 1 ? currentTime : 0,
                         x.account.activationPoint,
                         x.account.poolFees.baseFee.numberOfPeriod,
@@ -262,6 +262,10 @@ const Dammv2Browser: React.FC = () => {
     useEffect(() => {
         if (Object.entries(newPools).length == 0) return;
         setCurrentTime(new BN((Date.now())).divn(1000).toNumber());
+        const s = connection.getSlot()
+        s.then((x) =>{
+            setCurrentSlot(x);
+        });
         let mints: string[] = []
         const poolInfoMap: PoolInfoMap = {};
 
@@ -377,6 +381,14 @@ const Dammv2Browser: React.FC = () => {
         addOrQueuePool(pool);
     }, [websocketPools]);
 
+    useEffect(() =>{
+        setCurrentTime(new BN((Date.now())).divn(1000).toNumber());
+        const slot = connection.getSlot();
+        slot.then((x) => {
+            setCurrentSlot(x)
+        });
+    },[])
+
     return (
         <div className="flex flex-col h-[calc(100vh-140px)] lg:h-[calc(100vh-75px)] space-y-1 px-2 md:px-0">
             {/* Header */}
@@ -459,7 +471,8 @@ const Dammv2Browser: React.FC = () => {
                             onClick={() => {
                                 setMainPoolFilter(MainPoolFilters[(MainPoolFilters.indexOf(mainPoolFilter)! + 1) % 3]);
                                 setTokenMetadataMap({});
-                                setPools([])
+                                setPools([]);
+                                setWebsocketPools([]);
                                 mapPools([], {});
                             }}
                             className="flex items-center justify-center px-2 bg-gray-700 border border-gray-600 rounded-l-md md:text-sm hover:bg-gray-600 text-white"
