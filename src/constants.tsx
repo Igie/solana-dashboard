@@ -143,6 +143,7 @@ export function formatDuration(seconds: number | null): string {
 
 export function formatDurationNumber(seconds: number | null): string {
     if (seconds === null) return "0s"
+    seconds *= 60;
     const d = Math.floor(seconds / 86400)
     const h = Math.floor((seconds % 86400) / 3600)
     const m = Math.floor((seconds % 3600) / 60)
