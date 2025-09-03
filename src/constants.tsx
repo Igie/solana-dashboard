@@ -108,12 +108,12 @@ export const sortPools = (pools: PoolDetailedInfo[], sortType: PoolSortType, asc
 
 export const getShortMint = (mint: PublicKey) => {
     const m = mint.toBase58();
-    return m.slice(0, 4) + "...." + m.slice(m.length - 4, m.length);
+    return m.slice(0, 4) + ".." + m.slice(m.length - 4, m.length);
 }
 
 export const getShortMintS = (mint: string) => {
 
-    return mint.slice(0, 4) + "...." + mint.slice(mint.length - 4, mint.length);
+    return mint.slice(0, 4) + ".." + mint.slice(mint.length - 4, mint.length);
 }
 
 export function formatDuration(seconds: number | null): string {

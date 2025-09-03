@@ -129,6 +129,26 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                             <ExternalLink size={12} />
                         </a>
                     </div>
+                    <div className="grid gap-1">
+                        <a
+                            className="bg-purple-600 hover:bg-purple-500 text-white text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
+                            href={`https://www.dextools.io/app/en/solana/pair-explorer/${pool.poolInfo.publicKey.toBase58()}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            DexTools
+                            <ExternalLink size={12} />
+                        </a>
+                        <a
+                            className="bg-purple-600 hover:bg-purple-500 text-white text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
+                            href={`https://axiom.trade/meme/${pool.poolInfo.publicKey.toBase58()}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            Axiom
+                            <ExternalLink size={12} />
+                        </a>
+                    </div>
                     <div className="grid w-full gap-1">
                         <button
                             disabled={!connected}
@@ -179,7 +199,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
         {
             header: 'Pair',
             render: (pool) => (
-                <div className="text-center font-mono">
+                <div className="flex text-center justify-center font-mono">
                     <div className="grid w-max">
                         <div>
                             {pool.tokenA.symbol.slice(0, 10) + (pool.tokenA.symbol.length > 10 ? "..." : "")}/
@@ -209,6 +229,24 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                 </div>
                             </button>
                         </div>
+                    </div>
+                </div>
+            )
+        },
+        {
+            header: 'Creator',
+            render: (pool) => (
+                <div className="flex justify-center font-mono">
+                    <div className="grid w-max">
+                        <a
+                            className="bg-blue-600 hover:bg-blue-500 text-white text-xs py-0.5 px-1 rounded flex items-center gap-1"
+                            href={`https://solscan.io/account/${pool.poolInfo.account.creator.toBase58()}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            {getShortMint(pool.poolInfo.account.creator)}
+                            <ExternalLink size={12} />
+                        </a>
                     </div>
                 </div>
             )
@@ -303,7 +341,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
         {
 
             header: <div>
-                Fees Generated
+                Fees Earned
                 {SortArrow<PoolSortType>(PoolSortType.PoolTotalFees, sortBy, sortAscending, handleSort)}
             </div>,
             render: (pool) => (
