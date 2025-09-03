@@ -1,4 +1,4 @@
-import { ExternalLink, PanelsTopLeft } from "lucide-react";
+import { Copy, ExternalLink, PanelsTopLeft } from "lucide-react";
 import { SortArrow } from "./SortArrow";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { DepositPopover } from "./Dammv2DepositPopover";
@@ -141,7 +141,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                         </a>
                         <a
                             className="bg-purple-600 hover:bg-purple-500 text-white text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
-                            href={`https://axiom.trade/meme/${pool.poolInfo.publicKey.toBase58()}`}
+                            href={`https://axiom.trade/t/${pool.tokenA.mint}`}
                             target="_blank"
                             rel="noopener noreferrer"
                         >
@@ -237,7 +237,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
             header: 'Creator',
             render: (pool) => (
                 <div className="flex justify-center font-mono">
-                    <div className="grid w-max">
+                    <div className="flex gap-0.5 w-max">
                         <a
                             className="bg-blue-600 hover:bg-blue-500 text-white text-xs py-0.5 px-1 rounded flex items-center gap-1"
                             href={`https://solscan.io/account/${pool.poolInfo.account.creator.toBase58()}`}
@@ -247,6 +247,16 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                             {getShortMint(pool.poolInfo.account.creator)}
                             <ExternalLink size={12} />
                         </a>
+                        <button
+                            className="bg-blue-600 hover:bg-blue-500 text-white text-xs py-0.5 px-1 rounded flex items-center gap-1"
+                            onClick={async () => {
+                                await navigator.clipboard.writeText(pool.poolInfo.account.creator.toBase58());
+                            }}
+                        >
+                            <div className="flex gap-1 items-center justify-center">
+                                <Copy size={12} />
+                            </div>
+                        </button>
                     </div>
                 </div>
             )
