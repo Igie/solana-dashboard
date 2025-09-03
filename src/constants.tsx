@@ -67,7 +67,6 @@ export enum PoolSortType {
 }
 
 export const sortPools = (pools: PoolDetailedInfo[], sortType: PoolSortType, ascending?: boolean) => {
-
     const p = pools.sort((x, y) => {
         let r = 0;
         if (ascending === null) {
@@ -124,7 +123,7 @@ export function formatDuration(seconds: number | null): string {
 
     if (seconds < 0)
         seconds *= -1;
-        if (seconds < 0) return seconds.toString() + "s"
+
     const d = Math.floor(seconds / 86400)
     const h = Math.floor((seconds % 86400) / 3600)
     const m = Math.floor((seconds % 3600) / 60)
@@ -140,6 +139,22 @@ export function formatDuration(seconds: number | null): string {
 
     if (future) return "in " + full;
     else return full + " ago";
+}
+
+export function formatDurationNumber(seconds: number | null): string {
+    if (seconds === null) return "0s"
+    const d = Math.floor(seconds / 86400)
+    const h = Math.floor((seconds % 86400) / 3600)
+    const m = Math.floor((seconds % 3600) / 60)
+    const s = seconds % 60
+
+    const parts = []
+    if (d > 0) parts.push(`${d}d`)
+    if (h > 0 || d > 0) parts.push(`${h}h`)
+    if (m > 0 || h > 0 || d > 0) parts.push(`${m}m`)
+    if (d === 0 && h === 0 && m === 0) parts.push(`${s}s`)
+
+    return parts.join(' ');
 }
 
 export const getSchedulerType = (mode: number) => {

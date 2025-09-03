@@ -11,7 +11,7 @@ import { useTokenAccounts } from '../contexts/TokenAccountsContext'
 import { useTransactionManager } from '../contexts/TransactionManagerContext'
 import { txToast } from './Simple/TxToast'
 import Dammv2PoolList from './Simple/Dammv2PoolList'
-import type { PoolDetailedInfo, PoolInfo } from '../constants'
+import { formatDurationNumber, type PoolDetailedInfo, type PoolInfo } from '../constants'
 import { toast } from 'sonner'
 import { useConnection, useWallet } from '@jup-ag/wallet-adapter'
 import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from '@solana/spl-token'
@@ -667,7 +667,7 @@ const Dammv2PoolCreation: React.FC = () => {
                             </div>
                         </div>
                         <div className="relative w-full">
-                            <label className="block text-sm text-gray-400">Scheduler Total Duration</label>
+                            <label className="block text-sm text-gray-400">Scheduler Duration({formatDurationNumber(totalSchedulerDuration)})</label>
                             <div className="flex">
                                 <input
                                     type="text"
@@ -696,7 +696,7 @@ const Dammv2PoolCreation: React.FC = () => {
                             </div>
                         </div>
                         <div className="relative w-full">
-                            <label className="block text-sm text-gray-400">Scheduler Reduction Period</label>
+                            <label className="block text-sm text-gray-400">Scheduler Reduction Period({formatDurationNumber(schedulerReductionPeriod)})</label>
                             <div className="flex">
                                 <input
                                     type="text"
