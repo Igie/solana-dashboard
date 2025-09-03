@@ -314,9 +314,9 @@ const Dammv2PoolCreation: React.FC = () => {
             const tokenAMetadata = metadata[tokenAMint];
             const tokenBMetadata = metadata[tokenBMint];
 
-            const decimalsA = tokenAMetadata?.decimals
-            const decimalsB = tokenBMetadata?.decimals
-
+            const decimalsA = tokenAMetadata?.decimals || 9
+            const decimalsB = tokenBMetadata?.decimals || 9
+            console.log(decimalsA, decimalsB);
             const tokenAAmount = new BN(tokenBaseAmount.toNumber() * (10 ** decimalsA));
             const tokenBAmount = new BN(tokenQuoteAmount.toNumber() * (10 ** decimalsB));
 
@@ -607,7 +607,7 @@ const Dammv2PoolCreation: React.FC = () => {
                         </div>
                         <div className='grid grid-cols-2 gap-1'>
                             <div className="relative w-full">
-                                <label className="block text-sm text-gray-400">Max Fee Percentage</label>
+                                <label className="block text-sm text-gray-400">Starting Fee</label>
                                 <div className="flex">
                                     <input
                                         type="text"
@@ -637,7 +637,7 @@ const Dammv2PoolCreation: React.FC = () => {
                             </div>
 
                             <div className="relative w-full">
-                                <label className="block text-sm text-gray-400">Base Fee Percentage</label>
+                                <label className="block text-sm text-gray-400">Base Fee (Fee Tier)</label>
                                 <div className="flex">
                                     <input
                                         type="text"

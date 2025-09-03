@@ -45,6 +45,15 @@ export const MintSelectorInput: React.FC<Props> = ({
         }
     }
 
+    const handleCustom = () => {
+        const selected = tokenAccounts.find(t => t.mint === mintInput)
+        if (selected) {
+            const customValue = new Decimal(selected.amount.toString()).div(2)
+            setAmountInternalInput(customValue.toString());
+            onAmountChange(customValue);
+        }
+    }
+
     useEffect(() => {
         if (mint !== mintInput) setMintInput(mint);
     }, [mint]);
@@ -185,13 +194,20 @@ export const MintSelectorInput: React.FC<Props> = ({
             </div>
 
             {/* Amount Input */}
-            <div className="flex items-center justify-start gap-1">
+            <div className="flex items-center justify-start gap-0.5">
                 <button
-                    className="gap-2 px-2 min-w-10 py-1 text-xs bg-gray-700 rounded-md hover:bg-gray-600 overflow-hidden"
+                    className="gap-2 px-0.5 min-w-8 py-1 text-xs bg-gray-700 rounded-md hover:bg-gray-600 overflow-hidden"
                     onClick={handleMax}
                     disabled={!mintInput}
                 >
                     Max
+                </button>
+                <button
+                    className="gap-2 px-0.5 min-w-8 py-1 text-xs bg-gray-700 rounded-md hover:bg-gray-600 overflow-hidden"
+                    onClick={handleCustom}
+                    disabled={!mintInput}
+                >
+                    50%
                 </button>
 
                 <input
