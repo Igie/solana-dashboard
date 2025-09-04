@@ -62,14 +62,11 @@ const Dashboard: React.FC = () => {
               {connected ? 'Wallet connected successfully' : 'Connect a Solana wallet to get started'}
             </p>
           </div>
-          
           <div className="flex gap-2">
             <UnifiedWalletButton 
             buttonClassName="!bg-purple-600 hover:!bg-purple-700 !rounded-lg !font-medium !px-6 !py-2"
              currentUserClassName='"!bg-red-600 hover:!bg-red-700 !rounded-lg !font-medium !px-4 !py-2"'
              >
-              
-              
              </UnifiedWalletButton>
             {/* {connected && (
               <UnifiedWalletButton buttonClassName="!bg-red-600 hover:!bg-red-700 !rounded-lg !font-medium !px-4 !py-2" />
@@ -77,7 +74,6 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
-
       {/* Connection Status */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         <div className="bg-gray-900 border border-gray-700 rounded-2xl p-2">
@@ -95,12 +91,10 @@ const Dashboard: React.FC = () => {
               )}
             </button>
           </div>
-          
           <div className="flex items-center mb-2">
             <CheckCircle className="w-5 h-5 mr-2 text-green-400" />
             <span className="text-green-400">Connected to Helius RPC</span>
           </div>
-          
           {currentSlot && (
             <div className="mt-4 p-3 bg-gray-800 border border-gray-600 rounded-lg">
               <div className="flex justify-between items-center">
@@ -112,7 +106,6 @@ const Dashboard: React.FC = () => {
             </div>
           )}
         </div>
-
         <div className="bg-gray-900 border border-gray-700 rounded-2xl p-2">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -120,14 +113,12 @@ const Dashboard: React.FC = () => {
               Wallet Status
             </h3>
           </div>
-          
           {connecting && (
             <div className="flex items-center text-yellow-400">
               <Activity className="w-5 h-5 mr-2 animate-spin" />
               Connecting...
             </div>
           )}
-          
           {connected && publicKey ? (
             <div className="space-y-3">
               <div className="flex items-center text-green-400">
@@ -141,7 +132,6 @@ const Dashboard: React.FC = () => {
                   {publicKey.toString()}
                 </div>
               </div>
-              
               {balance !== null && (
                 <div className="p-3 bg-gray-800 border border-gray-600 rounded-lg">
                   <div className="flex justify-between items-center">
@@ -152,7 +142,6 @@ const Dashboard: React.FC = () => {
                   </div>
                 </div>
               )}
-              
               <button
                 onClick={fetchBalance}
                 className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
@@ -172,5 +161,4 @@ const Dashboard: React.FC = () => {
     </div>
   )
 }
-
 export default Dashboard

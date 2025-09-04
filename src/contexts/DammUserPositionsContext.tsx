@@ -67,6 +67,9 @@ interface DammUserPositionsContextType {
     updatePosition: (positionAddress: PublicKey) => void
     removePosition: (positionAddress: PublicKey) => void
     removeLiquidityAndSwapToQuote: (position: PoolPositionInfo) => void
+
+    sortedBy: SortType,
+    sortedAscending: boolean | undefined,
 }
 
 const DammUserPositionsContext = createContext<DammUserPositionsContextType>({
@@ -74,10 +77,13 @@ const DammUserPositionsContext = createContext<DammUserPositionsContextType>({
     totalLiquidityValue: 0,
     loading: false,
     refreshPositions: async () => { },
+
     sortPositionsBy: (_sortType: SortType, _ascending?: boolean) => { },
     updatePosition: async (_positionAddress: PublicKey) => { },
     removePosition: (_positionAddress: PublicKey) => { },
     removeLiquidityAndSwapToQuote: (_position: PoolPositionInfo) => { },
+    sortedBy: SortType.PoolValue,
+    sortedAscending: true,
 })
 
 export const useDammUserPositions = () => useContext(DammUserPositionsContext)
@@ -87,6 +93,8 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
     const { connection } = useConnection()
     const { sendTxn } = useTransactionManager();
     const { refreshTokenAccounts } = useTokenAccounts();
+    const [sortedBy, setSortBy] = useState<SortType>(SortType.PoolBaseFee);
+    const [sortedAscending, setSortAscending] = useState<boolean | undefined>(true);
     const [positions, setPositions] = useState<PoolPositionInfo[]>([])
     const [totalLiquidityValue, setTotalLiquidityValue] = useState<number>(0)
 
@@ -279,7 +287,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
 
             };
             //setPositions(positions)
-            sortPositionsByInternal(positionsParsed, SortType.PoolCurrentFee, true);
+            sortPositionsByInternal(positionsParsed, sortedBy, sortedAscending);
 
             // Calculate totals
             let totalLiquidity: number = 0;
@@ -311,6 +319,9 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
     }
 
     const sortPositionsBy = (sortType: SortType, ascending?: boolean) => {
+
+        setSortBy(sortType);
+        setSortAscending(ascending);
 
         const p = positions.sort((x, y) => {
             if (ascending === null) {
@@ -348,6 +359,8 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
     }
 
     const sortPositionsByInternal = (pools: PoolPositionInfo[], sortType: SortType, ascending?: boolean) => {
+        setSortBy(sortType);
+        setSortAscending(ascending);
         const p = pools.sort((x, y) => {
             let r = 0;
             if (ascending === null) {
@@ -709,7 +722,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
     return (
         <DammUserPositionsContext.Provider value={{
             positions, totalLiquidityValue, loading,
-            refreshPositions, sortPositionsBy, updatePosition, removePosition, removeLiquidityAndSwapToQuote
+            refreshPositions, sortPositionsBy, updatePosition, removePosition, removeLiquidityAndSwapToQuote, sortedBy, sortedAscending,
         }}>
             {children}
         </DammUserPositionsContext.Provider>
