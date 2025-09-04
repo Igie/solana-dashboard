@@ -242,7 +242,8 @@ const Dammv2PoolCreation: React.FC = () => {
                 decimals: tokenAMetadata?.decimals || 9,
                 price: tokenAMetadata.price,
                 image: tokenAMetadata.image || undefined,
-                totalFees: new Decimal(x.account.metrics.totalLpAFee.add(x.account.metrics.totalProtocolAFee).toString()).div(Decimal.pow(10, tokenAMetadata?.decimals)).mul(tokenAMetadata?.price)
+                totalFees: new Decimal(x.account.metrics.totalLpAFee.add(x.account.metrics.totalProtocolAFee).toString()).div(Decimal.pow(10, tokenAMetadata?.decimals)).mul(tokenAMetadata?.price),
+                launchpad: tokenAMetadata.launchpad,
             }
 
             const poolTokenB = {
@@ -254,7 +255,8 @@ const Dammv2PoolCreation: React.FC = () => {
                 decimals: tokenBMetadata?.decimals || 9,
                 price: tokenBMetadata.price,
                 image: tokenBMetadata.image || undefined,
-                totalFees: new Decimal(x.account.metrics.totalLpBFee.add(x.account.metrics.totalProtocolBFee).toString()).div(Decimal.pow(10, tokenBMetadata?.decimals)).mul(tokenBMetadata?.price)
+                totalFees: new Decimal(x.account.metrics.totalLpBFee.add(x.account.metrics.totalProtocolBFee).toString()).div(Decimal.pow(10, tokenBMetadata?.decimals)).mul(tokenBMetadata?.price),
+                launchpad: tokenBMetadata.launchpad,
             }
 
            let activationTime = 0;

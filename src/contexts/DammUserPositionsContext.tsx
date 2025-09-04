@@ -719,6 +719,37 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
 
     }
 
+    // useEffect(() => {
+    //     if (!connection.rpcEndpoint) return;
+    //     const id = connection.onProgramAccountChange(new PublicKey("cpamdpZCGKUy5JxQXB4dcpGPiikHawvSWAd6mEn1sGG"), (e: KeyedAccountInfo) => {
+    //         const slice = e.accountInfo.data.readUint32BE(0);
+    //         let found = false;
+    //         let name = "";
+    //         let decoded: any = undefined;
+    //         for (var i of cpAmm._program.idl.accounts) {
+    //             const buf = Buffer.from(i.discriminator);
+    //             const bufInt = buf.readUint32BE();
+    //             if (bufInt == slice) {
+    //                 name = i.name;
+    //                 decoded = cpAmm._program.coder.accounts.decode(i.name, e.accountInfo.data);
+    //                 found = true;
+    //                 break;
+    //             }
+    //         }
+    //         if (!found || name !== 'position') return;
+
+    //         console.log(decoded);
+
+    //     }, {
+    //         encoding: 'jsonParsed',
+    //         commitment: 'finalized',
+    //     });
+
+    //     return () => {
+    //         connection.removeProgramAccountChangeListener(id);
+    //     }
+    // }, [connection]);
+
     return (
         <DammUserPositionsContext.Provider value={{
             positions, totalLiquidityValue, loading,

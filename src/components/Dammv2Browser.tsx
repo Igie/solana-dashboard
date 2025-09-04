@@ -167,7 +167,8 @@ const Dammv2Browser: React.FC = () => {
                 decimals: tokenAMetadata?.decimals,
                 price: tokenAMetadata?.price,
                 image: tokenAMetadata?.image || undefined,
-                totalFees: new Decimal(x.account.metrics.totalLpAFee.add(x.account.metrics.totalProtocolAFee).toString()).div(Decimal.pow(10, tokenAMetadata?.decimals || 6)).mul(tokenAMetadata?.price)
+                totalFees: new Decimal(x.account.metrics.totalLpAFee.add(x.account.metrics.totalProtocolAFee).toString()).div(Decimal.pow(10, tokenAMetadata?.decimals || 6)).mul(tokenAMetadata?.price),
+                launchpad: tokenAMetadata.launchpad
             }
 
             const poolTokenB = {
@@ -179,7 +180,8 @@ const Dammv2Browser: React.FC = () => {
                 decimals: tokenBMetadata?.decimals,
                 price: tokenBMetadata?.price,
                 image: tokenBMetadata?.image || undefined,
-                totalFees: new Decimal(x.account.metrics.totalLpBFee.add(x.account.metrics.totalProtocolBFee).toString()).div(Decimal.pow(10, tokenBMetadata?.decimals)).mul(tokenBMetadata?.price)
+                totalFees: new Decimal(x.account.metrics.totalLpBFee.add(x.account.metrics.totalProtocolBFee).toString()).div(Decimal.pow(10, tokenBMetadata?.decimals)).mul(tokenBMetadata?.price),
+                launchpad: tokenBMetadata.launchpad
             }
 
             const poolTokenAAmountLocked = new Decimal(lockedWithdrawPoolQuote.outAmountA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();

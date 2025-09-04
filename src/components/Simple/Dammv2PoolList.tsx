@@ -11,7 +11,7 @@ import { formatDuration, getShortMint, PoolSortType, sortPools, type PoolDetaile
 import { useWallet } from "@jup-ag/wallet-adapter";
 import { getPoolPositionMap, useDammUserPositions, type PoolPositionInfoMap } from "../../contexts/DammUserPositionsContext";
 import { DynamicTable, type Column } from "./DynamicTable";
-
+import { launchpads } from "./../../utils/launchpads";
 interface Dammv2PoolListProps {
     cpAmm: CpAmm
     pools: PoolDetailedInfo[]
@@ -201,11 +201,18 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
             render: (pool) => (
                 <div className="flex text-center justify-center font-mono">
                     <div className="grid w-max">
-                        <div>
-                            {pool.tokenA.symbol.slice(0, 10) + (pool.tokenA.symbol.length > 10 ? "..." : "")}/
-                            {pool.tokenB.symbol.slice(0, 10) + (pool.tokenB.symbol.length > 10 ? "..." : "")}
-                        </div>
+                        <div className="flex gap-1">
+                            {pool.tokenA.launchpad !== undefined && (
+                                <div className="flex items-center justify-start">
 
+                                    <img className="max-w-5 max-h-5 object-scale-down"
+                                        alt={pool.tokenA.launchpad || pool.tokenA.mint} src={launchpads[pool.tokenA.launchpad]?.logo || ""} />
+                                </div>)}
+                            <div className="flex flex-grow items-center justify-center">
+                                {pool.tokenA.symbol.slice(0, 10) + (pool.tokenA.symbol.length > 10 ? "..." : "")}/
+                                {pool.tokenB.symbol.slice(0, 10) + (pool.tokenB.symbol.length > 10 ? "..." : "")}
+                            </div>
+                        </div>
                         <div className="flex gap-1 w-max">
                             <button
                                 className="bg-blue-600 hover:bg-blue-500 text-white text-xs py-0.5 px-1 rounded flex items-center gap-1"

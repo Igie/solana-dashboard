@@ -25,7 +25,8 @@ export interface PoolTokenInfo {
     decimals: number
     price: number
     image?: string,
-    totalFees: Decimal
+    totalFees: Decimal,
+    launchpad?: string,
 }
 
 export interface PoolDetailedInfo {
