@@ -249,11 +249,11 @@ const Dammv2Browser: React.FC = () => {
             setDummyBool(!b);
             b = !b;
             clearTimeout(timeout);
-        }, 1000);
+        }, 2000);
         const timer = setInterval(() => {
             setDummyBool(!b);
             b = !b;
-        }, 2000);
+        }, 4000);
 
         return () => {
             clearTimeout(timeout);
