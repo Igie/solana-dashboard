@@ -2,7 +2,7 @@ import { Copy, ExternalLink, PanelsTopLeft } from "lucide-react";
 import { SortArrow } from "./SortArrow";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { DepositPopover } from "./Dammv2DepositPopover";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTokenAccounts } from "../../contexts/TokenAccountsContext";
 import type { CpAmm } from "@meteora-ag/cp-amm-sdk";
 import { useTransactionManager } from "../../contexts/TransactionManagerContext";
@@ -11,7 +11,7 @@ import { formatDuration, getShortMint, PoolSortType, sortPools, type PoolDetaile
 import { useWallet } from "@jup-ag/wallet-adapter";
 import { getPoolPositionMap, useDammUserPositions, type PoolPositionInfoMap } from "../../contexts/DammUserPositionsContext";
 import { DynamicTable, type Column } from "./DynamicTable";
-import { launchpads } from "./../../utils/launchpads";
+import { launchpads } from "./../launchpads/Launchpads";
 interface Dammv2PoolListProps {
     cpAmm: CpAmm
     pools: PoolDetailedInfo[]
@@ -201,12 +201,20 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
             render: (pool) => (
                 <div className="flex text-center justify-center font-mono">
                     <div className="grid w-max">
-                        <div className="flex gap-1">
+                        <div className="flex">
                             {pool.tokenA.launchpad !== undefined && (
-                                <div className="flex items-center justify-start">
+                                <div className="flex justify-start">
 
-                                    <img className="max-w-5 max-h-5 object-scale-down"
-                                        alt={pool.tokenA.launchpad || pool.tokenA.mint} src={launchpads[pool.tokenA.launchpad]?.logo || ""} />
+                                    <div className="max-w-5 max-h-5 object-scale-down">
+                                        {
+                                            (() => {
+                                                if (!pool.tokenA.launchpad) return "";
+                                                const Logo = launchpads[pool.tokenA.launchpad].logo || null;
+                                                if (!Logo) return "";
+                                            return <Logo />;
+                                            })()
+                                        }
+                                    </div>
                                 </div>)}
                             <div className="flex flex-grow items-center justify-center">
                                 {pool.tokenA.symbol.slice(0, 10) + (pool.tokenA.symbol.length > 10 ? "..." : "")}/
