@@ -454,7 +454,7 @@ const DammPositions: React.FC = () => {
                 <div className="col-span-2">Fees</div>
                 <div className="col-span-2">Claimable</div>
                 <div className="col-span-2">Scheduler</div>
-                <div className="col-span-1"></div>
+                
               </div>
             </div>
           )}
@@ -465,7 +465,7 @@ const DammPositions: React.FC = () => {
                 {/* Desktop Table Row */}
                 <div className="hidden md:grid grid-cols-12 gap-1 px-4 py-1 border-b border-gray-700 hover:bg-gray-800/50 items-center">
                   {/* Checkbox */}
-                  <div className="col-span-1">
+                  <div className="flex flex-cols gap-2 justify-center col-span-1">
                     <input
                       type="checkbox"
                       className="scale-125 accent-purple-600"
@@ -488,8 +488,17 @@ const DammPositions: React.FC = () => {
                         }
                       }}
                     />
+                    <button
+                      onClick={() => toggleRowExpand(index)}
+                      className="p-1 rounded hover:bg-gray-700 transition-colors"
+                    >
+                      {expandedIndex == index ? (
+                        <ChevronUp className="w-4 h-4 text-gray-400" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-gray-400" />
+                      )}
+                    </button>
                   </div>
-
                   {/* Token Pair */}
                   <div className="col-span-2">
                     <div className="flex items-center gap-2">
@@ -577,20 +586,6 @@ const DammPositions: React.FC = () => {
                     <div className="text-white text-sm">
                       {getSchedulerType(position.poolState.poolFees.baseFee.feeSchedulerMode)}
                     </div>
-                  </div>
-
-                  {/* Expand Button */}
-                  <div className="col-span-1">
-                    <button
-                      onClick={() => toggleRowExpand(index)}
-                      className="p-1 rounded hover:bg-gray-700 transition-colors"
-                    >
-                      {expandedIndex == index ? (
-                        <ChevronUp className="w-4 h-4 text-gray-400" />
-                      ) : (
-                        <ChevronDown className="w-4 h-4 text-gray-400" />
-                      )}
-                    </button>
                   </div>
                 </div>
 
