@@ -290,7 +290,6 @@ export const launchpads: { [key: string]: { logo: React.FC } } =
     ["time.fun"]: {
         logo: TimeFunIcon
     },
-
     ["raydium"]: {
         logo: RaydiumIcon
     },
@@ -376,12 +375,15 @@ export const launchpads: { [key: string]: { logo: React.FC } } =
         logo: AircraftDotFunIcon
     },
     ["cook.meme"]: {
-        logo: GoFundMemeIcon
+        logo: CookMemeIcon
     },
     ["ethics"]: {
         logo: EthicsIcon
     },
     ["subs.fun"]: {
         logo: SubsFunIcon
+    },
+     ["boop"]: {
+        logo: BoopIcon
     },
 }
