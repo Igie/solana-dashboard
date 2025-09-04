@@ -209,9 +209,13 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                         {
                                             (() => {
                                                 if (!pool.tokenA.launchpad) return "";
-                                                const Logo = launchpads[pool.tokenA.launchpad].logo || null;
-                                                if (!Logo) return "";
-                                            return <Logo />;
+                                                const launchpad = launchpads[pool.tokenA.launchpad];
+                                                if (launchpad) {
+                                                    const Logo = launchpads[pool.tokenA.launchpad].logo || null;
+                                                    if (!Logo) return "";
+                                                    return <Logo />;
+                                                } else console.log(pool.tokenA.launchpad)
+                                                return "";
                                             })()
                                         }
                                     </div>
