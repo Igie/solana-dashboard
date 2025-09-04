@@ -36,7 +36,7 @@
     "recharts": "^3.1.2",
     "sonner": "^2.0.6",
     "tailwindcss": "^4.1.11",
-    "vercel": "^46.0.2"
+    "vercel": "^47.0.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.29.0",

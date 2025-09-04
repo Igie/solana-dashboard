@@ -293,7 +293,7 @@ export const launchpads: { [key: string]: { logo: React.FC } } =
     ["raydium-launchlab"]: {
         logo: RaydiumIcon
     },
-    ["anoncoin"]: {
+    ["dubdub"]: {
         logo: AnoncoinIcon
     },
     ["forge"]: {
