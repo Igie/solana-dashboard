@@ -184,8 +184,7 @@ export const fetchTokenAccounts = async (c: Connection, publicKey: PublicKey): P
         const metadataArray: TokenMetadata[] = [];
         const updatedAccounts = accounts.map(account => {
             if (metadataMap[account.mint]?.name.startsWith("kVault") ||
-                !metadataMap[account.mint]?.tokenProgram ||
-                account.decimals == 6
+                !metadataMap[account.mint]?.tokenProgram
             ) return;
             const price = priceMap[account.mint]?.price || 0
             const value = account.amount.mul(price)
