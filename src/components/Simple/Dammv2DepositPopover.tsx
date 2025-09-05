@@ -229,7 +229,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
         <div className="flex flex-col gap-2">
           {/* Token A */}
           <div>
-            <div className="text-sm text-gray-400">{tokenA!.symbol} Balance: {tokenA!.amount}</div>
+            <div className="text-sm text-gray-400">{tokenA!.symbol} Balance: {tokenA!.amount.toNumber()}</div>
             <div className="flex">
               <DecimalInput
                 className="flex-1 bg-[#1a1e2d] border border-gray-600 rounded p-1 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
@@ -248,7 +248,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
 
           {/* Token B */}
           <div>
-            <div className="text-sm text-gray-400">{tokenB!.symbol} Balance: {tokenB!.amount}</div>
+            <div className="text-sm text-gray-400">{tokenB!.symbol} Balance: {tokenB!.amount.toNumber()}</div>
             <div className="flex">
               <DecimalInput
                 className="flex-1 bg-[#1a1e2d] border border-gray-600 rounded p-1 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"

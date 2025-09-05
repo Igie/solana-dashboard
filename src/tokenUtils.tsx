@@ -1,6 +1,6 @@
 import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { Connection, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js"
-
+import Decimal from "decimal.js"
 
 
 export interface TokenMetadataMap {
@@ -16,10 +16,11 @@ export interface TokenMetadata {
     tokenProgram: string
     name: string
     symbol: string
-    price: number
+    price: Decimal
     decimals: number
     image?: string
-    launchpad?:string;
+    launchpad?: string
+    isVerified: boolean
 }
 
 export interface TokenAccount {
@@ -27,12 +28,13 @@ export interface TokenAccount {
     tokenProgram: string
     name: string
     symbol: string
-    price: number
+    price: Decimal
     decimals: number
     image?: string
     description?: string
-    value: number
-    amount: number
+    value: Decimal
+    amount: Decimal
+    isVerified: boolean
 }
 
 export interface JupData {
@@ -51,6 +53,7 @@ export interface JupTokenMetadata {
     tokenProgram: string,
     usdPrice?: number,
     launchpad?: string,
+    isVerified: boolean,
 
 }
 
@@ -61,8 +64,8 @@ export interface JupDataMap {
 export const metadataToAccounts = (tm: TokenMetadata[]): TokenAccount[] => {
     return tm.map(x => ({
         ...x,
-        amount: 0,
-        value: 0
+        amount: new Decimal(0),
+        value: new Decimal(0)
     }));
 }
 
@@ -99,10 +102,11 @@ export const fetchTokenMetadataJup = async (mintAddresses: string[]): Promise<{ 
                     name: tm.name || 'Unknown Token',
                     tokenProgram: tm.tokenProgram,
                     symbol: tm.symbol || 'UNK',
-                    price: tm.usdPrice || 0,
+                    price: tm.usdPrice ? new Decimal(tm.usdPrice) : new Decimal(0),
                     decimals: tm.decimals || 0,
                     image: tm.icon,
                     launchpad: tm.launchpad,
+                    isVerified: tm.isVerified,
                 }
             }
             i = end;
@@ -115,70 +119,8 @@ export const fetchTokenMetadataJup = async (mintAddresses: string[]): Promise<{ 
     }
 }
 
-export const fetchTokenMetadataJ = async (c: Connection, mintAddresses: string[]): Promise<{ [key: string]: TokenMetadata }> => {
-
+export const fetchTokenMetadataJ = async (mintAddresses: string[]): Promise<{ [key: string]: TokenMetadata }> => {
     return await fetchTokenMetadataJup(mintAddresses);
-    const metadataMap: { [key: string]: TokenMetadata } = {}
-    if (mintAddresses.length === 0)
-        return metadataMap;
-    try {
-        const response = await fetch(c.rpcEndpoint, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                jsonrpc: '2.0',
-                id: 'metadata-batch',
-                method: 'getAssetBatch',
-                params: {
-                    ids: mintAddresses
-                }
-            })
-        })
-
-        const data = await response.json();
-
-
-        if (data.result) {
-
-            const prices: JupDataMap = {}
-            let i = 0;
-            while (i < mintAddresses.length) {
-                const end = Math.min(i + 100, mintAddresses.length);
-                const priceRes = await fetch("https://lite-api.jup.ag/price/v3?ids=" + mintAddresses.slice(i, end).join(','));
-                const pricesJson: JupDataMap = await priceRes.json();
-                for (const [index, price] of Object.entries(pricesJson)) {
-                    prices[index] = price;
-                }
-                i = end;
-            }
-
-            for (let i = 0; i < data.result.length; i++) {
-                let r = data.result[i];
-                if (r === null) {
-                    continue
-                }
-
-                const metadata = r.content.metadata;
-                const mint = r.id;
-                metadataMap[mint] = {
-                    mint: mint,
-                    name: metadata.name || 'Unknown Token',
-                    tokenProgram: r.token_info?.token_program,
-                    symbol: metadata.symbol || 'UNK',
-                    price: prices[mint]?.usdPrice || r.token_info?.price_info?.price_per_token || 0,
-                    decimals: r.token_info?.decimals || 0,
-                    image: r.content.files?.[0]?.uri || metadata.image,
-                }
-            }
-        }
-
-        return metadataMap;
-    } catch (error) {
-        console.error('Error in batch metadata fetch:', error)
-        return {}
-    }
 }
 
 export const fetchTokenAccounts = async (c: Connection, publicKey: PublicKey): Promise<[TokenMetadata[], TokenAccount[]]> => {
@@ -204,22 +146,22 @@ export const fetchTokenAccounts = async (c: Connection, publicKey: PublicKey): P
     accounts.push({
         mint: "So11111111111111111111111111111111111111112",
         tokenProgram: "",
-        amount: (await c.getBalance(publicKey)) / (LAMPORTS_PER_SOL),
+        amount: new Decimal(await c.getBalance(publicKey)).div(LAMPORTS_PER_SOL),
         decimals: 9,
         symbol: 'Loading...',
         name: 'Loading...',
-        price: 0,
-        value: 0
+        price: new Decimal(0),
+        value: new Decimal(0),
+        isVerified: false,
     })
 
     for (const account of tokenAccounts) {
-
         const parsedInfo = account.account.data.parsed.info
         const mintAddress = parsedInfo.mint
-        const amount = parsedInfo.tokenAmount.uiAmount
         const decimals = parsedInfo.tokenAmount.decimals
+        const amount = new Decimal(parsedInfo.tokenAmount.amount).div(Decimal.pow(10, decimals))
 
-        if (amount > 0) {
+        if (amount.greaterThan(0) && decimals > 0) {
             mintAddresses.push(mintAddress)
             accounts.push({
                 mint: mintAddress,
@@ -228,21 +170,25 @@ export const fetchTokenAccounts = async (c: Connection, publicKey: PublicKey): P
                 decimals,
                 symbol: 'Loading...',
                 name: 'Loading...',
-                price: 0,
-                value: 0
+                price: new Decimal(0),
+                value: new Decimal(0),
+                isVerified: false,
             })
         }
     }
 
     if (mintAddresses.length > 0) {
-
-        const metadataMap = await fetchTokenMetadataJup(mintAddresses );
+        const metadataMap = await fetchTokenMetadataJup(mintAddresses);
         const priceMap = await fetchTokenPrices(mintAddresses, metadataMap);
 
         const metadataArray: TokenMetadata[] = [];
         const updatedAccounts = accounts.map(account => {
+            if (metadataMap[account.mint]?.name.startsWith("kVault") ||
+                !metadataMap[account.mint]?.tokenProgram ||
+                account.decimals == 6
+            ) return;
             const price = priceMap[account.mint]?.price || 0
-            const value = account.amount * price
+            const value = account.amount.mul(price)
             metadataArray.push(metadataMap[account.mint]);
             return {
                 ...account,
@@ -252,19 +198,20 @@ export const fetchTokenAccounts = async (c: Connection, publicKey: PublicKey): P
                 image: metadataMap[account.mint]?.image,
                 price,
                 value,
+                isVerified: metadataMap[account.mint]?.isVerified,
             }
         })
-        return [metadataArray, updatedAccounts];
+        return [metadataArray, updatedAccounts.filter(x => x !== undefined)];
     }
 
     return [[], []];
 }
 
-export const fetchTokenPrices = async (mintAddresses: string[], tokenMetadata: TokenMetadataMap): Promise<{ [key: string]: { price: number; } }> => {
+export const fetchTokenPrices = async (mintAddresses: string[], tokenMetadata: TokenMetadataMap): Promise<{ [key: string]: { price: Decimal; } }> => {
 
     const allMints = ['So11111111111111111111111111111111111111112', ...mintAddresses]
 
-    const priceMap: { [key: string]: { price: number } } = {}
+    const priceMap: { [key: string]: { price: Decimal } } = {}
 
     for (const mint of allMints) {
         priceMap[mint] = tokenMetadata[mint];

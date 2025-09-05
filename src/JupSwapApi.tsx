@@ -39,7 +39,7 @@ interface Instruction {
 
 const baseUrl: string = "https://quote-api.jup.ag/v6";
 
-export const getQuote = async (params: QuoteParams): Promise<QuoteResponse> => {
+export const getQuote = async (params: QuoteParams, notify: boolean = true): Promise<QuoteResponse> => {
   try {
     const url = new URL(`https://quote-api.jup.ag/v6/quote?`);
     url.searchParams.append("inputMint", params.inputMint);
@@ -57,7 +57,9 @@ export const getQuote = async (params: QuoteParams): Promise<QuoteResponse> => {
 
     const response = await fetch(url.toString());
     if (!response.ok) {
-      toast.error("Failed to get quote!");
+      if (notify) {
+        toast.error("Failed to get quote!");
+      }
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 

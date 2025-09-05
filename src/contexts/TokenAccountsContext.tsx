@@ -39,7 +39,7 @@ export const TokenAccountsProvider: React.FC<{ children: React.ReactNode }> = ({
         try {
             // Get all token accounts owned by the user
             const [tokenMetadata, tokenAccounts] = await fetchTokenAccounts(connection, publicKey);
-            const sortedAccounts = tokenAccounts.sort((x, y) => (y.price * y.amount) - (x.price * x.amount))
+            const sortedAccounts = tokenAccounts.sort((x, y) => (y.price.toNumber() * y.amount.toNumber()) - (x.price.toNumber() * x.amount.toNumber()))
             setTokenAccounts(sortedAccounts);
             setTokenMetadata(tokenMetadata);
             setLoading(false);

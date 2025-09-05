@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
 
-import { LAMPORTS_PER_SOL } from '@solana/web3.js'
+import { ComputeBudgetProgram, LAMPORTS_PER_SOL, PublicKey, Transaction, VersionedTransaction } from '@solana/web3.js'
 
-import { Coins, RefreshCw, Wallet, ExternalLink } from 'lucide-react'
+import { Coins, RefreshCw, Wallet, ExternalLink, CheckCircle, XCircle } from 'lucide-react'
 import { type TokenAccount } from '../tokenUtils'
 import { useTokenAccounts } from '../contexts/TokenAccountsContext'
 import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-adapter'
@@ -10,18 +10,23 @@ import { toast } from 'sonner'
 import { getQuote, getSwapTransactionVersioned } from '../JupSwapApi'
 import { useTransactionManager } from '../contexts/TransactionManagerContext'
 import { txToast } from './Simple/TxToast'
+import { createBurnCheckedInstruction, createCloseAccountInstruction, getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID } from '@solana/spl-token'
+import Decimal from "decimal.js"
 
 
 const Portfolio: React.FC = () => {
   const { connection } = useConnection()
   const { publicKey, connected } = useWallet()
-  const { sendTxn } = useTransactionManager();
+  const { sendTxn, sendMultiTxn } = useTransactionManager();
 
   const [solBalance, setSolBalance] = useState<number | null>(null)
   const { tokenAccounts, refreshTokenAccounts } = useTokenAccounts()
   const [loading, setLoading] = useState(false)
   const [popupIndex, setPopupIndex] = useState<number | null>(null)
   const popupRef = useRef<HTMLDivElement | null>(null)
+
+  const [selectedAccounts, setSelectedAccounts] = useState<Set<TokenAccount>>(new Set());
+  const [lastSelectedAccount, setLastSelectedAccount] = useState<TokenAccount | null>(null);
 
   // Fetch all portfolio data
   const fetchPortfolioData = async () => {
@@ -48,7 +53,7 @@ const Portfolio: React.FC = () => {
       formProps: {
         initialInputMint: ta.mint,
         initialOutputMint: 'So11111111111111111111111111111111111111112',
-        initialAmount: (ta.amount * (10 ** ta.decimals)).toFixed(0),
+        initialAmount: (ta.amount.mul(Decimal.pow(10, ta.decimals))).toFixed(0),
         swapMode: 'ExactIn',
       },
     });
@@ -58,11 +63,27 @@ const Portfolio: React.FC = () => {
     }
   }
 
+  const getSwapToSolTx = async (ta: TokenAccount) => {
+    try {
+      const quote = await getQuote({
+        inputMint: ta.mint,
+        outputMint: 'So11111111111111111111111111111111111111112',
+        amount: ta.amount.mul(Decimal.pow(10, ta.decimals)).toNumber(),
+        slippageBps: 1500,
+      }, false)
+
+      const txn = await getSwapTransactionVersioned(quote, publicKey!);
+      return txn;
+    } catch {
+      return null;
+    }
+  }
+
   const handleSwapToSol = async (ta: TokenAccount) => {
     const quote = await getQuote({
       inputMint: ta.mint,
       outputMint: 'So11111111111111111111111111111111111111112',
-      amount: ta.amount * (10 ** ta.decimals),
+      amount: ta.amount.mul(Decimal.pow(10, ta.decimals)).toNumber(),
       slippageBps: 1500,
     })
 
@@ -81,6 +102,99 @@ const Portfolio: React.FC = () => {
     });
   }
 
+  const getMultiBurnAndCloseTokenAccountTx = async (tas: TokenAccount[]) => {
+    const txns = [];
+    let tx = new Transaction();
+    tx.feePayer = publicKey!
+    let count = 0;
+
+    for (const ta of tas) {
+      try {
+        const mintPubKey = new PublicKey(ta.mint);
+        let tokenProgram = null;
+        try {
+        tokenProgram = new PublicKey(ta.tokenProgram);
+        } catch(e){
+          console.log(ta);
+          continue;
+        }
+
+        if (!tokenProgram) continue;
+
+        const ataPubKey = getAssociatedTokenAddressSync(mintPubKey, publicKey!, false, tokenProgram);
+        if (ta.amount.greaterThan(0)) {
+          const burnIx = createBurnCheckedInstruction(
+            ataPubKey,
+            mintPubKey,
+            publicKey!,
+            BigInt(ta.amount.mul(Decimal.pow(10, ta.decimals)).toString()),
+            ta.decimals,
+            [],
+            tokenProgram
+          );
+          tx.add(burnIx);
+          tx.signatures.length
+        }
+
+        const closeAccountIx = createCloseAccountInstruction(
+          ataPubKey,
+          publicKey!,
+          publicKey!,
+          [],
+          tokenProgram
+        )
+        tx.add(closeAccountIx);
+        count++;
+
+        if (count > 10) {
+          count = 0;
+
+          try {
+            const simulated = await connection.simulateTransaction(tx);
+            if (!simulated.value.err) {
+              console.log(simulated);
+              const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
+                units: simulated.value.unitsConsumed! * 1.2,
+              });
+
+              const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
+                microLamports: 1000000,
+              });
+              const txFinal = new Transaction();
+              txFinal.add(modifyComputeUnits, addPriorityFee, ...tx.instructions);
+              txns.push(txFinal);
+            }
+          } catch (e) {
+            console.log(ta);
+            console.log(e);
+          };
+
+          tx.instructions.splice(0);
+
+        }
+      } catch (e) { console.log(e) };
+    }
+
+    try {
+      const simulated = await connection.simulateTransaction(tx);
+      if (!simulated.value.err) {
+        console.log(simulated);
+        const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
+          units: simulated.value.unitsConsumed! * 1.2,
+        });
+
+        const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
+          microLamports: 1000000,
+        });
+        const txFinal = new Transaction();
+        txFinal.add(modifyComputeUnits, addPriorityFee, ...tx.instructions);
+        txns.push(txFinal);
+      }
+    } catch (e) { console.log(e) };
+
+    return txns;
+  }
+
   const handleCopyMint = async (mint: string) => {
     await navigator.clipboard.writeText(mint)
     setPopupIndex(null)
@@ -88,10 +202,11 @@ const Portfolio: React.FC = () => {
 
   // Fetch data when wallet connects
   useEffect(() => {
+    setSelectedAccounts(new Set());
     if (connected && publicKey) {
       fetchPortfolioData()
     }
-  }, [publicKey, connection])
+  }, [connection, publicKey])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -149,7 +264,10 @@ const Portfolio: React.FC = () => {
       </div>
       <div className="flex items-center justify-between">
         <button
-          onClick={fetchPortfolioData}
+          onClick={async () => {
+            await fetchPortfolioData();
+            setSelectedAccounts(new Set());
+          }}
           disabled={loading}
           className="flex items-center gap-1 px-2 py-1 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded-lg font-medium transition-colors"
         >
@@ -160,6 +278,69 @@ const Portfolio: React.FC = () => {
           )}
           Refresh
         </button>
+      </div>
+      <div className="bg-green-900/20 border border-green-700/50 rounded-xl p-1">
+        <div className="sm:flex-row items-start sm:items-center justify-between gap-1">
+
+          <div className="flex justify-between px-2 w-full sm:w-auto">
+            <button
+              className="bg-blue-600 hover:bg-blue-500 px-4 py-1 rounded text-white flex-1 sm:flex-none"
+              onClick={async () => {
+                const selectedAccountsTemp = [...selectedAccounts];
+
+                const txns: VersionedTransaction[] = [];
+                for (const pos of selectedAccountsTemp) {
+                  const txn = await getSwapToSolTx(pos)
+                  if (txn)
+                    txns.push(txn);
+                }
+                if (txns.length == 0) {
+                  txToast.error("Did not get quote for any mint!")
+                  return;
+                }
+
+
+                if (txns.length > 0) {
+                  setSelectedAccounts(new Set());
+                  await sendMultiTxn(txns.map(x => {
+                    return {
+                      tx: x,
+                    }
+                  }), {
+                    onSuccess: async () => {
+                      await refreshTokenAccounts();
+                    }
+                  })
+                }
+              }
+              }
+            >
+              Swap All to SOL ({selectedAccounts.size})
+            </button>
+            <button
+              className="bg-purple-600 hover:bg-purple-500 px-4 py-1 rounded text-white flex-1 sm:flex-none"
+              onClick={async () => {
+                const selectedAccountsTemp = [...selectedAccounts];
+                const txns: Transaction[] = await getMultiBurnAndCloseTokenAccountTx(selectedAccountsTemp)
+
+                if (txns.length > 0)
+                  await sendMultiTxn(txns.map(x => {
+                    return {
+                      tx: x,
+                    }
+                  }), {
+                    onSuccess: async () => {
+                      setSelectedAccounts(new Set());
+                      await refreshTokenAccounts();
+                    }
+                  })
+              }}
+            >
+              Burn All ({selectedAccounts.size})
+            </button>
+
+          </div>
+        </div>
       </div>
       {/* Token Holdings */}
       <div className="flex flex-col bg-gray-900 border border-gray-700 rounded-2xl flex-1 min-h-0">
@@ -180,7 +361,7 @@ const Portfolio: React.FC = () => {
           <div className="flex flex-col h-full overflow-hidden">
             <div className="flex-1 overflow-y-auto divide-y divide-gray-700">
               {/* Token Entries */}
-              {tokenAccounts.map((token, index) => (
+              {tokenAccounts.map((tokenAccount, index) => (
                 <div
                   key={index}
                   className="p-1 hover:bg-gray-800/50 transition-colors"
@@ -188,27 +369,64 @@ const Portfolio: React.FC = () => {
                   <div className="flex items-center">
                     {/* Left Side */}
                     <div className="flex items-center space-x-1 min-w-[10rem] flex-shrink-0">
+                      <input
+                        type="checkbox"
+                        className="scale-125 accent-purple-600"
+                        checked={selectedAccounts.has(tokenAccount)}
+                        onChange={(e) => {
+                          if (lastSelectedAccount !== null && (e.nativeEvent as MouseEvent).shiftKey) {
+                            const index1 = tokenAccounts.indexOf(tokenAccount);
+                            const index2 = tokenAccounts.indexOf(lastSelectedAccount);
+                            const addedRange = tokenAccounts.slice(Math.min(index1, index2), Math.max(index1, index2) + 1);
+                            setSelectedAccounts(new Set([...selectedAccounts, ...addedRange]));
+                            setLastSelectedAccount(tokenAccount);
+                            return;
+                          }
+                          setLastSelectedAccount(tokenAccount);
+                          if (e.target.checked) {
+                            setSelectedAccounts(new Set(selectedAccounts.add(tokenAccount)));
+                          }
+                          if (!e.target.checked) {
+                            setSelectedAccounts(new Set<TokenAccount>(Array.from(selectedAccounts).filter(x => x !== tokenAccount)));
+                          }
+                        }}
+                      />
                       <div className="relative w-10 h-10">
                         <div
-                          className="w-10 h-10 rounded-full overflow-hidden bg-gray-700 cursor-pointer"
+                          className="relative w-10 h-10 rounded-full bg-gray-700 cursor-pointer"
                           onClick={() => togglePopup(index)}
                         >
-                          {token.image ? (
+                          {/* Token image */}
+                          {tokenAccount.image ? (
                             <img
-                              src={token.image}
-                              alt={token.symbol}
+                              src={tokenAccount.image}
+                              alt={tokenAccount.symbol}
                               className="w-full h-full object-cover"
                               onError={(e) => {
-                                const target = e.target as HTMLImageElement
-                                target.style.display = 'none'
-                                target.nextElementSibling?.classList.remove('hidden')
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = "none";
+                                target.nextElementSibling?.classList.remove("hidden");
                               }}
                             />
                           ) : null}
-                          <div className={`w-full h-full bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center ${token.image ? 'hidden' : ''}`}>
+
+                          {/* Fallback symbol circle */}
+                          <div
+                            className={`w-full h-full bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center ${tokenAccount.image ? "hidden" : ""
+                              }`}
+                          >
                             <span className="text-white font-bold text-xs">
-                              {token.symbol.slice(0, 3).toUpperCase()}
+                              {tokenAccount.symbol.slice(0, 3).toUpperCase()}
                             </span>
+                          </div>
+
+                          {/* Verification badge */}
+                          <div className="absolute -bottom-1 -right-1 bg-gray-900 rounded-full p-[2px] shadow-md">
+                            {tokenAccount.isVerified ? (
+                              <CheckCircle className="w-3 h-3 text-blue-500" />
+                            ) : (
+                              <XCircle className="w-3 h-3 text-red-500" />
+                            )}
                           </div>
                         </div>
 
@@ -219,21 +437,21 @@ const Portfolio: React.FC = () => {
                             className="absolute z-50 top-12 left-0 w-48 bg-gray-900 border border-gray-700 rounded-xl shadow-lg p-2 space-y-1"
                           >
                             <button
-                              onClick={() => handleSwap(token)}
+                              onClick={() => handleSwap(tokenAccount)}
                               className="block w-full text-left px-3 py-2 text-sm text-white hover:bg-purple-700 rounded-md"
-                              aria-label={`Swap ${token.symbol} via Jupiter`}
+                              aria-label={`Swap ${tokenAccount.symbol} via Jupiter`}
                             >
                               Swap via Jupiter
                             </button>
 
                             <button
-                              onClick={() => handleSwapToSol(token)}
+                              onClick={() => handleSwapToSol(tokenAccount)}
                               className="block w-full text-left px-3 py-2 text-sm text-white hover:bg-purple-700 rounded-md"
                             >
                               Swap all to SOL
                             </button>
                             <button
-                              onClick={() => handleCopyMint(token.mint)}
+                              onClick={() => handleCopyMint(tokenAccount.mint)}
                               className="block w-full text-left px-3 py-2 text-sm text-white hover:bg-gray-700 rounded-md"
                             >
                               Copy Mint Address
@@ -242,15 +460,16 @@ const Portfolio: React.FC = () => {
                         )}
                       </div>
                       <div className="min-w-0 flex-1 truncate">
-                        <div className="text-white truncate">{token.name}</div>
+                        <div className="text-white truncate">{tokenAccount.name}</div>
                         <div className="text-sm text-gray-400 flex items-center gap-2">
-                          <span>{token.symbol}</span>
+                          <span>{tokenAccount.symbol}</span>
                           <button
-                            onClick={() => window.open(`https://solscan.io/token/${token.mint}`, '_blank')}
+                            onClick={() => window.open(`https://solscan.io/token/${tokenAccount.mint}`, '_blank')}
                             className="text-purple-400 hover:text-purple-300 transition-colors"
                           >
                             <ExternalLink className="w-3 h-3" />
                           </button>
+                          <span>{tokenAccount.tokenProgram == TOKEN_PROGRAM_ID.toBase58() ? "TOKEN" : "2022"}</span>
                         </div>
                       </div>
                     </div>
@@ -258,19 +477,20 @@ const Portfolio: React.FC = () => {
                     {/* Right Side */}
                     <div className="ml-auto text-right min-w-[6rem]">
                       <div className="font-semibold  text-white">
-                        {token.amount < 1
-                          ? token.amount.toFixed(Math.min(6, token.decimals))
-                          : token.amount.toLocaleString(undefined, {
+                        {tokenAccount.amount.lessThan(1)
+                          ? tokenAccount.amount.toFixed(Math.min(6, tokenAccount.decimals))
+                          : tokenAccount.amount.toNumber().toLocaleString(undefined, {
                             minimumFractionDigits: 0,
-                            maximumFractionDigits: Math.min(4, token.decimals)
+                            maximumFractionDigits: Math.min(4, tokenAccount.decimals)
                           })
                         }
                       </div>
                       <div className="text-sm text-gray-400 flex flex-col items-end">
-                        <span>${token.value.toFixed(2)}</span>
-                        {token.price > 0 && (
+                        <span>${tokenAccount.value.toFixed(2)}</span>
+
+                        {tokenAccount.price && tokenAccount.price.greaterThan(0) && (
                           <span className="text-xs">
-                            ${token.price < 0.01 ? token.price.toFixed(6) : token.price.toFixed(4)} each
+                            ${tokenAccount.price.lessThan(0.01) ? tokenAccount.price.toFixed(6) : tokenAccount.price.toFixed(4)} each
                           </span>
                         )}
                       </div>

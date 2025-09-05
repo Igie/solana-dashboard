@@ -165,10 +165,11 @@ const Dammv2Browser: React.FC = () => {
                 name: tokenAMetadata?.name || 'Unknown',
                 poolAmount: poolTokenAAmount,
                 decimals: tokenAMetadata?.decimals,
-                price: tokenAMetadata?.price,
+                price: tokenAMetadata?.price.toNumber(),
                 image: tokenAMetadata?.image || undefined,
                 totalFees: new Decimal(x.account.metrics.totalLpAFee.add(x.account.metrics.totalProtocolAFee).toString()).div(Decimal.pow(10, tokenAMetadata?.decimals || 6)).mul(tokenAMetadata?.price),
-                launchpad: tokenAMetadata.launchpad
+                launchpad: tokenAMetadata.launchpad,
+                isVerified: tokenAMetadata.isVerified,
             }
 
             const poolTokenB = {
@@ -178,10 +179,11 @@ const Dammv2Browser: React.FC = () => {
                 name: tokenBMetadata?.name || 'Unknown',
                 poolAmount: poolTokenBAmount,
                 decimals: tokenBMetadata?.decimals,
-                price: tokenBMetadata?.price,
+                price: tokenBMetadata?.price.toNumber(),
                 image: tokenBMetadata?.image || undefined,
                 totalFees: new Decimal(x.account.metrics.totalLpBFee.add(x.account.metrics.totalProtocolBFee).toString()).div(Decimal.pow(10, tokenBMetadata?.decimals)).mul(tokenBMetadata?.price),
-                launchpad: tokenBMetadata.launchpad
+                launchpad: tokenBMetadata.launchpad,
+                isVerified: tokenBMetadata.isVerified,
             }
 
             const poolTokenAAmountLocked = new Decimal(lockedWithdrawPoolQuote.outAmountA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
@@ -217,8 +219,8 @@ const Dammv2Browser: React.FC = () => {
                     x.account.poolFees.dynamicFee
                 )),
                 price: new Decimal(getPriceFromSqrtPrice(x.account.sqrtPrice, poolTokenA.decimals, poolTokenB.decimals)),
-                TVL: (poolPrice.mul(new Decimal(poolTokenAAmount)).toNumber() * tokenBMetadata.price + poolTokenBAmount * tokenBMetadata.price),
-                lockedTVL: poolPrice.mul(new Decimal(poolTokenAAmountLocked)).toNumber() * tokenBMetadata.price + poolTokenBAmountLocked * tokenBMetadata.price,
+                TVL: (poolPrice.mul(new Decimal(poolTokenAAmount)).toNumber() * tokenBMetadata.price.toNumber() + poolTokenBAmount * tokenBMetadata.price.toNumber()),
+                lockedTVL: poolPrice.mul(new Decimal(poolTokenAAmountLocked)).toNumber() * tokenBMetadata.price.toNumber() + poolTokenBAmountLocked * tokenBMetadata.price.toNumber(),
                 totalFees: poolTokenA.totalFees.add(poolTokenB.totalFees),
             });
         };

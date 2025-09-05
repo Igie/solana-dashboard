@@ -20,11 +20,9 @@ const DammPositions: React.FC = () => {
   const { sendTxn, sendMultiTxn } = useTransactionManager();
   const { updatePosition, removePosition } = useDammUserPositions()
 
-  //const { tokenAccounts, refreshTokenAccounts } = useTokenAccounts();
   const { positions, totalLiquidityValue, loading, refreshPositions, sortPositionsBy, removeLiquidityAndSwapToQuote, sortedBy, sortedAscending } = useDammUserPositions();
   const [selectedPositions, setSelectedPositions] = useState<Set<PoolPositionInfo>>(new Set());
   const [lastSelectedPosition, setLastSelectedPosition] = useState<PoolPositionInfo | null>(null);
-  //const { refreshTokenAccounts } = useTokenAccounts();
 
   const [searchString, setSearchString] = useState<string>("")
 

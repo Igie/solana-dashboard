@@ -140,7 +140,7 @@ export const MintSelectorInput: React.FC<Props> = ({
                                 <div className="p-2 text-sm text-center">No tokens</div>
                             ) : (
                                 tokenAccounts
-                                    .sort((a, b) => b.amount * b.price - a.amount * a.price)
+                                    .sort((a, b) => b.amount.mul(b.price).sub(a.amount.mul(a.price)).toNumber())
                                     .map((account) => {
                                         if (!account) return null;
                                         return (
@@ -174,7 +174,7 @@ export const MintSelectorInput: React.FC<Props> = ({
 
                                                 {/* Right side: total value */}
                                                 <div className="ml-auto text-xs text-gray-300 whitespace-nowrap">
-                                                    ${(account.amount * account.price).toFixed(2)}
+                                                    ${account.amount.mul(account.price).toFixed(2)}
                                                 </div>
                                             </button>
                                         );

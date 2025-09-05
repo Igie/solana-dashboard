@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState } from 'react'
 import { PublicKey } from '@solana/web3.js'
-import { CpAmm, feeNumeratorToBps, getBaseFeeNumerator, getFeeNumerator, getUnClaimReward, type PoolState, type PositionState } from '@meteora-ag/cp-amm-sdk'
+import { CpAmm, feeNumeratorToBps, getBaseFeeNumerator, getFeeNumerator, getPriceFromSqrtPrice, getUnClaimReward, type PoolState, type PositionState } from '@meteora-ag/cp-amm-sdk'
 import { fetchTokenMetadataJup } from '../tokenUtils'
 import Decimal from 'decimal.js'
 import { BN } from '@coral-xyz/anchor'
@@ -227,11 +227,8 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
 
                 const tokenAUnclaimedFees = new Decimal(unclaimedRewards.feeTokenA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
                 const tokenBUnclaimedFees = new Decimal(unclaimedRewards.feeTokenB.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
-                //const positionLiquidity = new BN(q64ToDecimal(position.positionState.unlockedLiquidity).toNumber());
-                //const poolsqrtprice = q64ToDecimal(position.poolState.sqrtPrice);
-                //const poolminsqrtprice = q64ToDecimal(position.poolState.sqrtMinPrice);
 
-                //const price = getPriceFromSqrtPrice(position.poolState.sqrtPrice, tokenAMetadata!.decimals, tokenBMetadata!.decimals);
+                const poolPrice = getPriceFromSqrtPrice(position.poolState.sqrtPrice, tokenAMetadata!.decimals, tokenBMetadata!.decimals).toNumber();
 
                 const shareOfPool = positionLP.muln(10000).div(poolLP).toNumber() / 100;
 
@@ -254,14 +251,15 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                 position.tokenB.positionAmount = positionTokenBAmount;
                 position.tokenB.unclaimedFee = tokenBUnclaimedFees;
 
-                position.poolValue = poolTokenAAmount * tokenAMetadata!.price +
-                    poolTokenBAmount * tokenBMetadata!.price;
-                position.positionValue = positionTokenAAmount * tokenAMetadata!.price +
-                    positionTokenBAmount * tokenBMetadata!.price;
+                position.poolValue = (poolTokenAAmount * poolPrice +
+                    poolTokenBAmount) * tokenBMetadata!.price.toNumber();
+
+                position.positionValue = (positionTokenAAmount * poolPrice +
+                    positionTokenBAmount) * tokenBMetadata!.price.toNumber();
                 position.shareOfPoolPercentage = shareOfPool;
                 position.positionUnclaimedFee =
-                    tokenAUnclaimedFees * tokenAMetadata!.price +
-                    tokenBUnclaimedFees * tokenBMetadata!.price;
+                    tokenAUnclaimedFees * tokenAMetadata!.price.toNumber() +
+                    tokenBUnclaimedFees * tokenBMetadata!.price.toNumber();
 
                 position.poolBaseFeeBPS = feeNumeratorToBps(getBaseFeeNumerator(
                     position.poolState.poolFees.baseFee.feeSchedulerMode,
@@ -280,16 +278,10 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                     position.poolState.poolFees.baseFee.reductionFactor,
                     position.poolState.poolFees.dynamicFee
                 ));
-                //positionsParsed.push(position);
-
                 positionsParsed.push(position)
-                //await new Promise(res => setTimeout(res, 500));
-
             };
-            //setPositions(positions)
             sortPositionsByInternal(positionsParsed, sortedBy, sortedAscending);
 
-            // Calculate totals
             let totalLiquidity: number = 0;
             let totalFees: number = 0
 
@@ -458,14 +450,14 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
         position.tokenB.positionAmount = positionTokenBAmount;
         position.tokenB.unclaimedFee = tokenBUnclaimedFees;
 
-        position.poolValue = poolTokenAAmount * tokenAMetadata!.price +
-            poolTokenBAmount * tokenBMetadata!.price;
-        position.positionValue = positionTokenAAmount * tokenAMetadata!.price +
-            positionTokenBAmount * tokenBMetadata!.price;
+        position.poolValue = poolTokenAAmount * tokenAMetadata!.price.toNumber() +
+            poolTokenBAmount * tokenBMetadata!.price.toNumber();
+        position.positionValue = positionTokenAAmount * tokenAMetadata!.price.toNumber() +
+            positionTokenBAmount * tokenBMetadata!.price.toNumber();
         position.shareOfPoolPercentage = shareOfPool;
         position.positionUnclaimedFee =
-            tokenAUnclaimedFees * tokenAMetadata!.price +
-            tokenBUnclaimedFees * tokenBMetadata!.price;
+            tokenAUnclaimedFees * tokenAMetadata!.price.toNumber() +
+            tokenBUnclaimedFees * tokenBMetadata!.price.toNumber();
 
         position.poolBaseFeeBPS = feeNumeratorToBps(getBaseFeeNumerator(
             position.poolState.poolFees.baseFee.feeSchedulerMode,
