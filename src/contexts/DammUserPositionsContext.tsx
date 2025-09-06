@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState } from 'react'
 import { PublicKey } from '@solana/web3.js'
-import { CpAmm, feeNumeratorToBps, getBaseFeeNumerator, getFeeNumerator, getPriceFromSqrtPrice, getUnClaimReward, type PoolState, type PositionState } from '@meteora-ag/cp-amm-sdk'
+import { feeNumeratorToBps, getBaseFeeNumerator, getFeeNumerator, getPriceFromSqrtPrice, getUnClaimReward, type PoolState, type PositionState } from '@meteora-ag/cp-amm-sdk'
 import { fetchTokenMetadataJup } from '../tokenUtils'
 import Decimal from 'decimal.js'
 import { BN } from '@coral-xyz/anchor'
@@ -9,6 +9,7 @@ import { useTransactionManager } from './TransactionManagerContext';
 import { txToast } from '../components/Simple/TxToast';
 import { getQuote, getSwapTransactionVersioned } from '../JupSwapApi'
 import { useTokenAccounts } from './TokenAccountsContext'
+import { useCpAmm } from './CpAmmContext'
 
 export interface PoolTokenInfo {
     mint: string
@@ -92,6 +93,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
     const { publicKey } = useWallet()
     const { connection } = useConnection()
     const { sendTxn } = useTransactionManager();
+    const { cpAmm } = useCpAmm();
     const { refreshTokenAccounts } = useTokenAccounts();
     const [sortedBy, setSortBy] = useState<SortType>(SortType.PoolBaseFee);
     const [sortedAscending, setSortAscending] = useState<boolean | undefined>(true);
@@ -103,7 +105,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
     const [currentTime, setCurrentTime] = useState(new BN((Date.now())).divn(1000).toNumber())
     const [currentSlot, setCurrentSlot] = useState(0)
 
-    const cpAmm = new CpAmm(connection);
+    
     //const zap = new Zap(connection);
 
     const refreshPositions = async () => {

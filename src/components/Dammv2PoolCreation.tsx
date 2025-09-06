@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useEffect } from 'react'
 import { RefreshCcw } from 'lucide-react'
-import { CollectFeeMode, CpAmm, deriveCustomizablePoolAddress, feeNumeratorToBps, FeeSchedulerMode, getBaseFeeNumerator, getBaseFeeParams, getDynamicFeeParams, getFeeNumerator, getPriceFromSqrtPrice, getSqrtPriceFromPrice, MAX_SQRT_PRICE, MIN_SQRT_PRICE } from '@meteora-ag/cp-amm-sdk'
+import { CollectFeeMode, deriveCustomizablePoolAddress, feeNumeratorToBps, FeeSchedulerMode, getBaseFeeNumerator, getBaseFeeParams, getDynamicFeeParams, getFeeNumerator, getPriceFromSqrtPrice, getSqrtPriceFromPrice, MAX_SQRT_PRICE, MIN_SQRT_PRICE } from '@meteora-ag/cp-amm-sdk'
 import { Keypair, PublicKey } from '@solana/web3.js'
 import { BN } from '@coral-xyz/anchor'
 import { fetchTokenMetadataJup, metadataToAccounts, type TokenAccount, type TokenMetadataMap } from '../tokenUtils'
@@ -15,11 +15,13 @@ import { formatDurationNumber, type PoolDetailedInfo, type PoolInfo } from '../c
 import { toast } from 'sonner'
 import { useConnection, useWallet } from '@jup-ag/wallet-adapter'
 import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from '@solana/spl-token'
+import { useCpAmm } from '../contexts/CpAmmContext'
 
 
 const Dammv2PoolCreation: React.FC = () => {
     const { publicKey, connected } = useWallet()
     const { connection } = useConnection()
+    const {cpAmm} = useCpAmm();
     const [searchMint, setSearchMint] = useState('')
     const { refreshTokenAccounts } = useTokenAccounts()
 
@@ -107,13 +109,10 @@ const Dammv2PoolCreation: React.FC = () => {
         setMinPriceInput(minPrice.toFixed())
     }, [minPrice])
 
-    const cpAmm = new CpAmm(connection);
-
     const handleFetchPrice = async () => {
         if (!tokenAMint || !tokenBMint) {
             return
         }
-
         try {
             const res = await fetch(`https://lite-api.jup.ag/price/v3?ids=${tokenAMint},${tokenBMint}`)
             const data = await res.json();
@@ -142,65 +141,57 @@ const Dammv2PoolCreation: React.FC = () => {
         setCurrentTime(new BN((Date.now())).divn(1000).toNumber());
         setCurrentSlot(await connection.getSlot())
         let mints: string[] = [];
-        try {
-            if (searchMint === '') {
-                const pools = await cpAmm.getAllPools();
-                pools.sort((x, y) => y.account.activationPoint.sub(x.account.activationPoint).toNumber())
-                const allPools = (pools).slice(0, 20);
+        if (searchMint === '') {
+            const pools = await cpAmm.getAllPools();
+            pools.sort((x, y) => y.account.activationPoint.sub(x.account.activationPoint).toNumber())
+            const allPools = (pools).slice(0, 20);
 
-                mints.push(...allPools.map(p => p.account.tokenAMint.toBase58()));
-                mints.push(...allPools.map(p => p.account.tokenBMint.toBase58()));
-                mints = [...new Set(mints)]
-                const tm = await fetchTokenMetadataJup(mints);
-                setTokenMetadataMap(tm);
-                setPools(allPools);
-                mapPools(allPools, tm);
-                setFetchingPools(false);
-                return;
-            }
-            const mintKey = new PublicKey(searchMint);
-            if (!mintKey) {
-                setTokenMetadataMap({});
-                setPools([])
-                mapPools([], {});
-                setFetchingPools(false)
-                console.error('Invalid mint address')
-                return;
-            }
-
-            const allPoolsA = await cpAmm._program.account.pool.all([{
-                memcmp: {
-                    encoding: 'base58',
-                    offset: 168,
-                    bytes: searchMint,
-                }
-            }])
-
-            const allPoolsB = await cpAmm._program.account.pool.all([{
-                memcmp: {
-                    encoding: 'base58',
-                    offset: 168 + 32,
-                    bytes: searchMint,
-                }
-            }])
-
-            const allPools = [...allPoolsA, ...allPoolsB];
-
-            const related = allPools.sort((x, y) => y.account.activationPoint.sub(x.account.activationPoint).toNumber()).slice(0, 20);
-            mints.push(...related.map(p => p.account.tokenAMint.toBase58()));
-            mints.push(...related.map(p => p.account.tokenBMint.toBase58()));
-            mints = [...new Set(mints)];
+            mints.push(...allPools.map(p => p.account.tokenAMint.toBase58()));
+            mints.push(...allPools.map(p => p.account.tokenBMint.toBase58()));
+            mints = [...new Set(mints)]
             const tm = await fetchTokenMetadataJup(mints);
             setTokenMetadataMap(tm);
-            setPools(related)
-            mapPools(related, tm);
-
-        } catch (err) {
-            console.error('Failed to fetch pools:', err)
+            setPools(allPools);
+            mapPools(allPools, tm);
+            setFetchingPools(false);
+            return;
+        }
+        const mintKey = new PublicKey(searchMint);
+        if (!mintKey) {
             setTokenMetadataMap({});
             setPools([])
             mapPools([], {});
+            setFetchingPools(false)
+            console.error('Invalid mint address')
+            return;
         }
+
+        const allPoolsA = await cpAmm._program.account.pool.all([{
+            memcmp: {
+                encoding: 'base58',
+                offset: 168,
+                bytes: searchMint,
+            }
+        }])
+
+        const allPoolsB = await cpAmm._program.account.pool.all([{
+            memcmp: {
+                encoding: 'base58',
+                offset: 168 + 32,
+                bytes: searchMint,
+            }
+        }])
+
+        const allPools = [...allPoolsA, ...allPoolsB];
+
+        const related = allPools.sort((x, y) => y.account.activationPoint.sub(x.account.activationPoint).toNumber()).slice(0, 20);
+        mints.push(...related.map(p => p.account.tokenAMint.toBase58()));
+        mints.push(...related.map(p => p.account.tokenBMint.toBase58()));
+        mints = [...new Set(mints)];
+        const tm = await fetchTokenMetadataJup(mints);
+        setTokenMetadataMap(tm);
+        setPools(related)
+        mapPools(related, tm);
         setFetchingPools(false)
     }
 
@@ -259,7 +250,7 @@ const Dammv2PoolCreation: React.FC = () => {
                 launchpad: tokenBMetadata.launchpad,
             }
 
-           let activationTime = 0;
+            let activationTime = 0;
             if (x.account.activationType === 0) {
                 activationTime = ((currentSlot - x.account.activationPoint.toNumber()) * 400 / 1000);
             } else {
@@ -402,11 +393,9 @@ const Dammv2PoolCreation: React.FC = () => {
                         setNewPoolAddress(null);
                         setNewPoolAddressExists(false);
                     });
-
                     promise.then((x) => {
                         setNewPoolAddress(pubKey);
                         setNewPoolAddressExists(x);
-
                     });
 
                 } else {

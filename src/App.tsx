@@ -9,15 +9,18 @@ import { DEVNET_HELIUS_RPC, MAINNET_HELIUS_RPC } from './constants';
 import { TransactionManagerProvider } from './contexts/TransactionManagerContext';
 import { TokenAccountsProvider } from './contexts/TokenAccountsContext';
 import { DammUserPositionsProvider } from './contexts/DammUserPositionsContext';
+import { CpAmmProvider } from './contexts/CpAmmContext';
 
 const GlobalProviders = ({ children }: { children: React.ReactNode }) => (
 
   <TransactionManagerProvider>
 
     <TokenAccountsProvider>
-      <DammUserPositionsProvider>
-        {children}
-      </DammUserPositionsProvider>
+      <CpAmmProvider>
+        <DammUserPositionsProvider>
+          {children}
+        </DammUserPositionsProvider>
+      </CpAmmProvider>
     </TokenAccountsProvider>
   </TransactionManagerProvider>
 )

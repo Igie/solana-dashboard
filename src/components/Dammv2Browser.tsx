@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { RefreshCcw, RefreshCw } from 'lucide-react'
-import { CpAmm, feeNumeratorToBps, getBaseFeeNumerator, getFeeNumerator, getPriceFromSqrtPrice, getTokenProgram } from '@meteora-ag/cp-amm-sdk'
+import { feeNumeratorToBps, getBaseFeeNumerator, getFeeNumerator, getPriceFromSqrtPrice, getTokenProgram } from '@meteora-ag/cp-amm-sdk'
 import { PublicKey, type KeyedAccountInfo, } from '@solana/web3.js'
 import { BN } from '@coral-xyz/anchor'
 import { fetchTokenMetadataJup, type TokenMetadataMap } from '../tokenUtils'
@@ -9,15 +9,16 @@ import Decimal from 'decimal.js'
 import { PoolSortType, sortPools, type PoolDetailedInfo, type PoolInfo, type PoolInfoMap } from '../constants'
 import Dammv2PoolList from './Simple/Dammv2PoolList'
 import { useConnection } from '@jup-ag/wallet-adapter'
+import { useCpAmm } from '../contexts/CpAmmContext'
 
 const MainPoolFilters = ["Include", "Exclude", "Only"];
 const bn0 = new BN(0);
 
 const Dammv2Browser: React.FC = () => {
     const { connection } = useConnection()
-
+    const { cpAmm } = useCpAmm();
     //const { positions, totalLiquidityValue, loading, refreshPositions } = useDammUserPositions()
-    const [websocketPools, setWebsocketPools] = useState<PoolInfo[]>([])
+    const [websocketPool, setWebsocketPool] = useState<PoolInfo>()
     const [pools, setPools] = useState<PoolInfo[]>([])
     const [newPools, setNewPools] = useState<PoolInfoMap>({});
     const [detailedPools, setDetailedPools] = useState<PoolDetailedInfo[]>([])
@@ -33,32 +34,62 @@ const Dammv2Browser: React.FC = () => {
 
     const [currentTime, setCurrentTime] = useState(0);
     const [currentSlot, setCurrentSlot] = useState(0);
-    const [poolAddress, setPoolAddress] = useState('')
+    const [poolPublicKeyOrMint, setPoolPublicKeyOrMint] = useState('')
     const [poolCreatorAddress, setPoolCreatorAddress] = useState('')
 
-    const cpAmm = new CpAmm(connection);
-
-    const fetchPool = async (poolAddress: string) => {
-        const poolKey = new PublicKey(poolAddress);
-        if (!await cpAmm.isPoolExist(poolKey)) return;
+    const fetchPool = async () => {
+        const pubKeyOrMint = poolPublicKeyOrMint.trim();
+        const publicKey = new PublicKey(pubKeyOrMint);
+        let poolExists = false;
+        try {
+            await cpAmm.isPoolExist(publicKey);
+        } catch { }
 
         setFetchingPools(true)
         setCurrentTime((new BN((Date.now())).divn(1000).toNumber()));
         setCurrentSlot(await connection.getSlot());
 
-        const pool = await cpAmm.fetchPoolState(poolKey)
-        const accountPool = {
-            publicKey: poolKey,
-            account: pool,
-        };
+        if (poolExists) {
+            const pool = await cpAmm.fetchPoolState(publicKey)
+            const accountPool = {
+                publicKey: publicKey,
+                account: pool,
+            };
 
-        const tm = await fetchTokenMetadataJup([pool.tokenAMint.toBase58(), pool.tokenBMint.toBase58()]);
-        setTokenMetadataMap(tm);
-        setPools([accountPool]);
-        mapPools([accountPool], tm);
+            const tm = await fetchTokenMetadataJup([pool.tokenAMint.toBase58(), pool.tokenBMint.toBase58()]);
+            setTokenMetadataMap(tm);
+            setPools([accountPool]);
+            mapPools([accountPool], tm);
+        } else {
+
+            const allPoolsA = await cpAmm._program.account.pool.all([{
+                memcmp: {
+                    encoding: 'base58',
+                    offset: 168,
+                    bytes: pubKeyOrMint,
+                }
+            }])
+
+            const allPoolsB = await cpAmm._program.account.pool.all([{
+                memcmp: {
+                    encoding: 'base58',
+                    offset: 168 + 32,
+                    bytes: pubKeyOrMint,
+                }
+            }])
+            let mints: string[] = [];
+            const allPools = [...allPoolsA, ...allPoolsB];
+            const related = allPools.sort((x, y) => y.account.activationPoint.sub(x.account.activationPoint).toNumber()).slice(0, 100);
+            mints.push(...related.map(p => p.account.tokenAMint.toBase58()));
+            mints.push(...related.map(p => p.account.tokenBMint.toBase58()));
+            mints = [...new Set(mints)];
+            const tm = await fetchTokenMetadataJup(mints);
+            setTokenMetadataMap(tm);
+            setPools(related)
+            mapPools(related, tm);
+        }
         setFetchingPools(false);
     }
-
 
     const fetchPools = async () => {
         if (!connection) return
@@ -148,10 +179,6 @@ const Dammv2Browser: React.FC = () => {
             const tokenAMetadata = tm[x.account.tokenAMint.toBase58()];
             const tokenBMetadata = tm[x.account.tokenBMint.toBase58()];
             if (!tokenAMetadata || !tokenBMetadata) continue;
-            if (!tokenAMetadata)
-                console.log("a is undefined", x.account.tokenAMint.toBase58());
-            if (!tokenAMetadata)
-                console.log("b is undefined", x.account.tokenBMint.toBase58());
 
             const poolTokenAAmount = new Decimal(withdrawPoolQuote.outAmountA.toString()).div(Decimal.pow(10, tokenAMetadata?.decimals || 6)).toNumber();
             const poolTokenBAmount = new Decimal(withdrawPoolQuote.outAmountB.toString()).div(Decimal.pow(10, tokenBMetadata?.decimals || 6)).toNumber();
@@ -236,7 +263,6 @@ const Dammv2Browser: React.FC = () => {
             setPools([...pools]);
             mapPools(poolsLocal, tokenMetadataMap);
         } else if (shouldRefreshPools) {
-
             const newPoolsLocal = newPools;
             newPoolsLocal[newPool.publicKey.toBase58()] = newPool;
             setNewPools(newPoolsLocal);
@@ -267,7 +293,7 @@ const Dammv2Browser: React.FC = () => {
         if (Object.entries(newPools).length == 0) return;
         setCurrentTime(new BN((Date.now())).divn(1000).toNumber());
         const s = connection.getSlot()
-        s.then((x) =>{
+        s.then((x) => {
             setCurrentSlot(x);
         });
         let mints: string[] = []
@@ -277,21 +303,18 @@ const Dammv2Browser: React.FC = () => {
         //setNewPools(x => { newPoolsLocal = newPools; return x });
         newPoolsLocal = newPools;
         setNewPools({});
-
-
         for (const pool of Object.entries(newPoolsLocal).map(x => x[1])) {
-
-            if (pool.account.activationType === 0 && pool.account.activationPoint.ltn(currentSlot))
+            if (pool.account.activationType === 0 && pool.account.activationPoint.addn(10).ltn(currentSlot))
                 continue;
 
-
-            if (pool.account.activationType === 1 && pool.account.activationPoint.ltn(currentTime))
+            if (pool.account.activationType === 1 && pool.account.activationPoint.addn(10).ltn(currentTime))
                 continue
-
 
             if (poolCreatorAddress !== "" && pool?.account.creator.toBase58() !== poolCreatorAddress)
                 continue
 
+            if (poolPublicKeyOrMint !== "" && pool?.account.tokenAMint.toBase58() !== poolPublicKeyOrMint && pool?.account.tokenBMint.toBase58() !== poolPublicKeyOrMint && pool.publicKey.toBase58() !== poolPublicKeyOrMint)
+                continue
 
             const currentFee = feeNumeratorToBps(getFeeNumerator(
                 pool.account.activationType === 0 ? currentSlot :
@@ -315,7 +338,6 @@ const Dammv2Browser: React.FC = () => {
             poolInfoMap[pool.publicKey.toBase58()] = pool;
         }
 
-        //setPools(x => { poolsLocal = pools; return x });
         for (const pool of pools) {
             poolInfoMap[pool.publicKey.toBase58()] = pool;
         }
@@ -327,13 +349,13 @@ const Dammv2Browser: React.FC = () => {
         mints.push(...finalPools.map(x => x.account.tokenBMint.toBase58()));
         mints = [...new Set(mints)]
         const newTokenMetadataMap = fetchTokenMetadataJup(mints);
-        const oldTokenMetadataMap = tokenMetadataMap;
         newTokenMetadataMap.then((x) => {
+            for (var entries of Object.entries(x)) {
 
-            for (var entries of Object.entries(x))
-                oldTokenMetadataMap[entries[0]] = entries[1];
-            setTokenMetadataMap(oldTokenMetadataMap);
-            mapPools(finalPools, oldTokenMetadataMap);
+                x[entries[0]] = entries[1];
+            }
+            setTokenMetadataMap(x);
+            mapPools(finalPools, x);
         });
     }, [dummyBool]);
 
@@ -354,19 +376,12 @@ const Dammv2Browser: React.FC = () => {
                     break;
                 }
             }
-            if (!found) console.log(e.accountInfo);
             if (!found || name !== 'pool') return;
 
-
-            setWebsocketPools([...websocketPools, { publicKey: e.accountId, account: decoded }]);
-            //updatePool(existing, { publicKey: e.accountId, account: decoded });
-
-            //console.log(e.accountInfo);
-            //console.log();
-
+            setWebsocketPool({ publicKey: e.accountId, account: decoded });
         }, {
             encoding: 'jsonParsed',
-            commitment: 'finalized',
+            commitment: 'processed',
         });
 
         return () => {
@@ -375,23 +390,17 @@ const Dammv2Browser: React.FC = () => {
     }, [connection]);
 
     useEffect(() => {
-        if (websocketPools.length == 0) return;
+        if (!websocketPool) return;
+        addOrQueuePool(websocketPool);
+    }, [websocketPool]);
 
-        const websocketPoolsLocal = websocketPools;
-        const pool = websocketPoolsLocal.pop();
-        setWebsocketPools(websocketPoolsLocal);
-        if (!pool) return;
-
-        addOrQueuePool(pool);
-    }, [websocketPools]);
-
-    useEffect(() =>{
+    useEffect(() => {
         setCurrentTime(new BN((Date.now())).divn(1000).toNumber());
         const slot = connection.getSlot();
         slot.then((x) => {
             setCurrentSlot(x)
         });
-    },[])
+    }, [])
 
     return (
         <div className="flex flex-col h-[calc(100vh-140px)] lg:h-[calc(100vh-75px)] space-y-1 px-2 md:px-0">
@@ -424,11 +433,11 @@ const Dammv2Browser: React.FC = () => {
 
             <div className='grid grid-cols-2 gap-1'>
                 <div className="relative w-full">
-                    <label className="block text-sm text-gray-400">Pool address</label>
+                    <label className="block text-sm text-gray-400">Pool/mint address</label>
                     <div className="flex" >
                         <button
                             type="button"
-                            onClick={() => fetchPool(poolAddress)}
+                            onClick={() => fetchPool()}
                             className="flex items-center justify-center px-2 bg-gray-700 border border-gray-600 rounded-l-md md:text-sm hover:bg-gray-600 text-white"
                             title="Refresh pools"
                         >
@@ -436,9 +445,9 @@ const Dammv2Browser: React.FC = () => {
                         </button>
                         <input
                             className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-r-md px-2 py-0.5 text-white md:text-sm placeholder-gray-500"
-                            placeholder="Enter pool address..."
-                            value={poolAddress}
-                            onChange={(e) => setPoolAddress(e.target.value.trim())}
+                            placeholder="Pool/mint address..."
+                            value={poolPublicKeyOrMint}
+                            onChange={(e) => setPoolPublicKeyOrMint(e.target.value.trim())}
                         />
                     </div>
                 </div>
@@ -457,7 +466,7 @@ const Dammv2Browser: React.FC = () => {
                         </button>
                         <input
                             className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-r-md px-2 py-0.5 text-white md:text-sm placeholder-gray-500"
-                            placeholder="Filter new pools by creator..."
+                            placeholder="Creator address..."
                             value={poolCreatorAddress}
                             onChange={(e) => setPoolCreatorAddress(e.target.value.trim())}
                         />
@@ -476,7 +485,7 @@ const Dammv2Browser: React.FC = () => {
                                 setMainPoolFilter(MainPoolFilters[(MainPoolFilters.indexOf(mainPoolFilter)! + 1) % 3]);
                                 setTokenMetadataMap({});
                                 setPools([]);
-                                setWebsocketPools([]);
+                                setWebsocketPool(undefined);
                                 mapPools([], {});
                             }}
                             className="flex items-center justify-center px-2 bg-gray-700 border border-gray-600 rounded-l-md md:text-sm hover:bg-gray-600 text-white"

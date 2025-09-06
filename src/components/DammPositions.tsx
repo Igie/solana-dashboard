@@ -1,22 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { RefreshCw, Wallet, ExternalLink, Droplets, TrendingUp, ChevronDown, ChevronUp, Menu } from 'lucide-react'
-import { CpAmm } from '@meteora-ag/cp-amm-sdk'
-//import Decimal from 'decimal.js'
 import { SortType, useDammUserPositions, type PoolPositionInfo } from '../contexts/DammUserPositionsContext'
-//import { useTokenAccounts } from '../contexts/TokenAccountsContext'
 import { useTransactionManager } from '../contexts/TransactionManagerContext'
-//import { getQuote, getSwapTransactionVersioned } from '../JupSwapApi'
 import { toast } from 'sonner'
 import { BN } from '@coral-xyz/anchor'
 import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-adapter'
 import { PublicKey, Transaction } from '@solana/web3.js'
-//import { txToast } from './Simple/TxToast'
 import { copyToClipboard, getSchedulerType, renderFeeTokenImages } from '../constants'
 import { FeeSchedulerGraph } from './Simple/FeeSchedulerGraph'
+import { useCpAmm } from '../contexts/CpAmmContext'
 
 const DammPositions: React.FC = () => {
   const { connection } = useConnection()
   const { publicKey, connected } = useWallet()
+  const { cpAmm } = useCpAmm();
   const { sendTxn, sendMultiTxn } = useTransactionManager();
   const { updatePosition, removePosition } = useDammUserPositions()
 
@@ -30,7 +27,6 @@ const DammPositions: React.FC = () => {
   const [showSortMenu, setShowSortMenu] = useState(false);
 
   const popupRef = useRef<HTMLDivElement | null>(null)
-  const cpAmm = new CpAmm(connection);
 
   const toggleRowExpand = (index: number) => {
     setExpandedIndex(expandedIndex === index ? null : index);
@@ -180,7 +176,7 @@ const DammPositions: React.FC = () => {
   }, [])
 
   const handleSort = (sortType: SortType, ascending?: boolean) => {
-    
+
     sortPositionsBy(sortType, ascending);
     setShowSortMenu(false);
   };
@@ -452,7 +448,7 @@ const DammPositions: React.FC = () => {
                 <div className="col-span-2">Fees</div>
                 <div className="col-span-2">Claimable</div>
                 <div className="col-span-2">Scheduler</div>
-                
+
               </div>
             </div>
           )}
