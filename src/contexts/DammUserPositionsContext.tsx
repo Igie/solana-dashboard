@@ -21,6 +21,7 @@ export interface PoolTokenInfo {
     decimals: number
     image?: string
     unclaimedFee: number
+    claimedFee: number
 }
 
 export interface PoolPositionInfo {
@@ -34,7 +35,8 @@ export interface PoolPositionInfo {
     shareOfPoolPercentage: number
     poolValue: number // USD value
     positionValue: number
-    positionUnclaimedFee: number // from tokenA + tokenB fee values
+    positionUnclaimedFee: number
+    positionClaimedFee: number
     poolBaseFeeBPS: number
     poolCurrentFeeBPS: number
 }
@@ -105,7 +107,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
     const [currentTime, setCurrentTime] = useState(new BN((Date.now())).divn(1000).toNumber())
     const [currentSlot, setCurrentSlot] = useState(0)
 
-    
+
     //const zap = new Zap(connection);
 
     const refreshPositions = async () => {
@@ -153,6 +155,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                             positionAmount: 0,
                             decimals: 1,
                             unclaimedFee: 0,
+                            claimedFee: 0,
                         },
                         tokenB: {
                             mint: pool.tokenBMint.toString(),
@@ -163,11 +166,13 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                             positionAmount: 0,
                             decimals: 1,
                             unclaimedFee: 0,
+                            claimedFee: 0,
                         },
                         shareOfPoolPercentage: 0.5,
                         poolValue: 0,
                         positionValue: 0,
                         positionUnclaimedFee: 0,
+                        positionClaimedFee: 0,
                         poolBaseFeeBPS: 0,
                         poolCurrentFeeBPS: 0,
                     })
@@ -229,6 +234,9 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
 
                 const tokenAUnclaimedFees = new Decimal(unclaimedRewards.feeTokenA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
                 const tokenBUnclaimedFees = new Decimal(unclaimedRewards.feeTokenB.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
+                const tokenAClaimedFees = new Decimal(position.positionState.metrics.totalClaimedAFee.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
+                const tokenBClaimedFees = new Decimal(position.positionState.metrics.totalClaimedBFee.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
+
 
                 const poolPrice = getPriceFromSqrtPrice(position.poolState.sqrtPrice, tokenAMetadata!.decimals, tokenBMetadata!.decimals).toNumber();
 
@@ -242,16 +250,17 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                 position.tokenA.poolAmount = poolTokenAAmount;
                 position.tokenA.positionAmount = positionTokenAAmount;
                 position.tokenA.unclaimedFee = tokenAUnclaimedFees;
+                position.tokenA.claimedFee = tokenAClaimedFees;
 
                 position.tokenB.tokenProgram = tokenBMetadata?.tokenProgram;
                 position.tokenB.name = tokenBMetadata?.name || 'Unknown Token';
                 position.tokenB.symbol = tokenBMetadata?.symbol || 'UNK';
                 position.tokenB.image = tokenBMetadata?.image;
                 position.tokenB.decimals = tokenBMetadata?.decimals;
-
                 position.tokenB.poolAmount = poolTokenBAmount;
                 position.tokenB.positionAmount = positionTokenBAmount;
                 position.tokenB.unclaimedFee = tokenBUnclaimedFees;
+                position.tokenB.claimedFee = tokenBClaimedFees;
 
                 position.poolValue = (poolTokenAAmount * poolPrice +
                     poolTokenBAmount) * tokenBMetadata!.price.toNumber();
@@ -262,6 +271,10 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                 position.positionUnclaimedFee =
                     tokenAUnclaimedFees * tokenAMetadata!.price.toNumber() +
                     tokenBUnclaimedFees * tokenBMetadata!.price.toNumber();
+
+                position.positionClaimedFee =
+                    tokenAClaimedFees * tokenAMetadata!.price.toNumber() +
+                    tokenBClaimedFees * tokenBMetadata!.price.toNumber();
 
                 position.poolBaseFeeBPS = feeNumeratorToBps(getBaseFeeNumerator(
                     position.poolState.poolFees.baseFee.feeSchedulerMode,
@@ -436,11 +449,8 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
 
         const tokenAUnclaimedFees = new Decimal(unclaimedRewards.feeTokenA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
         const tokenBUnclaimedFees = new Decimal(unclaimedRewards.feeTokenB.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
-        //const positionLiquidity = new BN(q64ToDecimal(position.positionState.unlockedLiquidity).toNumber());
-        //const poolsqrtprice = q64ToDecimal(position.poolState.sqrtPrice);
-        //const poolminsqrtprice = q64ToDecimal(position.poolState.sqrtMinPrice);
-
-        //const price = getPriceFromSqrtPrice(position.poolState.sqrtPrice, tokenAMetadata!.decimals, tokenBMetadata!.decimals);
+        const tokenAClaimedFees = new Decimal(position.positionState.metrics.totalClaimedAFee.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
+        const tokenBClaimedFees = new Decimal(position.positionState.metrics.totalClaimedBFee.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
 
         const shareOfPool = positionLP.muln(10000).div(poolLP).toNumber() / 100;
 
@@ -448,10 +458,12 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
         position.tokenA.poolAmount = poolTokenAAmount;
         position.tokenA.positionAmount = positionTokenAAmount;
         position.tokenA.unclaimedFee = tokenAUnclaimedFees;
+        position.tokenA.claimedFee = tokenAClaimedFees;
 
         position.tokenB.poolAmount = poolTokenBAmount;
         position.tokenB.positionAmount = positionTokenBAmount;
         position.tokenB.unclaimedFee = tokenBUnclaimedFees;
+        position.tokenB.claimedFee = tokenBClaimedFees;
 
         position.poolValue = poolTokenAAmount * tokenAMetadata!.price.toNumber() +
             poolTokenBAmount * tokenBMetadata!.price.toNumber();
@@ -461,6 +473,10 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
         position.positionUnclaimedFee =
             tokenAUnclaimedFees * tokenAMetadata!.price.toNumber() +
             tokenBUnclaimedFees * tokenBMetadata!.price.toNumber();
+            position.positionClaimedFee =
+            tokenAClaimedFees * tokenAMetadata!.price.toNumber() +
+            tokenBClaimedFees * tokenBMetadata!.price.toNumber();
+
 
         position.poolBaseFeeBPS = feeNumeratorToBps(getBaseFeeNumerator(
             position.poolState.poolFees.baseFee.feeSchedulerMode,

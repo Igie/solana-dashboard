@@ -428,16 +428,16 @@ const DammPositions: React.FC = () => {
       ) : (
         <div className="flex flex-col bg-gray-900 border border-gray-700 rounded-xl overflow-hidden">
           {/* Desktop Table Header - Sticky */}
-            <div className="hidden md:block bg-gray-800 border-b border-gray-600 sticky top-0">
-              <div className="grid grid-cols-12 gap-2 px-4 py-3 text-xs font-medium text-gray-300 uppercase tracking-wider">
-                <div className="col-span-1"></div>
-                <div className="col-span-2">Pair</div>
-                <div className="col-span-2">Your Liquidity</div>
-                <div className="col-span-2">Fees</div>
-                <div className="col-span-2">Claimable</div>
-                <div className="col-span-2">Scheduler</div>
-              </div>
+          <div className="hidden md:block bg-gray-800 border-b border-gray-600 sticky top-0">
+            <div className="grid grid-cols-12 gap-2 px-4 py-3 text-xs font-medium text-gray-300 uppercase tracking-wider">
+              <div className="col-span-1"></div>
+              <div className="col-span-2">Pair</div>
+              <div className="col-span-2">Your Liquidity</div>
+              <div className="col-span-2">Fees</div>
+              <div className="col-span-2">Claimable/Claimed</div>
+              <div className="col-span-2">Scheduler</div>
             </div>
+          </div>
           {/* Scrollable Content */}
           <div className="flex-grow overflow-y-auto">
             {positions.filter((x) => poolContainsString(x, searchString)).map((position, index) => (
@@ -545,21 +545,36 @@ const DammPositions: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Claimable Fees */}
-                  <div className="col-span-2">
-                    {position.positionUnclaimedFee > 0 ? (
-                      <div className="flex items-center gap-2">
-                        {renderFeeTokenImages(position)}
-                        <div>
-                          <div className="text-green-400 font-medium text-sm">
-                            ${position.positionUnclaimedFee.toFixed(2)}
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-gray-500 text-sm">-</div>
-                    )}
-                  </div>
+                  {/* Claimable/Claimed Fees */}
+{/* Claimable/Claimed Fees */}
+<div className="col-span-2">
+  <div className="flex items-center gap-2">
+    {/* Token Images */}
+    {renderFeeTokenImages(position)}
+
+    {/* Fees row */}
+    <div className="grid grid-cols-2 gap-2 text-sm min-w-[120px]">
+      {/* Unclaimed */}
+      {position.positionUnclaimedFee > 0 ? (
+        <span className="text-green-400 font-medium">
+          ${position.positionUnclaimedFee.toFixed(2)}
+        </span>
+      ) : (
+        <span className="text-gray-500">-</span>
+      )}
+
+      {/* Claimed */}
+      {position.positionClaimedFee > 0 ? (
+        <span className="text-green-700 font-medium">
+          ${position.positionClaimedFee.toFixed(2)}
+        </span>
+      ) : (
+        <span className="text-gray-500">-</span>
+      )}
+    </div>
+  </div>
+</div>
+
 
                   {/* Scheduler */}
                   <div className="col-span-2">
