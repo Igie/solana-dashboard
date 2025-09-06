@@ -165,11 +165,9 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
 
     const inputA = new BN(amountA.mul(Decimal.pow(10, tokenA!.decimals)).toString());
     const inputB = new BN(amountB.mul(Decimal.pow(10, tokenB!.decimals)).toString());
-    
 
-    let tx = null;
     if (positionInfo) {
-      tx = await cpAmm.addLiquidity({
+      const tx = await cpAmm.addLiquidity({
         owner: owner,
         positionNftAccount: positionInfo.positionNftAccount,
         pool: positionInfo.poolAddress,
@@ -194,7 +192,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
       }
     } else {
       const positionNft = Keypair.generate();
-      tx = await cpAmm.createPositionAndAddLiquidity({
+      const tx = await cpAmm.createPositionAndAddLiquidity({
         owner: owner,
         pool: poolInfo.poolInfo.publicKey,
         positionNft: positionNft.publicKey,
@@ -208,14 +206,15 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
         tokenBMint: poolInfo.poolInfo.account.tokenBMint,
         tokenAProgram: getTokenProgram(poolInfo.poolInfo.account.tokenAFlag),
         tokenBProgram: getTokenProgram(poolInfo.poolInfo.account.tokenBFlag),
-      });
 
-      const success = await sendTransaction(tx, positionInfo === null ? null : positionNft);
+      });
+      const success = await sendTransaction(tx, positionNft);
       if (success) {
         onClose();
         await refreshTokenAccounts();
         await refreshPositions();
       }
+
     }
 
   };
