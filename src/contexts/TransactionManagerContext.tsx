@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { Keypair, Transaction, VersionedTransaction } from '@solana/web3.js';
 import { txToast } from '../components/Simple/TxToast';
 import { useConnection, useWallet } from '@jup-ag/wallet-adapter';
@@ -21,6 +21,9 @@ type TransactionManagerContextType = {
         onError?: (err: any) => void;
         notify?: boolean;
     }) => Promise<Array<string | null>>;
+
+    solBalance: number;
+    refreshBalance: () => void;
 };
 
 const TransactionManagerContext = createContext<TransactionManagerContextType | null>(null);
@@ -28,6 +31,7 @@ const TransactionManagerContext = createContext<TransactionManagerContextType | 
 export const TransactionManagerProvider = ({ children }: { children: ReactNode }) => {
     const { sendTransaction, signTransaction, signAllTransactions, publicKey } = useWallet();
     const { connection } = useConnection();
+    const [solBalance, setSolBalance] = useState<number>(0);
 
     const sendTxn = async (
         tx: Transaction | VersionedTransaction, signers?: Keypair[],
@@ -86,6 +90,8 @@ export const TransactionManagerProvider = ({ children }: { children: ReactNode }
                 onError?.(confirmation.value.err);
                 return null;
             }
+
+            setSolBalance(await connection.getBalance(publicKey));
 
             if (notify) txToast.success('Transaction confirmed!', sig);
             onSuccess?.(sig);
@@ -194,7 +200,7 @@ export const TransactionManagerProvider = ({ children }: { children: ReactNode }
                     toast.success(`Transactions ${successes.length} of ${result.length} successful!`);
                 onSuccess?.(successes);
             }
-
+            setSolBalance(await connection.getBalance(publicKey));
 
             return result.map(x => {
                 if (x.status === 'fulfilled') {
@@ -210,10 +216,23 @@ export const TransactionManagerProvider = ({ children }: { children: ReactNode }
             onError?.(err);
             return [];
         }
+
+
     }
 
+    const refreshBalance = async () => {
+        if (publicKey) {
+            connection.getBalance(publicKey).then(setSolBalance);
+        }
+    }
+
+    useEffect(() => {
+        refreshBalance();
+    }, [publicKey, connection]);
+
+
     return (
-        <TransactionManagerContext.Provider value={{ sendTxn, sendMultiTxn }}>
+        <TransactionManagerContext.Provider value={{ sendTxn, sendMultiTxn, solBalance, refreshBalance }}>
             {children}
         </TransactionManagerContext.Provider>
     );

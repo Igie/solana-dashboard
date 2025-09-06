@@ -12,9 +12,7 @@ import { DammUserPositionsProvider } from './contexts/DammUserPositionsContext';
 import { CpAmmProvider } from './contexts/CpAmmContext';
 
 const GlobalProviders = ({ children }: { children: React.ReactNode }) => (
-
   <TransactionManagerProvider>
-
     <TokenAccountsProvider>
       <CpAmmProvider>
         <DammUserPositionsProvider>
@@ -31,9 +29,6 @@ function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
 
   const ActiveComponent = tabs.find(t => t.id === activeTab)?.component || tabs[0].component;
-
-  const handleSwapClick = () => window.Jupiter.init({ displayMode: 'modal' });
-
   return (
     <ConnectionProvider endpoint={endpoint} config={{ commitment: 'confirmed' }}>
       <UnifiedWalletProvider
@@ -62,7 +57,6 @@ function App() {
               setActiveTab={setActiveTab}
               network={network}
               setNetwork={setNetwork}
-              onSwap={handleSwapClick}
             >
               <ActiveComponent />
             </AppLayout>

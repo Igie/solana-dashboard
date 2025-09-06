@@ -17,7 +17,7 @@ import Decimal from "decimal.js"
 const Portfolio: React.FC = () => {
   const { connection } = useConnection()
   const { publicKey, connected } = useWallet()
-  const { sendTxn, sendMultiTxn } = useTransactionManager();
+  const { sendTxn, sendMultiTxn, refreshBalance } = useTransactionManager();
 
   const [solBalance, setSolBalance] = useState<number | null>(null)
   const { tokenAccounts, refreshTokenAccounts } = useTokenAccounts()
@@ -60,6 +60,7 @@ const Portfolio: React.FC = () => {
 
     window.Jupiter.onSuccess = async () => {
       await fetchPortfolioData();
+      await refreshBalance();
     }
   }
 

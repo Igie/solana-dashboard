@@ -214,9 +214,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
         await refreshTokenAccounts();
         await refreshPositions();
       }
-
     }
-
   };
 
   if (!poolInfo) {
@@ -307,8 +305,6 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
           </button>
         </div>
       )}
-
     </div>
-
   );
 };

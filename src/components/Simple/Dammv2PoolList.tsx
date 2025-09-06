@@ -28,7 +28,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
     }
 ) => {
     const { publicKey, connected } = useWallet();
-    const { sendTxn } = useTransactionManager();
+    const { sendTxn, refreshBalance } = useTransactionManager();
     const { tokenAccounts, refreshTokenAccounts } = useTokenAccounts();
     const { positions, refreshPositions } = useDammUserPositions();
 
@@ -112,7 +112,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                 <div className="flex w-full justify-center gap-1">
                     <div className="grid gap-1">
                         <a
-                            className="bg-purple-600 hover:bg-purple-500 text-white text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
+                            className="bg-purple-800 hover:bg-purple-700 text-white text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
                             href={`https://edge.meteora.ag/dammv2/${pool.poolInfo.publicKey.toBase58()}`}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -121,7 +121,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                             <ExternalLink size={12} />
                         </a>
                         <a
-                            className="bg-purple-600 hover:bg-purple-500 text-white text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
+                            className="bg-purple-800 hover:bg-purple-700 text-white text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
                             href={`https://gmgn.ai/sol/token/NQhHUcmQ_${pool.tokenA.mint}`}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -132,7 +132,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                     </div>
                     <div className="grid gap-1">
                         <a
-                            className="bg-purple-600 hover:bg-purple-500 text-white text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
+                            className="bg-purple-800 hover:bg-purple-700 text-white text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
                             href={`https://www.dextools.io/app/en/solana/pair-explorer/${pool.poolInfo.publicKey.toBase58()}`}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -141,7 +141,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                             <ExternalLink size={12} />
                         </a>
                         <a
-                            className="bg-purple-600 hover:bg-purple-500 text-white text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
+                            className="bg-purple-800 hover:bg-purple-700 text-white text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
                             href={`https://axiom.trade/t/${pool.tokenA.mint}`}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -153,7 +153,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                     <div className="grid w-full gap-1">
                         <button
                             disabled={!connected}
-                            className="bg-blue-600 hover:bg-blue-500 text-white text-xs py-0.5 px-1 rounded flex items-center justify-start gap-1"
+                            className={`${tokenAccountMap[pool.tokenA.mint] ? "bg-indigo-600 hover:bg-indigo-500" : "bg-blue-600 hover:bg-blue-500"} text-white text-xs py-0.5 px-1 rounded flex items-center justify-start gap-1`}
                             onClick={() => {
                                 window.Jupiter.init({
                                     formProps: {
@@ -163,6 +163,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                     },
                                     onSuccess: async () => {
                                         await refreshTokenAccounts();
+                                        await refreshBalance();
                                     }
                                 });
                             }}
@@ -177,7 +178,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                         </button>
                         <button
                             disabled={!connected}
-                            className="bg-blue-600 hover:bg-blue-500 text-white text-xs py-0.5 px-1 rounded flex items-center justify-start gap-1"
+                            className={`${userPoolPositionInfoMap[pool.poolInfo.publicKey.toBase58()] ? "bg-indigo-600 hover:bg-indigo-500" : "bg-blue-600 hover:bg-blue-500"} text-white text-xs py-0.5 px-1 rounded flex items-center justify-start gap-1`}
                             onClick={(e) => {
                                 setDepositPool(pool);
                                 handleDepositClick(e);
@@ -591,6 +592,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                                     },
                                                     onSuccess: async () => {
                                                         await refreshTokenAccounts();
+                                                        await refreshBalance();
                                                     }
                                                 });
                                             }}

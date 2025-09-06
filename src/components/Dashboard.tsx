@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react'
-import { LAMPORTS_PER_SOL } from '@solana/web3.js'
 import { Activity, CheckCircle, XCircle, Wallet, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-adapter'
@@ -8,22 +7,8 @@ const Dashboard: React.FC = () => {
   const { connection } = useConnection()
   const { publicKey, connected, connecting } = useWallet()
   
-  const [balance, setBalance] = useState<number | null>(null)
   const [currentSlot, setCurrentSlot] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
-
-  // Fetch wallet balance
-  const fetchBalance = async () => {
-    if (!publicKey || !connection) return
-    
-    try {
-      const balance = await connection.getBalance(publicKey)
-      setBalance(balance / LAMPORTS_PER_SOL)
-    } catch (err) {
-      console.error('Error fetching balance:', err)
-      toast.error('Failed to fetch balance')
-    }
-  }
 
   // Fetch current slot
   const fetchSlot = async () => {
@@ -42,7 +27,6 @@ const Dashboard: React.FC = () => {
   // Fetch data when wallet connects
   useEffect(() => {
     if (connected && publicKey) {
-      fetchBalance()
       fetchSlot()
     }
   }, [connection])
@@ -132,23 +116,6 @@ const Dashboard: React.FC = () => {
                   {publicKey.toString()}
                 </div>
               </div>
-              {balance !== null && (
-                <div className="p-3 bg-gray-800 border border-gray-600 rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-300">Balance:</span>
-                    <span className="font-bold text-green-400">
-                      {balance.toFixed(4)} SOL
-                    </span>
-                  </div>
-                </div>
-              )}
-              <button
-                onClick={fetchBalance}
-                className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Refresh Balance
-              </button>
             </div>
           ) : !connecting && (
             <div className="flex items-center text-gray-400">

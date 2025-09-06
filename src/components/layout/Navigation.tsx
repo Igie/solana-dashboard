@@ -15,7 +15,7 @@ export function Navigation({
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-            className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+            className={`flex items-center px-2 py-1 rounded-md text-sm font-medium transition-colors ${
               activeTab === tab.id
                 ? 'bg-purple-600 text-white'
                 : 'text-gray-300 hover:text-white hover:bg-gray-700'
