@@ -94,7 +94,7 @@ export const useDammUserPositions = () => useContext(DammUserPositionsContext)
 export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { publicKey } = useWallet()
     const { connection } = useConnection()
-    const { sendTxn } = useTransactionManager();
+    const { sendTxn , refreshBalance} = useTransactionManager();
     const { cpAmm } = useCpAmm();
     const { refreshTokenAccounts } = useTokenAccounts();
     const [sortedBy, setSortBy] = useState<SortType>(SortType.PoolBaseFee);
@@ -316,6 +316,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
             setTotalLiquidityValue(0);
         }
         setLoading(false)
+        refreshBalance();
     }
 
     const updateLiquidity = (p: PoolPositionInfo[]) => {
