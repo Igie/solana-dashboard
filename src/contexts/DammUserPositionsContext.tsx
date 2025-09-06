@@ -111,8 +111,8 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
     const refreshPositions = async () => {
         if (!publicKey || !connection || loading) return
         setLoading(true)
-        setPositions([]);
-        setTotalLiquidityValue(0);
+        //setPositions([]);
+        //setTotalLiquidityValue(0);
         setCurrentTime(new BN((Date.now())).divn(1000).toNumber());
         setCurrentSlot(await connection.getSlot())
         try {
@@ -299,7 +299,8 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
 
         } catch (err) {
             console.error('Failed to fetch positions:', err)
-            setPositions([])
+            setPositions([]);
+            setTotalLiquidityValue(0);
         }
         setLoading(false)
     }

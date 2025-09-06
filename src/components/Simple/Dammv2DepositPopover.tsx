@@ -7,7 +7,7 @@ import { DecimalInput } from './DecimalInput';
 import { BN } from '@coral-xyz/anchor';
 import { useTokenAccounts } from '../../contexts/TokenAccountsContext';
 import type { PoolDetailedInfo } from '../../constants';
-import { useDammUserPositions } from '../../contexts/DammUserPositionsContext';
+import { useDammUserPositions, type PoolPositionInfo } from '../../contexts/DammUserPositionsContext';
 import { getQuote, getSwapTransactionVersioned } from '../../JupSwapApi';
 import { NATIVE_MINT } from '@solana/spl-token';
 import { useTransactionManager } from '../../contexts/TransactionManagerContext';
@@ -18,15 +18,17 @@ interface DepositPopoverProps {
   cpAmm: CpAmm;
   owner: PublicKey,
   poolInfo: PoolDetailedInfo | null;
+  positionInfo: PoolPositionInfo | null;
   onClose: () => void;
   position: { x: number; y: number };
-  sendTransaction: (tx: Transaction, nft: Keypair) => Promise<boolean>;
+  sendTransaction: (tx: Transaction, nft: Keypair | null) => Promise<boolean>;
 }
 
 export const DepositPopover: React.FC<DepositPopoverProps> = ({
   cpAmm,
   owner,
   poolInfo,
+  positionInfo,
   onClose,
   position,
   sendTransaction,
@@ -163,30 +165,59 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
 
     const inputA = new BN(amountA.mul(Decimal.pow(10, tokenA!.decimals)).toString());
     const inputB = new BN(amountB.mul(Decimal.pow(10, tokenB!.decimals)).toString());
-    const positionNft = Keypair.generate();
+    
 
-    const tx = await cpAmm.createPositionAndAddLiquidity({
-      owner: owner,
-      pool: poolInfo.poolInfo.publicKey,
-      positionNft: positionNft.publicKey,
-      liquidityDelta: depositQuote.liquidityDelta,
-      maxAmountTokenA: inputA,
-      maxAmountTokenB: inputB,
+    let tx = null;
+    if (positionInfo) {
+      tx = await cpAmm.addLiquidity({
+        owner: owner,
+        positionNftAccount: positionInfo.positionNftAccount,
+        pool: positionInfo.poolAddress,
+        position: positionInfo.positionAddress,
+        liquidityDelta: depositQuote.liquidityDelta,
+        maxAmountTokenA: inputA,
+        maxAmountTokenB: inputB,
+        tokenAAmountThreshold: inputA.muln(1.50),
+        tokenBAmountThreshold: inputB.muln(1.50),
+        tokenAMint: positionInfo.poolState.tokenAMint,
+        tokenBMint: positionInfo.poolState.tokenBMint,
+        tokenAVault: positionInfo.poolState.tokenAVault,
+        tokenBVault: positionInfo.poolState.tokenBVault,
+        tokenAProgram: getTokenProgram(positionInfo.poolState.tokenAFlag),
+        tokenBProgram: getTokenProgram(positionInfo.poolState.tokenBFlag),
+      })
+      const success = await sendTransaction(tx, null);
+      if (success) {
+        onClose();
+        await refreshTokenAccounts();
+        await refreshPositions();
+      }
+    } else {
+      const positionNft = Keypair.generate();
+      tx = await cpAmm.createPositionAndAddLiquidity({
+        owner: owner,
+        pool: poolInfo.poolInfo.publicKey,
+        positionNft: positionNft.publicKey,
+        liquidityDelta: depositQuote.liquidityDelta,
+        maxAmountTokenA: inputA,
+        maxAmountTokenB: inputB,
 
-      tokenAAmountThreshold: inputA.muln(1.50),
-      tokenBAmountThreshold: inputB.muln(1.50),
-      tokenAMint: poolInfo.poolInfo.account.tokenAMint,
-      tokenBMint: poolInfo.poolInfo.account.tokenBMint,
-      tokenAProgram: getTokenProgram(poolInfo.poolInfo.account.tokenAFlag),
-      tokenBProgram: getTokenProgram(poolInfo.poolInfo.account.tokenBFlag),
-    });
+        tokenAAmountThreshold: inputA.muln(1.50),
+        tokenBAmountThreshold: inputB.muln(1.50),
+        tokenAMint: poolInfo.poolInfo.account.tokenAMint,
+        tokenBMint: poolInfo.poolInfo.account.tokenBMint,
+        tokenAProgram: getTokenProgram(poolInfo.poolInfo.account.tokenAFlag),
+        tokenBProgram: getTokenProgram(poolInfo.poolInfo.account.tokenBFlag),
+      });
 
-    const success = await sendTransaction(tx, positionNft);
-    if (success) {
-      onClose();
-      await refreshTokenAccounts();
-      await refreshPositions();
+      const success = await sendTransaction(tx, positionInfo === null ? null : positionNft);
+      if (success) {
+        onClose();
+        await refreshTokenAccounts();
+        await refreshPositions();
+      }
     }
+
   };
 
   if (!poolInfo) {

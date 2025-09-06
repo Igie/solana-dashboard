@@ -15,9 +15,7 @@ const DammPositions: React.FC = () => {
   const { publicKey, connected } = useWallet()
   const { cpAmm } = useCpAmm();
   const { sendTxn, sendMultiTxn } = useTransactionManager();
-  const { updatePosition, removePosition } = useDammUserPositions()
-
-  const { positions, totalLiquidityValue, loading, refreshPositions, sortPositionsBy, removeLiquidityAndSwapToQuote, sortedBy, sortedAscending } = useDammUserPositions();
+  const { positions, totalLiquidityValue, loading, refreshPositions, updatePosition, removePosition, sortPositionsBy, removeLiquidityAndSwapToQuote, sortedBy, sortedAscending } = useDammUserPositions();
   const [selectedPositions, setSelectedPositions] = useState<Set<PoolPositionInfo>>(new Set());
   const [lastSelectedPosition, setLastSelectedPosition] = useState<PoolPositionInfo | null>(null);
 
@@ -227,14 +225,14 @@ const DammPositions: React.FC = () => {
         placeholder="Search by token mint, name or symbol..."
       />
       <div className="flex flex-row items-start justify-between gap-2">
-        <div className="flex flex-col items-stretch justify-start gap-2">
+        <div className="flex flex-col items-stretch justify-start gap-1">
           <button
             onClick={() => {
               refreshPositions()
               setSelectedPositions(new Set())
             }}
             disabled={loading}
-            className="flex items-center gap-2 px-2 py-1 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded-lg font-medium transition-colors w-auto justify-center"
+            className="flex items-center gap-1 px-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded-lg font-medium transition-colors w-auto justify-center"
           >
             {loading ? (
               <RefreshCw className="w-4 h-4 animate-spin" />
@@ -248,7 +246,7 @@ const DammPositions: React.FC = () => {
               setSelectedPositions(new Set([...positions]))
             }}
             disabled={loading}
-            className="flex items-center gap-2 px-2 py-1 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded-lg font-medium transition-colors w-auto justify-center"
+            className="flex items-center gap-1 px-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded-lg font-medium transition-colors w-auto justify-center"
           >
             Select All
 
@@ -419,14 +417,6 @@ const DammPositions: React.FC = () => {
           </div>
         </div>
       )}
-
-      {loading && (
-        <div className="p-8 text-center">
-          <RefreshCw className="w-8 h-8 mx-auto mb-4 text-purple-400 animate-spin" />
-          <p className="text-gray-400">Loading pool positions...</p>
-        </div>
-      )}
-
       {(positions.length === 0 && !loading) ? (
         <div className="p-8 text-center">
           <Droplets className="w-12 h-12 mx-auto mb-4 text-gray-400" />
@@ -436,10 +426,8 @@ const DammPositions: React.FC = () => {
           </p>
         </div>
       ) : (
-
         <div className="flex flex-col bg-gray-900 border border-gray-700 rounded-xl overflow-hidden">
           {/* Desktop Table Header - Sticky */}
-          {(!loading) && (
             <div className="hidden md:block bg-gray-800 border-b border-gray-600 sticky top-0">
               <div className="grid grid-cols-12 gap-2 px-4 py-3 text-xs font-medium text-gray-300 uppercase tracking-wider">
                 <div className="col-span-1"></div>
@@ -448,10 +436,8 @@ const DammPositions: React.FC = () => {
                 <div className="col-span-2">Fees</div>
                 <div className="col-span-2">Claimable</div>
                 <div className="col-span-2">Scheduler</div>
-
               </div>
             </div>
-          )}
           {/* Scrollable Content */}
           <div className="flex-grow overflow-y-auto">
             {positions.filter((x) => poolContainsString(x, searchString)).map((position, index) => (

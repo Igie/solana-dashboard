@@ -1,3 +1,4 @@
+import { nodePolyfills } from 'vite-plugin-node-polyfills'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
@@ -10,7 +11,10 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
   },
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    nodePolyfills({}),
+    react(),
+    tailwindcss()],
   define: {
     global: 'globalThis', // make sure global is defined
     'process.env': {}, // Needed for many packages that access process.env.*

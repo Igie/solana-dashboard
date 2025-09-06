@@ -36,7 +36,8 @@
     "recharts": "^3.1.2",
     "sonner": "^2.0.6",
     "tailwindcss": "^4.1.11",
-    "vercel": "^47.0.4"
+    "vercel": "^47.0.5",
+    "vite-plugin-node-polyfills": "^0.24.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.29.0",

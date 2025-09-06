@@ -61,7 +61,6 @@ const Dammv2Browser: React.FC = () => {
             setPools([accountPool]);
             mapPools([accountPool], tm);
         } else {
-
             const allPoolsA = await cpAmm._program.account.pool.all([{
                 memcmp: {
                     encoding: 'base58',
@@ -69,7 +68,6 @@ const Dammv2Browser: React.FC = () => {
                     bytes: pubKeyOrMint,
                 }
             }])
-
             const allPoolsB = await cpAmm._program.account.pool.all([{
                 memcmp: {
                     encoding: 'base58',

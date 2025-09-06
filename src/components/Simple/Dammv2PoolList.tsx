@@ -50,6 +50,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
 
     const handleDepositClick = async (e: React.MouseEvent) => {
         await refreshTokenAccounts();
+        await refreshPositions();
         const rect = (e.target as HTMLElement).getBoundingClientRect();
 
         // Calculate smart position that stays within viewport
@@ -435,12 +436,13 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                         <DepositPopover
                             cpAmm={cpAmm}
                             owner={publicKey!}
+                            positionInfo={positions.find(x => x.poolAddress.toBase58() === depositPool?.poolInfo.publicKey.toBase58()) || null}
                             poolInfo={depositPool}
                             onClose={() => setPopoverVisible(false)}
                             position={position}
                             sendTransaction={async (x, nft) => {
                                 let success = false;
-                                await sendTxn(x, [nft], {
+                                await sendTxn(x, nft ? [nft] : undefined, {
                                     notify: true,
                                     onSuccess: () => {
                                         success = true;
