@@ -10,6 +10,7 @@ import { PoolSortType, sortPools, type PoolDetailedInfo, type PoolInfo, type Poo
 import Dammv2PoolList from './Simple/Dammv2PoolList'
 import { useConnection } from '@jup-ag/wallet-adapter'
 import { useCpAmm } from '../contexts/CpAmmContext'
+import { useDammUserPositions } from '../contexts/DammUserPositionsContext'
 
 const MainPoolFilters = ["Include", "Exclude", "Only"];
 const bn0 = new BN(0);
@@ -17,6 +18,7 @@ const bn0 = new BN(0);
 const Dammv2Browser: React.FC = () => {
     const { connection } = useConnection()
     const { cpAmm } = useCpAmm();
+    const { refreshPositions } = useDammUserPositions();
     //const { positions, totalLiquidityValue, loading, refreshPositions } = useDammUserPositions()
     const [websocketPool, setWebsocketPool] = useState<PoolInfo>()
     const [pools, setPools] = useState<PoolInfo[]>([])
@@ -352,6 +354,7 @@ const Dammv2Browser: React.FC = () => {
 
                 x[entries[0]] = entries[1];
             }
+            refreshPositions();
             setTokenMetadataMap(x);
             mapPools(finalPools, x);
         });
