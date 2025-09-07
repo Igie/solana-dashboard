@@ -231,6 +231,10 @@ export const TransactionManagerProvider = ({ children }: { children: ReactNode }
     }, [publicKey, connection]);
 
 
+    useEffect(() => {
+       console.log("TransactionManagerProvider mounted");
+    }, []);
+
     return (
         <TransactionManagerContext.Provider value={{ sendTxn, sendMultiTxn, solBalance, refreshBalance }}>
             {children}

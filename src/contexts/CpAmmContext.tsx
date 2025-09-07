@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect } from 'react'
+import React, { createContext, useContext, useEffect, } from 'react'
 import { useConnection } from '@jup-ag/wallet-adapter'
 import { CpAmm } from '@meteora-ag/cp-amm-sdk'
 
@@ -7,20 +7,18 @@ interface CpAmmContextType {
 }
 
 const CpAmmContext = createContext<CpAmmContextType>({
-    cpAmm: new CpAmm(null as any) // will be overwritten in provider,
+    cpAmm: new CpAmm(null as any)
 })
 
 export const useCpAmm = () => useContext(CpAmmContext)
 
 export const CpAmmProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { connection } = useConnection()
-
+    const { connection } = useConnection();
     let cpAmm = new CpAmm(connection);
 
     useEffect(() => {
-        cpAmm = new CpAmm(connection)
+        cpAmm = new CpAmm(connection);
     }, [connection]);
-
 
     return (
         <CpAmmContext.Provider value={{ cpAmm }}>

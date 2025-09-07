@@ -1,26 +1,42 @@
-import type { ReactNode } from 'react'
+import React, { useEffect, useState } from 'react'
 
-import { Navigation, MobileNavigation } from './Navigation'
+import { tabs } from './config/tabs'
+
+import { Navigation, MobileNavigation } from './components/layout/Navigation'
 import { ArrowLeftRight } from 'lucide-react'
 import { LAMPORTS_PER_SOL, type Cluster } from '@solana/web3.js'
-import { useTransactionManager } from '../../contexts/TransactionManagerContext'
+import { useTransactionManager } from './contexts/TransactionManagerContext'
 
-interface AppLayoutProps {
-  activeTab: string
-  setActiveTab: (id: string) => void
-  network: Cluster
-  setNetwork: (n: Cluster) => void
-  children: ReactNode
+
+
+interface ComponentMap {
+  [key: string]: React.FC
 }
 
-export const AppLayout: React.FC<AppLayoutProps> = ({
-  activeTab,
-  setActiveTab,
+interface AppInnerProps {
+  network: Cluster
+  setNetwork: (n: Cluster) => void
+
+}
+
+const AppInner: React.FC<AppInnerProps> = ({
   network,
   setNetwork,
-  children,
 }) => {
+  const [components, setComponents] = useState<ComponentMap>({})
+  const [activeTab, setActiveTab] = useState('dashboard')
+
   const { solBalance, refreshBalance } = useTransactionManager()
+  const ActiveComponent =
+    components[activeTab] || (() => <div>Loading...</div>)
+
+  useEffect(() => {
+    setComponents(
+      tabs
+        .map((t) => ({ [t.id]: t.component }))
+        .reduce((a, b) => ({ ...a, ...b }), {})
+    )
+  }, [])
 
   return (
     <div className="flex flex-col h-full bg-black text-white">
@@ -62,10 +78,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       </header>
 
       <main className="flex flex-col h-[calc(100vh-65px)] pb-[calc(4rem+var(10px))] w-full px-4 py-2">
-        <div className="w-full max-w-screen-2xl mx-auto">{children}</div>
+        <div className="w-full max-w-screen-2xl mx-auto">
+          <ActiveComponent />
+        </div>
       </main>
 
       <MobileNavigation activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
+
   )
 }
+
+export default AppInner

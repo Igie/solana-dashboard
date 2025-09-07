@@ -1,7 +1,7 @@
 import { ExternalLink, Copy, Info, Users, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 
-export default function AboutPage() {
+const AboutPage: React.FC = () => {
   const wallet = "CDsSZvpGNYmmMVhjMTsqtS4j9iFfu9G9R8sJLRT4zZfx";
   const token = "83YPDRtSkNv79ctSn2iWcs5JeD86YNi3UZYxVxubbREV";
   const copyToClipboard = async (text: string) => {
@@ -183,3 +183,5 @@ export default function AboutPage() {
     </div>
   );
 }
+
+export default AboutPage;

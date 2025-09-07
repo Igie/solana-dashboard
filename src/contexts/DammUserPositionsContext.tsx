@@ -92,8 +92,8 @@ const DammUserPositionsContext = createContext<DammUserPositionsContextType>({
 export const useDammUserPositions = () => useContext(DammUserPositionsContext)
 
 export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { publicKey } = useWallet()
-    const { connection } = useConnection()
+    const { publicKey } = useWallet();
+    const { connection } = useConnection();
     const { sendTxn , refreshBalance} = useTransactionManager();
     const { cpAmm } = useCpAmm();
     const { refreshTokenAccounts } = useTokenAccounts();
@@ -113,8 +113,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
     const refreshPositions = async () => {
         if (!publicKey || !connection || loading) return
         setLoading(true)
-        //setPositions([]);
-        //setTotalLiquidityValue(0);
+
         setCurrentTime(new BN((Date.now())).divn(1000).toNumber());
         setCurrentSlot(await connection.getSlot())
         try {
@@ -410,8 +409,6 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
         const position = newPositions.find(x => x.positionAddress === positionAddress);
         if (!position) return;
 
-
-
         position.positionState = await cpAmm.fetchPositionState(position.positionAddress);
         position.poolState = await cpAmm.fetchPoolState(position.poolAddress);
 
@@ -455,7 +452,6 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
 
         const shareOfPool = positionLP.muln(10000).div(poolLP).toNumber() / 100;
 
-
         position.tokenA.poolAmount = poolTokenAAmount;
         position.tokenA.positionAmount = positionTokenAAmount;
         position.tokenA.unclaimedFee = tokenAUnclaimedFees;
@@ -478,7 +474,6 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
             tokenAClaimedFees * tokenAMetadata!.price.toNumber() +
             tokenBClaimedFees * tokenBMetadata!.price.toNumber();
 
-
         position.poolBaseFeeBPS = feeNumeratorToBps(getBaseFeeNumerator(
             position.poolState.poolFees.baseFee.feeSchedulerMode,
             position.poolState.poolFees.baseFee.cliffFeeNumerator,
@@ -496,7 +491,6 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
             position.poolState.poolFees.baseFee.reductionFactor,
             position.poolState.poolFees.dynamicFee
         ));
-
         setPositions(newPositions);
     }
 
