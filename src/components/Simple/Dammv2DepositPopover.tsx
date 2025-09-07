@@ -12,6 +12,7 @@ import { getQuote, getSwapTransactionVersioned } from '../../JupSwapApi';
 import { NATIVE_MINT } from '@solana/spl-token';
 import { useTransactionManager } from '../../contexts/TransactionManagerContext';
 import { txToast } from './TxToast';
+import { useSettings } from '../../contexts/SettingsContext';
 
 
 interface DepositPopoverProps {
@@ -44,6 +45,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
 
   const [swapSolAmount, setSwapSolAmount] = useState(new Decimal(0.01));
 
+  const { jupSlippage, includeDammv2Route, setIncludeDammv2Route } = useSettings();
   const { sendTxn } = useTransactionManager();
   const { refreshTokenAccounts } = useTokenAccounts();
   const { refreshPositions } = useDammUserPositions();
@@ -104,7 +106,8 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
       inputMint: NATIVE_MINT.toBase58(),
       outputMint: poolInfo.poolInfo.account.tokenAMint.toBase58(),
       amount: swapSolAmount.mul(LAMPORTS_PER_SOL).toNumber(),
-      slippageBps: 500,
+      slippageBps: jupSlippage ? jupSlippage * 100 : 200,
+      excludeDexes: includeDammv2Route ? [] : ['Meteora DAMM V2'],
     });
 
     const transaction = await getSwapTransactionVersioned(quote, owner);
@@ -116,28 +119,9 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
       },
       onSuccess: async (x) => {
         txToast.success("Swap successful", x);
-        //const { tokenAccounts } = await refreshTokenAccounts();
-
         await setTokensAB();
-
-        // const ta = tokenAccounts.find(x => x.mint == poolInfo.poolInfo.account.tokenAMint.toBase58());
-        // if (!ta) {
-        //   txToast.error("Failed to find token account for token A");
-        //   return;
-        // }
-        // setAmountA(new Decimal(ta.amount))
-
-        // const depositQuote = cpAmm.getDepositQuote({
-        //   sqrtPrice: poolInfo.poolInfo.account.sqrtPrice,
-        //   minSqrtPrice: poolInfo.poolInfo.account.sqrtMinPrice,
-        //   maxSqrtPrice: poolInfo.poolInfo.account.sqrtMaxPrice,
-        //   isTokenA: false,
-        //   inAmount: new BN(new Decimal(ta.amount).mul(Decimal.pow(10, tokenA!.decimals)).toString()),
-        // })
-
       }
     });
-    //getQuote()
   }
 
   useEffect(() => {
@@ -235,18 +219,27 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
       className="absolute z-50 bg-[#0d111c] text-gray-100 border border-gray-700 rounded-md p-2 text-sm justify-center"
       style={{ top: position.y, left: position.x }}
     >
-      <div className="flex gap-1 text-sm font-semibold text-gray-100">
-        <DecimalInput
-          className='flex-1 bg-[#1a1e2d] border border-gray-600 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500'
-          value={swapSolAmount.toFixed()}
-          onChange={() => { }}
-          onBlur={(v) => setSwapSolAmount(v)}
-        />
-        <button
-          className="bg-green-600 hover:bg-green-700 text-white p-1 rounded text-sm"
-          onClick={() => swapSOLAndDeposit()}>
-          Swap SOL
-        </button>
+      <div className="grid gap-1 text-sm font-semibold text-gray-100">
+        <div className='flex gap-1 items-center'>
+          <input type='checkbox' checked={includeDammv2Route}
+            onChange={v => setIncludeDammv2Route(v.target.checked)}
+          ></input>
+          <label>Include DAMMv2 route</label>
+        </div>
+        <div className='flex gap-1 items-center'>
+          <DecimalInput
+            className='flex-1 bg-[#1a1e2d] max-w-40 border border-gray-600 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500'
+            value={swapSolAmount.toFixed()}
+            onChange={() => { }}
+            onBlur={(v) => setSwapSolAmount(v)}
+          />
+          <button
+            className="bg-green-600 hover:bg-green-700 text-white p-1 rounded text-sm"
+            onClick={() => swapSOLAndDeposit()}>
+            Swap SOL
+          </button>
+        </div>
+
       </div>
       {(!tokenA || !tokenB) && (
         <div className="justify-self-center text-sm text-gray-700">Could not find one of tokens</div>

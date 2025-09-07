@@ -12,9 +12,11 @@ import { useTransactionManager } from '../contexts/TransactionManagerContext'
 import { txToast } from './Simple/TxToast'
 import { createBurnCheckedInstruction, createCloseAccountInstruction, getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID } from '@solana/spl-token'
 import Decimal from "decimal.js"
+import { useSettings } from '../contexts/SettingsContext'
 
 
 const Portfolio: React.FC = () => {
+  const { jupSlippage, includeDammv2Route } = useSettings();
   const { connection } = useConnection()
   const { publicKey, connected } = useWallet()
   const { sendTxn, sendMultiTxn, refreshBalance } = useTransactionManager();
@@ -56,6 +58,7 @@ const Portfolio: React.FC = () => {
         initialAmount: (ta.amount.mul(Decimal.pow(10, ta.decimals))).toFixed(0),
         swapMode: 'ExactIn',
       },
+      
     });
 
     window.Jupiter.onSuccess = async () => {
@@ -70,7 +73,8 @@ const Portfolio: React.FC = () => {
         inputMint: ta.mint,
         outputMint: 'So11111111111111111111111111111111111111112',
         amount: ta.amount.mul(Decimal.pow(10, ta.decimals)).toNumber(),
-        slippageBps: 1500,
+        slippageBps: jupSlippage ? jupSlippage * 100 : 200,
+      excludeDexes: includeDammv2Route ? [] : ['Meteora DAMM V2'],
       }, false)
 
       const txn = await getSwapTransactionVersioned(quote, publicKey!);
@@ -85,7 +89,8 @@ const Portfolio: React.FC = () => {
       inputMint: ta.mint,
       outputMint: 'So11111111111111111111111111111111111111112',
       amount: ta.amount.mul(Decimal.pow(10, ta.decimals)).toNumber(),
-      slippageBps: 1500,
+      slippageBps: jupSlippage ? jupSlippage * 100 : 200,
+      excludeDexes: includeDammv2Route ? [] : ['Meteora DAMM V2'],
     })
 
     const txn = await getSwapTransactionVersioned(quote, publicKey!);
@@ -238,10 +243,6 @@ const Portfolio: React.FC = () => {
 
   return (
     <div className="flex flex-col h-[calc(100vh-140px)] lg:h-[calc(100vh-75px)] space-y-2 px-2 md:px-0">
-
-      {/* Header */}
-
-
       {/* Portfolio Overview */}
       <div className="grid grid-cols-2 gap-1">
         <div className="bg-gradient-to-br from-green-900/30 to-green-800/20 border border-green-700/50 rounded-2xl p-2">

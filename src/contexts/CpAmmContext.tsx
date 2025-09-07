@@ -18,6 +18,7 @@ export const CpAmmProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     useEffect(() => {
         cpAmm = new CpAmm(connection);
+        console.log("CpAmmProvider set new connection")
     }, [connection]);
 
     return (

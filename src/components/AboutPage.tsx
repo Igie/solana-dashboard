@@ -14,8 +14,8 @@ const AboutPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center p-6 space-y-6">
-      <div className="w-full shadow-lg rounded-2xl bg-gray-900 text-white p-6">
+    <div className="flex flex-col h-[calc(100vh-140px)] lg:h-[calc(100vh-75px)] items-center justify-center space-y-2">
+      <div className="w-full h-full overflow-y-auto rounded-xs bg-gray-900 text-white p-1">
         <h1 className="flex items-center justify-center gap-2 text-2xl font-bold mb-4">
           <Info className="text-purple-400" /> About This Tool
         </h1>

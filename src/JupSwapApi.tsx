@@ -14,8 +14,9 @@ interface QuoteParams {
   outputMint: string;
   amount: number;
   slippageBps: number;
-  maxAccounts?: number,
-  onlyDirectRoutes?: boolean,
+  maxAccounts?: number;
+  onlyDirectRoutes?: boolean;
+  excludeDexes?: string[];
 }
 
 interface QuoteResponse {
@@ -37,11 +38,12 @@ interface Instruction {
 }
 
 
+
 const baseUrl: string = "https://quote-api.jup.ag/v6";
 
 export const getQuote = async (params: QuoteParams, notify: boolean = true): Promise<QuoteResponse> => {
   try {
-    const url = new URL(`https://quote-api.jup.ag/v6/quote?`);
+    const url = new URL(`https://ultra-api.jup.ag/order?`);
     url.searchParams.append("inputMint", params.inputMint);
     url.searchParams.append("outputMint", params.outputMint);
     url.searchParams.append("amount", params.amount.toString());
@@ -52,8 +54,8 @@ export const getQuote = async (params: QuoteParams, notify: boolean = true): Pro
       url.searchParams.append("maxAccounts", params.maxAccounts.toString());
     if (params.onlyDirectRoutes)
       url.searchParams.append("onlyDirectRoutes", params.onlyDirectRoutes.toString());
-    // You can add restrictIntermediateTokens for more stable routes
-    //url.searchParams.append("restrictIntermediateTokens", "true");
+    if (params.excludeDexes && params.excludeDexes.length > 0)
+      url.searchParams.append("excludeDexes", params.excludeDexes.join(","));
 
     const response = await fetch(url.toString());
     if (!response.ok) {
@@ -136,8 +138,7 @@ export const getSwapInstructions = async (quoteResponse: QuoteResponse, pubKey: 
 
 
 
-export const getSwapTransaction = async (quoteParams: QuoteParams, connection: Connection, pubKey: PublicKey): Promise<Transaction | VersionedTransaction> => {
-  const quoteResponse = await getQuote(quoteParams);
+export const getSwapTransaction = async (quoteResponse: QuoteResponse, connection: Connection, pubKey: PublicKey): Promise<Transaction | VersionedTransaction> => {
   const instructions = await (
     await fetch(`${baseUrl}/swap-instructions`, {
       method: 'POST',

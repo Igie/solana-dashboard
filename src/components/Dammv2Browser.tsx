@@ -44,7 +44,7 @@ const Dammv2Browser: React.FC = () => {
         const publicKey = new PublicKey(pubKeyOrMint);
         let poolExists = false;
         try {
-            await cpAmm.isPoolExist(publicKey);
+            poolExists = await cpAmm.isPoolExist(publicKey);
         } catch { }
 
         setFetchingPools(true)

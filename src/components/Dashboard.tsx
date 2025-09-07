@@ -1,39 +1,15 @@
-import React, { useState, useEffect } from 'react'
-import { Activity, CheckCircle, XCircle, Wallet, RefreshCw } from 'lucide-react'
-import { toast } from 'sonner'
-import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-adapter'
+import React from 'react'
+import { UnifiedWalletButton, useWallet } from '@jup-ag/wallet-adapter'
+import { useSettings } from '../contexts/SettingsContext'
+import { DecimalInput } from './Simple/DecimalInput'
+import Decimal from 'decimal.js'
 
 const Dashboard: React.FC = () => {
-  const { connection } = useConnection()
-  const { publicKey, connected, connecting } = useWallet()
-  
-  const [currentSlot, setCurrentSlot] = useState<number | null>(null)
-  const [loading, setLoading] = useState(false)
-
-  // Fetch current slot
-  const fetchSlot = async () => {
-    try {
-      setLoading(true)
-      const slot = await connection.getSlot()
-      setCurrentSlot(slot)
-    } catch (err) {
-      console.error('Error fetching slot:', err)
-      toast.error('Failed to fetch current slot')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Fetch data when wallet connects
-  useEffect(() => {
-    if (connected && publicKey) {
-      fetchSlot()
-    }
-  }, [connection])
-
-  useEffect(() => {
-    
-  }, [])
+  const {
+    jupSlippage, setJupSlippage,
+    includeDammv2Route, setIncludeDammv2Route,
+  } = useSettings()
+  const { connected } = useWallet()
 
   return (
     <div className="space-y-2">
@@ -47,82 +23,77 @@ const Dashboard: React.FC = () => {
             </p>
           </div>
           <div className="flex gap-2">
-            <UnifiedWalletButton 
-            buttonClassName="!bg-purple-600 hover:!bg-purple-700 !rounded-lg !font-medium !px-6 !py-2"
-             currentUserClassName='"!bg-red-600 hover:!bg-red-700 !rounded-lg !font-medium !px-4 !py-2"'
-             >
-             </UnifiedWalletButton>
+            <UnifiedWalletButton
+              buttonClassName="!bg-purple-600 hover:!bg-purple-700 !rounded-lg !font-medium !px-6 !py-2"
+              currentUserClassName='"!bg-red-600 hover:!bg-red-700 !rounded-lg !font-medium !px-4 !py-2"'
+            >
+            </UnifiedWalletButton>
             {/* {connected && (
               <UnifiedWalletButton buttonClassName="!bg-red-600 hover:!bg-red-700 !rounded-lg !font-medium !px-4 !py-2" />
             )} */}
           </div>
         </div>
       </div>
-      {/* Connection Status */}
+      {/* Settings */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         <div className="bg-gray-900 border border-gray-700 rounded-2xl p-2">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">RPC Connection</h3>
-            <button
-              onClick={fetchSlot}
-              disabled={loading}
-              className="p-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 rounded-lg transition-colors"
-            >
-              {loading ? (
-                <RefreshCw className="w-4 h-4 animate-spin" />
-              ) : (
-                <RefreshCw className="w-4 h-4" />
-              )}
-            </button>
+            <h3 className="text-lg font-semibold">Jupiter Route Settings</h3>
           </div>
-          <div className="flex items-center mb-2">
-            <CheckCircle className="w-5 h-5 mr-2 text-green-400" />
-            <span className="text-green-400">Connected to Helius RPC</span>
+
+          <div className="space-y-2">
+            {/* Row 1 */}
+            <div className="flex items-center gap-2">
+              <label className="w-28 text-white md:text-xs">Slippage</label>
+              <div>
+                <DecimalInput className="w-14 bg-gray-800 border border-gray-700 rounded-md px-2 text-white md:text-xs placeholder-gray-500"
+                  value={jupSlippage?.toString() || ""}
+                  onChange={() => { }}
+                  onBlur={
+                    (v) => {
+                      if (v.greaterThan(100)) v = new Decimal(100);
+                      setJupSlippage(parseFloat(v.toFixed(2)));
+                    }}
+                />
+                {/* <input
+                  type="text"
+                  value={jupSlippage}
+                  onChange={() => {}}
+                  onBlur={(e) => {
+                    const val = e.target.value;
+                    if (val === "") {
+                      setJupSlippage("0");
+                    } else {
+                      if (/^[0-9]*\.?[0-9]*$/.test(val)) {
+                        let num = parseFloat(val);
+                        if (isNaN(num) || num < 0) num = 0;
+                        if (num > 100) num = 100;
+                        setJupSlippage(num.toFixed(2));
+                      }
+                    }
+                  }}
+                  className="w-10 bg-gray-800 border border-gray-700 rounded-md px-2 text-white md:text-xs placeholder-gray-500"
+                /> */}
+                <span className="text-gray-400 px-1 md:text-xs">%</span>
+              </div>
+
+            </div>
+
+            {/* Row 2 */}
+            <div className="flex items-center gap-2">
+              <label className="w-28 text-green-100 md:text-xs">Include DAMM v2</label>
+              <input
+                type="checkbox"
+                checked={includeDammv2Route}
+                onChange={(e) => {
+                  setIncludeDammv2Route(e.target.checked);
+                }}
+                className="h-4 w-4 accent-purple-600"
+              />
+            </div>
           </div>
-          {currentSlot && (
-            <div className="mt-4 p-3 bg-gray-800 border border-gray-600 rounded-lg">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-300">Current Slot:</span>
-                <span className="font-mono text-purple-400 font-bold">
-                  {currentSlot.toLocaleString()}
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-        <div className="bg-gray-900 border border-gray-700 rounded-2xl p-2">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Wallet className="w-5 h-5" />
-              Wallet Status
-            </h3>
-          </div>
-          {connecting && (
-            <div className="flex items-center text-yellow-400">
-              <Activity className="w-5 h-5 mr-2 animate-spin" />
-              Connecting...
-            </div>
-          )}
-          {connected && publicKey ? (
-            <div className="space-y-3">
-              <div className="flex items-center text-green-400">
-                <CheckCircle className="w-5 h-5 mr-2" />
-                Wallet Connected
-              </div>
-              
-              <div className="p-3 bg-gray-800 border border-gray-600 rounded-lg">
-                <div className="text-sm text-gray-400 mb-1">Address:</div>
-                <div className="font-mono text-xs text-purple-400 break-all">
-                  {publicKey.toString()}
-                </div>
-              </div>
-            </div>
-          ) : !connecting && (
-            <div className="flex items-center text-gray-400">
-              <XCircle className="w-5 h-5 mr-2" />
-              No wallet connected
-            </div>
-          )}
+
+
         </div>
       </div>
     </div>

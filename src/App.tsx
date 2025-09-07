@@ -12,19 +12,24 @@ import { DammUserPositionsProvider } from './contexts/DammUserPositionsContext'
 import { CpAmmProvider } from './contexts/CpAmmContext'
 import { type Cluster } from '@solana/web3.js'
 import AppInner from './AppInner'
+import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare'
+import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom'
+import { SettingsProvider } from './contexts/SettingsContext'
 
 interface GlobalProvidersProps {
   children: React.ReactNode
 }
 
 const GlobalProviders: React.FC<GlobalProvidersProps> = ({ children }) => (
-  <TransactionManagerProvider>
-    <TokenAccountsProvider>
-      <CpAmmProvider>
-        <DammUserPositionsProvider>{children}</DammUserPositionsProvider>
-      </CpAmmProvider>
-    </TokenAccountsProvider>
-  </TransactionManagerProvider>
+  <SettingsProvider>
+    <TransactionManagerProvider>
+      <TokenAccountsProvider>
+        <CpAmmProvider>
+          <DammUserPositionsProvider>{children}</DammUserPositionsProvider>
+        </CpAmmProvider>
+      </TokenAccountsProvider>
+    </TransactionManagerProvider>
+  </SettingsProvider>
 )
 
 const App: React.FC = () => {
@@ -39,7 +44,7 @@ const App: React.FC = () => {
   return (
     <ConnectionProvider endpoint={endpoint} config={{ commitment: 'confirmed' }}>
       <UnifiedWalletProvider
-        wallets={[]}
+        wallets={[new PhantomWalletAdapter, new SolflareWalletAdapter]}
         config={{
           autoConnect: true,
           env: network,

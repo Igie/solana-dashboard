@@ -335,7 +335,7 @@ export const launchpads: { [key: string]: { logo: React.FC } } =
     ["slerfpad"]: {
         logo: OhFuckFunIcon
     },
-    ["dialect"]: {
+    ["Dialect"]: {
         logo: DialectIcon
     },
     ["shout"]: {

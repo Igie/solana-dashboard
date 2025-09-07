@@ -21,7 +21,7 @@ import { useCpAmm } from '../contexts/CpAmmContext'
 const Dammv2PoolCreation: React.FC = () => {
     const { publicKey, connected } = useWallet()
     const { connection } = useConnection()
-    const {cpAmm} = useCpAmm();
+    const { cpAmm } = useCpAmm();
     const [searchMint, setSearchMint] = useState('')
     const { refreshTokenAccounts } = useTokenAccounts()
 
@@ -586,13 +586,14 @@ const Dammv2PoolCreation: React.FC = () => {
                                 </div>
                             </div>
                         </div>
-                        <div className="relative flex flex-cols w-full">
+                        <div className="relative flex flex-cols w-full gap-1 bg-gray-800 border-t border-b border-r border-gray-700 rounded-md text-white text-xs">
 
-                            <label className="w-full select-none text-reado bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 text-white text-xs">
-                                <input type='checkbox'
-                                    checked={useDynamicFee}
-                                    onChange={(e) => setUseDynamicFee(e.target.checked)}>
-                                </input>
+                            <input type='checkbox'
+                                checked={useDynamicFee}
+                                onChange={(e) => setUseDynamicFee(e.target.checked)}>
+                            </input>
+                            <label className="w-full select-none text-reado">
+
                                 Use Dynamic Fee
                             </label>
                         </div>
