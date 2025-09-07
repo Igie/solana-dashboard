@@ -58,7 +58,7 @@ const Portfolio: React.FC = () => {
         initialAmount: (ta.amount.mul(Decimal.pow(10, ta.decimals))).toFixed(0),
         swapMode: 'ExactIn',
       },
-      
+
     });
 
     window.Jupiter.onSuccess = async () => {
@@ -74,7 +74,7 @@ const Portfolio: React.FC = () => {
         outputMint: 'So11111111111111111111111111111111111111112',
         amount: ta.amount.mul(Decimal.pow(10, ta.decimals)).toNumber(),
         slippageBps: jupSlippage ? jupSlippage * 100 : 200,
-      excludeDexes: includeDammv2Route ? [] : ['Meteora DAMM V2'],
+      excludeDexes: includeDammv2Route ? [] : ['Meteora DAMM v2'],
       }, false)
 
       const txn = await getSwapTransactionVersioned(quote, publicKey!);
@@ -90,7 +90,7 @@ const Portfolio: React.FC = () => {
       outputMint: 'So11111111111111111111111111111111111111112',
       amount: ta.amount.mul(Decimal.pow(10, ta.decimals)).toNumber(),
       slippageBps: jupSlippage ? jupSlippage * 100 : 200,
-      excludeDexes: includeDammv2Route ? [] : ['Meteora DAMM V2'],
+      excludeDexes: includeDammv2Route ? [] : ['Meteora DAMM v2'],
     })
 
     const txn = await getSwapTransactionVersioned(quote, publicKey!);

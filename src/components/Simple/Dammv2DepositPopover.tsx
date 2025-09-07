@@ -102,12 +102,14 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
     if (!poolInfo) return;
     if (swapSolAmount.lessThanOrEqualTo(0)) return;
 
+    console.log(jupSlippage, includeDammv2Route);
+
     const quote = await getQuote({
       inputMint: NATIVE_MINT.toBase58(),
       outputMint: poolInfo.poolInfo.account.tokenAMint.toBase58(),
       amount: swapSolAmount.mul(LAMPORTS_PER_SOL).toNumber(),
       slippageBps: jupSlippage ? jupSlippage * 100 : 200,
-      excludeDexes: includeDammv2Route ? [] : ['Meteora DAMM V2'],
+      excludeDexes: includeDammv2Route ? [] : ['Meteora DAMM v2'],
     });
 
     const transaction = await getSwapTransactionVersioned(quote, owner);
