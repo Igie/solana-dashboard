@@ -319,7 +319,7 @@ const Portfolio: React.FC = () => {
             >
               Swap All to SOL ({selectedAccounts.size})
             </button>
-            <button
+            {/* <button
               className="bg-purple-600 hover:bg-purple-500 px-4 py-1 rounded text-white flex-1 sm:flex-none"
               onClick={async () => {
                 const selectedAccountsTemp = [...selectedAccounts];
@@ -339,7 +339,7 @@ const Portfolio: React.FC = () => {
               }}
             >
               Burn All ({selectedAccounts.size})
-            </button>
+            </button> */}
 
           </div>
         </div>
