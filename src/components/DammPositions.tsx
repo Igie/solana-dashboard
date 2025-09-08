@@ -466,7 +466,7 @@ const DammPositions: React.FC = () => {
                 Claim Fees ({selectedPositions.size})
               </button>
               <div className='flex md:flex-row flex-col gap-0.5'>
-                <button
+                {/* <button
                   className="bg-purple-600 hover:bg-purple-500 px-2 md:py-1 rounded text-white flex-1 sm:flex-none"
                   onClick={async () => {
                     const selectedPositionsTemp = [...selectedPositions];
@@ -487,7 +487,7 @@ const DammPositions: React.FC = () => {
                 >
 
                   {zapOutProgress.length > 0 && (zapOutProgress)} Close and Swap All ({selectedPositions.size})
-                </button>
+                </button> */}
                 <button
                   className="bg-purple-600 hover:bg-purple-500 px-2 md:py-1 rounded text-white flex-1 sm:flex-none"
                   onClick={async () => {

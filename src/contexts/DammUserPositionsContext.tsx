@@ -571,7 +571,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
         } return true;
     }
 
-    const[zapOutProgress, setZapOutProgress] = useState("");
+    const [zapOutProgress, setZapOutProgress] = useState("");
 
     const getZapOutTx = async (positions: PoolPositionInfo[]): Promise<Transaction[]> => {
         const currentTime = await connection.getBlockTime(currentSlot);
@@ -601,22 +601,16 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                 let transaction = new Transaction();
                 transaction.feePayer = publicKey!;
 
-                const removeLiquidityTx = await cpAmm.removeLiquidity({
+                let removeLiquidityTx = await cpAmm.removeAllLiquidityAndClosePosition({
                     owner: publicKey!,
-                    pool: position.poolAddress,
                     position: position.positionAddress,
                     positionNftAccount: position.positionNftAccount,
-                    liquidityDelta: position.positionState.unlockedLiquidity,
+                    positionState: position.positionState,
+                    poolState: position.poolState,
                     tokenAAmountThreshold: new BN(0),
                     tokenBAmountThreshold: new BN(0),
-                    tokenAMint: position.poolState.tokenAMint,
-                    tokenBMint: position.poolState.tokenBMint,
-                    tokenAVault: position.poolState.tokenAVault,
-                    tokenBVault: position.poolState.tokenBVault,
-                    tokenAProgram: getTokenProgram(position.poolState.tokenAFlag),
-                    tokenBProgram: getTokenProgram(position.poolState.tokenBFlag),
                     vestings: [],
-                    currentPoint: new BN(currentTime ?? 0),
+                    currentPoint: new BN(0),
                 });
 
                 transaction.add(removeLiquidityTx);
@@ -642,7 +636,8 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                         inputMint: inputMint.toBase58(),
                         outputMint: outputMint.toBase58(),
                         amount: new Decimal(amountARemoved.toString()),
-                        maxAccounts: 20,
+                        maxAccounts: 10,
+                        onlyDirectRoutes: true,
                         slippageBps: jupZapOutSlippage ? jupZapOutSlippage * 100 : 2000,
                         excludeDexes: includeDammv2Route ? [] : ['Meteora DAMM v2'],
                     }, false);
@@ -811,22 +806,16 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
         let transaction = new Transaction();
         transaction.feePayer = publicKey!;
 
-        const removeLiquidityTx = await cpAmm.removeLiquidity({
+        let removeLiquidityTx = await cpAmm.removeAllLiquidityAndClosePosition({
             owner: publicKey!,
-            pool: position.poolAddress,
             position: position.positionAddress,
             positionNftAccount: position.positionNftAccount,
-            liquidityDelta: position.positionState.unlockedLiquidity,
+            positionState: position.positionState,
+            poolState: position.poolState,
             tokenAAmountThreshold: new BN(0),
             tokenBAmountThreshold: new BN(0),
-            tokenAMint: position.poolState.tokenAMint,
-            tokenBMint: position.poolState.tokenBMint,
-            tokenAVault: position.poolState.tokenAVault,
-            tokenBVault: position.poolState.tokenBVault,
-            tokenAProgram: getTokenProgram(position.poolState.tokenAFlag),
-            tokenBProgram: getTokenProgram(position.poolState.tokenBFlag),
             vestings: [],
-            currentPoint: new BN(currentTime ?? 0),
+            currentPoint: new BN(0),
         });
 
         transaction.add(removeLiquidityTx);
@@ -852,7 +841,8 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                 inputMint: inputMint.toBase58(),
                 outputMint: outputMint.toBase58(),
                 amount: new Decimal(amountARemoved.toString()),
-                maxAccounts: 20,
+                maxAccounts: 10,
+                onlyDirectRoutes: true,
                 slippageBps: jupZapOutSlippage ? jupZapOutSlippage * 100 : 2000,
                 excludeDexes: includeDammv2Route ? [] : ['Meteora DAMM v2'],
             });
