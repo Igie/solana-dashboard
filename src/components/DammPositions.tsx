@@ -17,7 +17,7 @@ const DammPositions: React.FC = () => {
   const { publicKey, connected } = useWallet()
   const { cpAmm } = useCpAmm();
   const { sendTxn, sendMultiTxn } = useTransactionManager();
-  const { positions, totalLiquidityValue, loading, refreshPositions, updatePosition, removePosition, sortPositionsBy, removeLiquidityAndSwapToQuote, getZapOutTx, zapOutProgress, sortedBy, sortedAscending } = useDammUserPositions();
+  const { positions, totalLiquidityValue, loading, refreshPositions, updatePosition, removePosition, sortPositionsBy, removeLiquidityAndSwapToQuote, sortedBy, sortedAscending } = useDammUserPositions();
   const [selectedPositions, setSelectedPositions] = useState<Set<PoolPositionInfo>>(new Set());
   const [lastSelectedPosition, setLastSelectedPosition] = useState<PoolPositionInfo | null>(null);
 
@@ -221,12 +221,12 @@ const DammPositions: React.FC = () => {
     removeLiquidityAndSwapToQuote(position);
   }
 
-  const getClosePositionAndSwapTx = async (positions: PoolPositionInfo[]) => {
-    positions = positions.filter(x => !cpAmm.isLockedPosition(x.positionState))
-    const txns = getZapOutTx(positions);
+  // const getClosePositionAndSwapTx = async (positions: PoolPositionInfo[]) => {
+  //   positions = positions.filter(x => !cpAmm.isLockedPosition(x.positionState))
+  //   const txns = getZapOutTx(positions);
 
-    return txns;
-  };
+  //   return txns;
+  // };
 
   const poolContainsString = (pool: PoolPositionInfo, searchString: string): boolean => {
     const lowerSearch = searchString.toLowerCase();
