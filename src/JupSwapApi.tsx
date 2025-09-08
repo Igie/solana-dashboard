@@ -7,22 +7,46 @@ import {
   Transaction,
 } from "@solana/web3.js";
 import { toast } from "sonner";
+import Decimal from "decimal.js";
 
 
-interface QuoteParams {
+interface JupiterQuoteParams {
   inputMint: string;
   outputMint: string;
-  amount: number;
+  amount: Decimal;
   slippageBps: number;
   maxAccounts?: number;
   onlyDirectRoutes?: boolean;
   excludeDexes?: string[];
 }
 
-interface QuoteResponse {
+export interface JupiterQuoteResponse {
   inputMint: string;
+  inAmount: string;
   outputMint: string;
   outAmount: string;
+  otherAmountThreshold: string;
+  swapMode: string;
+  slippageBps: number;
+  platformFee: any;
+  priceImpactPct: string;
+  routePlan: JupiterRoutePlan[];
+  contextSlot: number;
+  timeTaken: number;
+  swapUsdValue: string;
+  simplerRouteUsed: boolean;
+  mostReliableAmmsQuoteReport: {
+    info: Record<string, string>;
+  };
+  useIncurredSlippageForQuoting: any;
+  otherRoutePlans: any;
+  aggregatorVersion: any;
+}
+
+export interface JupiterRoutePlan {
+  swapInfo: any;
+  percent: number;
+  bps: number;
 }
 
 interface InstructionAccount {
@@ -41,7 +65,7 @@ interface Instruction {
 
 const baseUrl: string = "https://quote-api.jup.ag/v6";
 
-export const getQuote = async (params: QuoteParams, notify: boolean = true): Promise<QuoteResponse> => {
+export const getQuote = async (params: JupiterQuoteParams, notify: boolean = true): Promise<JupiterQuoteResponse> => {
   try {
     const url = new URL(`https://ultra-api.jup.ag/order?`);
     url.searchParams.append("inputMint", params.inputMint);
@@ -65,7 +89,7 @@ export const getQuote = async (params: QuoteParams, notify: boolean = true): Pro
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const data: QuoteResponse = await response.json();
+    const data: JupiterQuoteResponse = await response.json();
     return data;
   } catch (error) {
     console.error("Error fetching quote:", error);
@@ -73,7 +97,7 @@ export const getQuote = async (params: QuoteParams, notify: boolean = true): Pro
   }
 }
 
-export const getSwapTransactionVersioned = async (quoteResponse: QuoteResponse, publicKey: PublicKey): Promise<VersionedTransaction> => {
+export const getSwapTransactionVersioned = async (quoteResponse: JupiterQuoteResponse, publicKey: PublicKey): Promise<VersionedTransaction> => {
 
   const { swapTransaction } = await (
     await fetch('https://quote-api.jup.ag/v6/swap', {
@@ -103,7 +127,7 @@ interface SwapInstructions {
   cleanupInstruction: TransactionInstruction,
 }
 
-export const getSwapInstructions = async (quoteResponse: QuoteResponse, pubKey: PublicKey): Promise<SwapInstructions> => {
+export const getSwapInstructions = async (quoteResponse: JupiterQuoteResponse, pubKey: PublicKey): Promise<SwapInstructions> => {
   console.log(quoteResponse);
   const instructions = await (
     await fetch(`${baseUrl}/swap-instructions`, {
@@ -138,7 +162,7 @@ export const getSwapInstructions = async (quoteResponse: QuoteResponse, pubKey: 
 
 
 
-export const getSwapTransaction = async (quoteResponse: QuoteResponse, connection: Connection, pubKey: PublicKey): Promise<Transaction | VersionedTransaction> => {
+export const getSwapTransaction = async (quoteResponse: JupiterQuoteResponse, connection: Connection, pubKey: PublicKey): Promise<Transaction | VersionedTransaction> => {
   const instructions = await (
     await fetch(`${baseUrl}/swap-instructions`, {
       method: 'POST',

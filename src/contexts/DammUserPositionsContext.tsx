@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState } from 'react'
-import { PublicKey } from '@solana/web3.js'
-import { feeNumeratorToBps, getBaseFeeNumerator, getFeeNumerator, getPriceFromSqrtPrice, getUnClaimReward, type PoolState, type PositionState } from '@meteora-ag/cp-amm-sdk'
+import { ComputeBudgetProgram, PublicKey, Transaction } from '@solana/web3.js'
+import { feeNumeratorToBps, getAmountAFromLiquidityDelta, getBaseFeeNumerator, getFeeNumerator, getPriceFromSqrtPrice, getTokenProgram, getUnClaimReward, Rounding, type PoolState, type PositionState } from '@meteora-ag/cp-amm-sdk'
 import { fetchTokenMetadataJup } from '../tokenUtils'
 import Decimal from 'decimal.js'
 import { BN } from '@coral-xyz/anchor'
@@ -10,6 +10,8 @@ import { txToast } from '../components/Simple/TxToast';
 import { getQuote, getSwapTransactionVersioned } from '../JupSwapApi'
 import { useTokenAccounts } from './TokenAccountsContext'
 import { useCpAmm } from './CpAmmContext'
+import { getJupiterSwapInstruction } from "@meteora-ag/zap-sdk"
+import { useSettings } from './SettingsContext'
 
 export interface PoolTokenInfo {
     mint: string
@@ -70,7 +72,8 @@ interface DammUserPositionsContextType {
     updatePosition: (positionAddress: PublicKey) => void
     removePosition: (positionAddress: PublicKey) => void
     removeLiquidityAndSwapToQuote: (position: PoolPositionInfo) => void
-
+    getZapOutTx: (positions: PoolPositionInfo[]) => Promise<Transaction[]>
+    zapOutProgress: string,
     sortedBy: SortType,
     sortedAscending: boolean | undefined,
 }
@@ -85,6 +88,8 @@ const DammUserPositionsContext = createContext<DammUserPositionsContextType>({
     updatePosition: async (_positionAddress: PublicKey) => { },
     removePosition: (_positionAddress: PublicKey) => { },
     removeLiquidityAndSwapToQuote: (_position: PoolPositionInfo) => { },
+    getZapOutTx: async (_positions: PoolPositionInfo[]) => [],
+    zapOutProgress: "",
     sortedBy: SortType.PoolValue,
     sortedAscending: true,
 })
@@ -92,10 +97,11 @@ const DammUserPositionsContext = createContext<DammUserPositionsContextType>({
 export const useDammUserPositions = () => useContext(DammUserPositionsContext)
 
 export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const { jupZapOutSlippage, includeDammv2Route } = useSettings();
     const { publicKey } = useWallet();
     const { connection } = useConnection();
-    const { sendTxn , refreshBalance} = useTransactionManager();
-    const { cpAmm } = useCpAmm();
+    const { sendTxn, refreshBalance } = useTransactionManager();
+    const { cpAmm, zap } = useCpAmm();
     const { refreshTokenAccounts } = useTokenAccounts();
     const [sortedBy, setSortBy] = useState<SortType>(SortType.PoolBaseFee);
     const [sortedAscending, setSortAscending] = useState<boolean | undefined>(true);
@@ -470,7 +476,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
         position.positionUnclaimedFee =
             tokenAUnclaimedFees * tokenAMetadata!.price.toNumber() +
             tokenBUnclaimedFees * tokenBMetadata!.price.toNumber();
-            position.positionClaimedFee =
+        position.positionClaimedFee =
             tokenAClaimedFees * tokenAMetadata!.price.toNumber() +
             tokenBClaimedFees * tokenBMetadata!.price.toNumber();
 
@@ -501,6 +507,13 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
     }
 
     const removeLiquidityAndSwapToQuote = async (position: PoolPositionInfo): Promise<boolean> => {
+
+        const success = await zapOut(position);
+        if (success) {
+            return true;
+        }
+        console.log("Falling back to simple remove liquidity and swap");
+        txToast.error("Remove liquidity and swap failed. Falling back to simple remove and swap.");
 
         const txn = await cpAmm.removeAllLiquidityAndClosePosition({
             owner: publicKey!,
@@ -539,9 +552,9 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                 inputMint: position.tokenA.mint,
                 outputMint: position.tokenB.mint,
 
-                amount: new Decimal(tokenAAccount.amount).mul(Decimal.pow(10, tokenAAccount.decimals)).toNumber(),
+                amount: new Decimal(tokenAAccount.amount).mul(Decimal.pow(10, tokenAAccount.decimals)),
                 slippageBps: 1000,
-            });
+            }, false);
 
             const transaction = await getSwapTransactionVersioned(quote, publicKey!);
 
@@ -556,210 +569,442 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                 }
             });
         } return true;
-        // const currentTime = await connection.getBlockTime(currentSlot);
-
-        // const liquidityDelta =
-        //     position.positionState.unlockedLiquidity; // remove liquidity with too small amount
-
-        // const inputMint = position.poolState.tokenAMint;
-        // const outputMint = position.poolState.tokenBMint;
-        // const inputTokenProgram = getTokenProgram(position.poolState.tokenAFlag);
-        // const outputTokenProgram = getTokenProgram(position.poolState.tokenBFlag);
-        // const amountARemoved = getAmountAFromLiquidityDelta(
-        //     liquidityDelta,
-        //     position.poolState.sqrtPrice,
-        //     position.poolState.sqrtMaxPrice,
-        //     Rounding.Down
-        // );
-
-        // // const amountBRemoved = getAmountBFromLiquidityDelta(
-        // //     liquidityDelta,
-        // //     pool.poolState.sqrtPrice,
-        // //     pool.poolState.sqrtMinPrice,
-        // //     Rounding.Down
-        // // );
-
-        // const transaction = new Transaction();
-        // const removeLiquidityTx = await cpAmm.removeLiquidity({
-        //     owner: publicKey!,
-        //     pool: position.poolAddress,
-        //     position: position.positionAddress,
-        //     positionNftAccount: position.positionNftAccount,
-        //     liquidityDelta: position.positionState.unlockedLiquidity,
-        //     tokenAAmountThreshold: new BN(0),
-        //     tokenBAmountThreshold: new BN(0),
-        //     tokenAMint: position.poolState.tokenAMint,
-        //     tokenBMint: position.poolState.tokenBMint,
-        //     tokenAVault: position.poolState.tokenAVault,
-        //     tokenBVault: position.poolState.tokenBVault,
-        //     tokenAProgram: getTokenProgram(position.poolState.tokenAFlag),
-        //     tokenBProgram: getTokenProgram(position.poolState.tokenBFlag),
-        //     vestings: [],
-        //     currentPoint: new BN(currentTime ?? 0),
-        // });
-
-        // transaction.add(removeLiquidityTx);
-
-        // const [dammV2Quote, jupiterQuote] = await Promise.allSettled([
-        //     cpAmm.getQuote({
-        //         inAmount: amountARemoved,
-        //         inputTokenMint: inputMint,
-        //         slippage: 0.5,
-        //         poolState: position.poolState,
-        //         currentTime: currentTime ?? 0,
-        //         currentSlot,
-        //         tokenADecimal: position.tokenA.decimals,
-        //         tokenBDecimal: position.tokenB.decimals,
-        //     }),
-        //     getJupiterQuote(
-        //         inputMint,
-        //         outputMint,
-        //         amountARemoved,
-        //         50,
-        //         20,
-        //         true,
-        //         true,
-        //         true,
-        //         "https://lite-api.jup.ag"
-        //     ),
-
-        // ]);
-
-        // const quotes = {
-        //     dammV2: dammV2Quote.status === "fulfilled" ? dammV2Quote.value : null,
-        //     jupiter: jupiterQuote.status === "fulfilled" ? jupiterQuote.value : null,
-        // };
-
-        // if (quotes.dammV2) {
-        //     console.log("DAMM v2 quote:", quotes.dammV2.swapOutAmount.toString());
-        // } else {
-        //     console.log(
-        //         "DAMM v2 quote failed:",
-        //         dammV2Quote.status === "rejected" ? dammV2Quote.reason : "Unknown error"
-        //     );
-        // }
-
-        // if (quotes.jupiter) {
-        //     console.log("Jupiter quote:", quotes.jupiter.outAmount.toString());
-        // } else {
-        //     console.log(
-        //         "Jupiter quote failed:",
-        //         jupiterQuote.status === "rejected"
-        //             ? jupiterQuote.reason
-        //             : "Unknown error"
-        //     );
-        // }
-
-        // let bestQuoteValue: BN | null = null;
-        // let bestProtocol: string | null = null;
-
-        // if (quotes.dammV2?.swapOutAmount) {
-        //     bestQuoteValue = quotes.dammV2.swapOutAmount;
-        //     bestProtocol = "dammV2";
-        // }
-
-        // if (quotes.jupiter?.outAmount) {
-        //     const jupiterAmount = new BN(quotes.jupiter.outAmount);
-        //     if (!bestQuoteValue || jupiterAmount.gt(bestQuoteValue)) {
-        //         bestQuoteValue = jupiterAmount;
-        //         bestProtocol = "jupiter";
-        //     }
-        // }
-
-        // if (!bestProtocol || !bestQuoteValue) {
-        //     throw new Error("No valid quotes obtained from any protocol");
-        // }
-
-        // console.log(
-        //     `Best protocol: ${bestProtocol} with quote:`,
-        //     bestQuoteValue.toString()
-        // );
-
-        // let zapOutTx;
-
-        // if (bestProtocol === "dammV2") {
-        //     zapOutTx = await zap.zapOutThroughDammV2({
-        //         user: publicKey!,
-        //         poolAddress: position.poolAddress,
-        //         inputMint,
-        //         outputMint,
-        //         inputTokenProgram: inputTokenProgram,
-        //         outputTokenProgram: outputTokenProgram,
-        //         amountIn: amountARemoved,
-        //         minimumSwapAmountOut: new BN(0),
-        //         maxSwapAmount: amountARemoved,
-        //         percentageToZapOut: 100,
-        //     });
-        // } else if (bestProtocol === "jupiter" && quotes.jupiter) {
-        //     const swapInstructionResponse = await getJupiterSwapInstruction(
-        //         publicKey!,
-        //         quotes.jupiter
-        //     );
-
-        //     zapOutTx = await zap.zapOutThroughJupiter({
-        //         user: publicKey!,
-        //         inputMint,
-        //         outputMint,
-        //         inputTokenProgram,
-        //         outputTokenProgram,
-        //         jupiterSwapResponse: swapInstructionResponse,
-        //         maxSwapAmount: new BN(quotes.jupiter.inAmount),
-        //         percentageToZapOut: 100,
-        //     });
-        // } else {
-        //     throw new Error(`Invalid protocol selected: ${bestProtocol}`);
-        // }
-
-        // transaction.add(zapOutTx);
-
-        // await sendTxn(transaction, undefined, {
-        //     notify: true,
-        //     onError: () => {
-        //         txToast.error("Zap Out failed");
-        //     },
-        //     onSuccess: async (x) => {
-        //         txToast.success("Zap out successful", x);
-        //         removePosition(position.positionAddress);
-        //     }
-        // });
-
     }
 
-    // useEffect(() => {
-    //     if (!connection.rpcEndpoint) return;
-    //     const id = connection.onProgramAccountChange(new PublicKey("cpamdpZCGKUy5JxQXB4dcpGPiikHawvSWAd6mEn1sGG"), (e: KeyedAccountInfo) => {
-    //         const slice = e.accountInfo.data.readUint32BE(0);
-    //         let found = false;
-    //         let name = "";
-    //         let decoded: any = undefined;
-    //         for (var i of cpAmm._program.idl.accounts) {
-    //             const buf = Buffer.from(i.discriminator);
-    //             const bufInt = buf.readUint32BE();
-    //             if (bufInt == slice) {
-    //                 name = i.name;
-    //                 decoded = cpAmm._program.coder.accounts.decode(i.name, e.accountInfo.data);
-    //                 found = true;
-    //                 break;
-    //             }
-    //         }
-    //         if (!found || name !== 'position') return;
+    const[zapOutProgress, setZapOutProgress] = useState("");
 
-    //         console.log(decoded);
+    const getZapOutTx = async (positions: PoolPositionInfo[]): Promise<Transaction[]> => {
+        const currentTime = await connection.getBlockTime(currentSlot);
+        const txns = [];
 
-    //     }, {
-    //         encoding: 'jsonParsed',
-    //         commitment: 'finalized',
-    //     });
+        let count = 1;
+        for (const position of positions) {
+            setZapOutProgress(`${count} of ${positions.length}`);
+            count++;
+            position.positionState = await cpAmm.fetchPositionState(position.positionAddress);
 
-    //     return () => {
-    //         connection.removeProgramAccountChangeListener(id);
-    //     }
-    // }, [connection]);
+            try {
+                const liquidityDelta =
+                    position.positionState.unlockedLiquidity; // remove liquidity with too small amount
+
+                const inputMint = position.poolState.tokenAMint;
+                const outputMint = position.poolState.tokenBMint;
+                const inputTokenProgram = getTokenProgram(position.poolState.tokenAFlag);
+                const outputTokenProgram = getTokenProgram(position.poolState.tokenBFlag);
+                const amountARemoved = getAmountAFromLiquidityDelta(
+                    liquidityDelta,
+                    position.poolState.sqrtPrice,
+                    position.poolState.sqrtMaxPrice,
+                    Rounding.Down
+                );
+
+                let transaction = new Transaction();
+                transaction.feePayer = publicKey!;
+
+                const removeLiquidityTx = await cpAmm.removeLiquidity({
+                    owner: publicKey!,
+                    pool: position.poolAddress,
+                    position: position.positionAddress,
+                    positionNftAccount: position.positionNftAccount,
+                    liquidityDelta: position.positionState.unlockedLiquidity,
+                    tokenAAmountThreshold: new BN(0),
+                    tokenBAmountThreshold: new BN(0),
+                    tokenAMint: position.poolState.tokenAMint,
+                    tokenBMint: position.poolState.tokenBMint,
+                    tokenAVault: position.poolState.tokenAVault,
+                    tokenBVault: position.poolState.tokenBVault,
+                    tokenAProgram: getTokenProgram(position.poolState.tokenAFlag),
+                    tokenBProgram: getTokenProgram(position.poolState.tokenBFlag),
+                    vestings: [],
+                    currentPoint: new BN(currentTime ?? 0),
+                });
+
+                transaction.add(removeLiquidityTx);
+
+                let dammV2Quote = null;
+                let jupiterQuote = null;
+                try {
+                    dammV2Quote = cpAmm.getQuote({
+                        inAmount: amountARemoved,
+                        inputTokenMint: inputMint,
+                        slippage: 0.5,
+                        poolState: position.poolState,
+                        currentTime: currentTime ?? 0,
+                        currentSlot,
+                        tokenADecimal: position.tokenA.decimals,
+                        tokenBDecimal: position.tokenB.decimals,
+                    });
+                } catch { }
+
+
+                try {
+                    jupiterQuote = await getQuote({
+                        inputMint: inputMint.toBase58(),
+                        outputMint: outputMint.toBase58(),
+                        amount: new Decimal(amountARemoved.toString()),
+                        maxAccounts: 20,
+                        slippageBps: jupZapOutSlippage ? jupZapOutSlippage * 100 : 2000,
+                        excludeDexes: includeDammv2Route ? [] : ['Meteora DAMM v2'],
+                    }, false);
+                } catch { };
+
+                const quotes = {
+                    dammV2: dammV2Quote,
+                    jupiter: jupiterQuote,
+                };
+
+                if (quotes.dammV2) {
+                    console.log("DAMM v2 quote:", quotes.dammV2.swapOutAmount.toString());
+                }
+
+                if (quotes.jupiter) {
+                    console.log("Jupiter quote:", quotes.jupiter.outAmount.toString());
+                }
+
+                let bestQuoteValue: BN | null = null;
+                let bestProtocol: string | null = null;
+
+                if (quotes.dammV2?.swapOutAmount) {
+                    bestQuoteValue = quotes.dammV2.swapOutAmount;
+                    bestProtocol = "dammV2";
+                }
+
+                if (quotes.jupiter?.outAmount) {
+                    const jupiterAmount = new BN(quotes.jupiter.outAmount);
+                    if (!bestQuoteValue || jupiterAmount.gt(bestQuoteValue)) {
+                        bestQuoteValue = jupiterAmount;
+                        bestProtocol = "jupiter";
+                    }
+                }
+
+                if (!bestProtocol || !bestQuoteValue) {
+                    console.error("No valid quotes obtained from any protocol");
+                    continue;
+                }
+
+                console.log(
+                    `Best protocol: ${bestProtocol} with quote:`,
+                    bestQuoteValue.toString()
+                );
+
+                let zapOutTx;
+                if (bestProtocol === "dammV2") {
+                    zapOutTx = await zap.zapOutThroughDammV2({
+                        user: publicKey!,
+                        poolAddress: position.poolAddress,
+                        inputMint,
+                        outputMint,
+                        inputTokenProgram: inputTokenProgram,
+                        outputTokenProgram: outputTokenProgram,
+                        amountIn: amountARemoved,
+                        minimumSwapAmountOut: new BN(0),
+                        maxSwapAmount: amountARemoved,
+                        percentageToZapOut: 100,
+                    });
+                } else if (bestProtocol === "jupiter" && quotes.jupiter) {
+
+                    const swapInstructionResponse = await getJupiterSwapInstruction(
+                        publicKey!,
+                        quotes.jupiter,
+                    );
+
+                    console.log("Jupiter swap response:", swapInstructionResponse);
+
+                    try {
+                        zapOutTx = await zap.zapOutThroughJupiter({
+                            user: publicKey!,
+                            inputMint,
+                            outputMint,
+                            inputTokenProgram,
+                            outputTokenProgram,
+                            jupiterSwapResponse: swapInstructionResponse,
+                            maxSwapAmount: new BN(quotes.jupiter.inAmount),
+                            percentageToZapOut: 100,
+                        });
+                    } catch { continue; }
+                } else {
+                    console.error(`Invalid protocol selected: ${bestProtocol}`);
+                }
+
+                transaction.add(zapOutTx!);
+                let res = null;
+                try {
+                    res = await connection.simulateTransaction(transaction)
+                } catch {
+                    continue;
+                }
+
+                console.log("First sim:", res);
+
+                if (!res || res.value.err) {
+                    console.log("Zap out failed simulation!");
+                    if (bestProtocol === "dammV2" && quotes.jupiter) {
+                        console.log("Retrying with Jupiter");
+                        transaction = new Transaction();
+                        transaction.feePayer = publicKey!;
+                        transaction.add(removeLiquidityTx);
+                        const swapInstructionResponse = await getJupiterSwapInstruction(
+                            publicKey!,
+                            quotes.jupiter,
+                        );
+                        console.log("Jupiter swap response:", swapInstructionResponse);
+                        try {
+                            zapOutTx = await zap.zapOutThroughJupiter({
+                                user: publicKey!,
+                                inputMint,
+                                outputMint,
+                                inputTokenProgram,
+                                outputTokenProgram,
+                                jupiterSwapResponse: swapInstructionResponse,
+                                maxSwapAmount: new BN(quotes.jupiter.inAmount),
+                                percentageToZapOut: 100,
+                            });
+                        } catch { continue; }
+                        transaction.add(zapOutTx!);
+
+                        res = await connection.simulateTransaction(transaction);
+                        console.log("Second sim:", res);
+
+                        if (res.value.err) {
+                            console.log("Simulation failed with Jupiter as well, aborting.");
+                            continue;
+                        } else {
+                            console.log("Simulation success with Jupiter, proceeding to send.");
+                        }
+                    } else {
+                        continue;
+                    }
+                }
+
+                transaction.instructions = [
+                    ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100000 }),
+                    ComputeBudgetProgram.setComputeUnitLimit({ units: res.value.unitsConsumed! * 1.2 }),
+                    ...transaction.instructions
+                ];
+
+                txns.push(transaction);
+            } catch { }
+        }
+        setZapOutProgress("")
+        return txns;
+    }
+
+    const zapOut = async (position: PoolPositionInfo): Promise<boolean> => {
+        const currentTime = await connection.getBlockTime(currentSlot);
+
+        position.positionState = await cpAmm.fetchPositionState(position.positionAddress);
+
+        const liquidityDelta =
+            position.positionState.unlockedLiquidity; // remove liquidity with too small amount
+
+        const inputMint = position.poolState.tokenAMint;
+        const outputMint = position.poolState.tokenBMint;
+        const inputTokenProgram = getTokenProgram(position.poolState.tokenAFlag);
+        const outputTokenProgram = getTokenProgram(position.poolState.tokenBFlag);
+        const amountARemoved = getAmountAFromLiquidityDelta(
+            liquidityDelta,
+            position.poolState.sqrtPrice,
+            position.poolState.sqrtMaxPrice,
+            Rounding.Down
+        );
+
+        let transaction = new Transaction();
+        transaction.feePayer = publicKey!;
+
+        const removeLiquidityTx = await cpAmm.removeLiquidity({
+            owner: publicKey!,
+            pool: position.poolAddress,
+            position: position.positionAddress,
+            positionNftAccount: position.positionNftAccount,
+            liquidityDelta: position.positionState.unlockedLiquidity,
+            tokenAAmountThreshold: new BN(0),
+            tokenBAmountThreshold: new BN(0),
+            tokenAMint: position.poolState.tokenAMint,
+            tokenBMint: position.poolState.tokenBMint,
+            tokenAVault: position.poolState.tokenAVault,
+            tokenBVault: position.poolState.tokenBVault,
+            tokenAProgram: getTokenProgram(position.poolState.tokenAFlag),
+            tokenBProgram: getTokenProgram(position.poolState.tokenBFlag),
+            vestings: [],
+            currentPoint: new BN(currentTime ?? 0),
+        });
+
+        transaction.add(removeLiquidityTx);
+
+        let dammV2Quote = null;
+        let jupiterQuote = null;
+        try {
+            dammV2Quote = cpAmm.getQuote({
+                inAmount: amountARemoved,
+                inputTokenMint: inputMint,
+                slippage: 0.5,
+                poolState: position.poolState,
+                currentTime: currentTime ?? 0,
+                currentSlot,
+                tokenADecimal: position.tokenA.decimals,
+                tokenBDecimal: position.tokenB.decimals,
+            });
+        } catch { }
+
+
+        try {
+            jupiterQuote = await getQuote({
+                inputMint: inputMint.toBase58(),
+                outputMint: outputMint.toBase58(),
+                amount: new Decimal(amountARemoved.toString()),
+                maxAccounts: 20,
+                slippageBps: jupZapOutSlippage ? jupZapOutSlippage * 100 : 2000,
+                excludeDexes: includeDammv2Route ? [] : ['Meteora DAMM v2'],
+            });
+        } catch { };
+
+        const quotes = {
+            dammV2: dammV2Quote,
+            jupiter: jupiterQuote,
+        };
+
+        if (quotes.dammV2) {
+            console.log("DAMM v2 quote:", quotes.dammV2.swapOutAmount.toString());
+        }
+
+        if (quotes.jupiter) {
+            console.log("Jupiter quote:", quotes.jupiter.outAmount.toString());
+        }
+
+        let bestQuoteValue: BN | null = null;
+        let bestProtocol: string | null = null;
+
+        if (quotes.dammV2?.swapOutAmount) {
+            bestQuoteValue = quotes.dammV2.swapOutAmount;
+            bestProtocol = "dammV2";
+        }
+
+        if (quotes.jupiter?.outAmount) {
+            const jupiterAmount = new BN(quotes.jupiter.outAmount);
+            if (!bestQuoteValue || jupiterAmount.gt(bestQuoteValue)) {
+                bestQuoteValue = jupiterAmount;
+                bestProtocol = "jupiter";
+            }
+        }
+
+        if (!bestProtocol || !bestQuoteValue) {
+            console.error("No valid quotes obtained from any protocol");
+            return false;
+        }
+
+        console.log(
+            `Best protocol: ${bestProtocol} with quote:`,
+            bestQuoteValue.toString()
+        );
+
+        let zapOutTx;
+        if (bestProtocol === "dammV2") {
+            zapOutTx = await zap.zapOutThroughDammV2({
+                user: publicKey!,
+                poolAddress: position.poolAddress,
+                inputMint,
+                outputMint,
+                inputTokenProgram: inputTokenProgram,
+                outputTokenProgram: outputTokenProgram,
+                amountIn: amountARemoved,
+                minimumSwapAmountOut: new BN(0),
+                maxSwapAmount: amountARemoved,
+                percentageToZapOut: 100,
+            });
+        } else if (bestProtocol === "jupiter" && quotes.jupiter) {
+
+            const swapInstructionResponse = await getJupiterSwapInstruction(
+                publicKey!,
+                quotes.jupiter,
+            );
+
+            console.log("Jupiter swap response:", swapInstructionResponse);
+
+            zapOutTx = await zap.zapOutThroughJupiter({
+                user: publicKey!,
+                inputMint,
+                outputMint,
+                inputTokenProgram,
+                outputTokenProgram,
+                jupiterSwapResponse: swapInstructionResponse,
+                maxSwapAmount: new BN(quotes.jupiter.inAmount),
+                percentageToZapOut: 100,
+            });
+        } else {
+            txToast.error(`Failed to create zap out transaction  + ${bestProtocol}`);
+            console.error(`Invalid protocol selected: ${bestProtocol}`);
+        }
+
+        transaction.add(zapOutTx!);
+        let res = await connection.simulateTransaction(transaction)
+
+        console.log("First sim:", res);
+
+        if (res.value.err) {
+            console.log("Zap out failed simulation!");
+            if (bestProtocol === "dammV2" && quotes.jupiter) {
+                console.log("Retrying with Jupiter");
+                transaction = new Transaction();
+                transaction.feePayer = publicKey!;
+                transaction.add(removeLiquidityTx);
+                const swapInstructionResponse = await getJupiterSwapInstruction(
+                    publicKey!,
+                    quotes.jupiter,
+                );
+                console.log("Jupiter swap response:", swapInstructionResponse);
+                zapOutTx = await zap.zapOutThroughJupiter({
+                    user: publicKey!,
+                    inputMint,
+                    outputMint,
+                    inputTokenProgram,
+                    outputTokenProgram,
+                    jupiterSwapResponse: swapInstructionResponse,
+                    maxSwapAmount: new BN(quotes.jupiter.inAmount),
+                    percentageToZapOut: 100,
+                });
+                transaction.add(zapOutTx!);
+
+                res = await connection.simulateTransaction(transaction);
+                console.log("Second sim:", res);
+
+                if (res.value.err) {
+                    console.log("Simulation failed with Jupiter as well, aborting.");
+                    txToast.error("Zap out failed! Both DAMM v2 and Jupiter simulations failed!");
+                    return false;
+                } else {
+                    console.log("Simulation success with Jupiter, proceeding to send.");
+                }
+            } else {
+                txToast.error("Zap out failed! No Jupiter quote!");
+                return false;
+            }
+        }
+
+        transaction.instructions = [
+            ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100000 }),
+            ComputeBudgetProgram.setComputeUnitLimit({ units: res.value.unitsConsumed! * 1.2 }),
+            ...transaction.instructions
+        ];
+
+        await sendTxn(transaction, undefined, {
+            notify: true,
+            onError: () => {
+                txToast.error("Zap Out failed!");
+                return false;
+            },
+            onSuccess: async (x) => {
+                txToast.success("Zap out successful!", x);
+                removePosition(position.positionAddress);
+                return true;
+            }
+        });
+        return false;
+    }
 
     return (
         <DammUserPositionsContext.Provider value={{
             positions, totalLiquidityValue, loading,
-            refreshPositions, sortPositionsBy, updatePosition, removePosition, removeLiquidityAndSwapToQuote, sortedBy, sortedAscending,
+            refreshPositions, sortPositionsBy, updatePosition, removePosition, removeLiquidityAndSwapToQuote, getZapOutTx, zapOutProgress, sortedBy, sortedAscending,
         }}>
             {children}
         </DammUserPositionsContext.Provider>

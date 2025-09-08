@@ -107,7 +107,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
     const quote = await getQuote({
       inputMint: NATIVE_MINT.toBase58(),
       outputMint: poolInfo.poolInfo.account.tokenAMint.toBase58(),
-      amount: swapSolAmount.mul(LAMPORTS_PER_SOL).toNumber(),
+      amount: swapSolAmount.mul(LAMPORTS_PER_SOL),
       slippageBps: jupSlippage ? jupSlippage * 100 : 200,
       excludeDexes: includeDammv2Route ? [] : ['Meteora DAMM v2'],
     });

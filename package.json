@@ -17,6 +17,7 @@
     "@jup-ag/jup-mobile-adapter": "^0.0.2",
     "@jup-ag/wallet-adapter": "^0.2.3",
     "@meteora-ag/cp-amm-sdk": "^1.1.0",
+    "@meteora-ag/zap-sdk": "^1.0.8",
     "@solana/spl-token": "^0.4.13",
     "@solana/wallet-adapter-base": "^0.9.27",
     "@solana/wallet-adapter-react-ui": "^0.9.39",

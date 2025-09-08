@@ -72,7 +72,7 @@ const Portfolio: React.FC = () => {
       const quote = await getQuote({
         inputMint: ta.mint,
         outputMint: 'So11111111111111111111111111111111111111112',
-        amount: ta.amount.mul(Decimal.pow(10, ta.decimals)).toNumber(),
+        amount: ta.amount.mul(Decimal.pow(10, ta.decimals)),
         slippageBps: jupSlippage ? jupSlippage * 100 : 200,
       excludeDexes: includeDammv2Route ? [] : ['Meteora DAMM v2'],
       }, false)
@@ -88,7 +88,7 @@ const Portfolio: React.FC = () => {
     const quote = await getQuote({
       inputMint: ta.mint,
       outputMint: 'So11111111111111111111111111111111111111112',
-      amount: ta.amount.mul(Decimal.pow(10, ta.decimals)).toNumber(),
+      amount: ta.amount.mul(Decimal.pow(10, ta.decimals)),
       slippageBps: jupSlippage ? jupSlippage * 100 : 200,
       excludeDexes: includeDammv2Route ? [] : ['Meteora DAMM v2'],
     })

@@ -7,6 +7,7 @@ import Decimal from 'decimal.js'
 const Dashboard: React.FC = () => {
   const {
     jupSlippage, setJupSlippage,
+    jupZapOutSlippage, setJupZapOutSlippage,
     includeDammv2Route, setIncludeDammv2Route,
   } = useSettings()
   const { connected } = useWallet()
@@ -42,7 +43,6 @@ const Dashboard: React.FC = () => {
           </div>
 
           <div className="space-y-2">
-            {/* Row 1 */}
             <div className="flex items-center gap-2">
               <label className="w-28 text-white md:text-xs">Slippage</label>
               <div>
@@ -55,31 +55,24 @@ const Dashboard: React.FC = () => {
                       setJupSlippage(parseFloat(v.toFixed(2)));
                     }}
                 />
-                {/* <input
-                  type="text"
-                  value={jupSlippage}
-                  onChange={() => {}}
-                  onBlur={(e) => {
-                    const val = e.target.value;
-                    if (val === "") {
-                      setJupSlippage("0");
-                    } else {
-                      if (/^[0-9]*\.?[0-9]*$/.test(val)) {
-                        let num = parseFloat(val);
-                        if (isNaN(num) || num < 0) num = 0;
-                        if (num > 100) num = 100;
-                        setJupSlippage(num.toFixed(2));
-                      }
-                    }
-                  }}
-                  className="w-10 bg-gray-800 border border-gray-700 rounded-md px-2 text-white md:text-xs placeholder-gray-500"
-                /> */}
                 <span className="text-gray-400 px-1 md:text-xs">%</span>
               </div>
-
             </div>
-
-            {/* Row 2 */}
+            <div className="flex items-center gap-2">
+              <label className="w-28 text-white md:text-xs">ZapOut Slippage</label>
+              <div>
+                <DecimalInput className="w-14 bg-gray-800 border border-gray-700 rounded-md px-2 text-white md:text-xs placeholder-gray-500"
+                  value={jupZapOutSlippage?.toString() || ""}
+                  onChange={() => { }}
+                  onBlur={
+                    (v) => {
+                      if (v.greaterThan(100)) v = new Decimal(100);
+                      setJupZapOutSlippage(parseFloat(v.toFixed(2)));
+                    }}
+                />
+                <span className="text-gray-400 px-1 md:text-xs">%</span>
+              </div>
+            </div>
             <div className="flex items-center gap-2">
               <label className="w-28 text-green-100 md:text-xs">Include DAMM v2</label>
               <input

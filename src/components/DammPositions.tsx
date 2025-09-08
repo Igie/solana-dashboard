@@ -5,17 +5,19 @@ import { useTransactionManager } from '../contexts/TransactionManagerContext'
 import { toast } from 'sonner'
 import { BN } from '@coral-xyz/anchor'
 import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-adapter'
-import { PublicKey, Transaction } from '@solana/web3.js'
+import { ComputeBudgetProgram, PublicKey, Transaction, TransactionInstruction } from '@solana/web3.js'
 import { copyToClipboard, getSchedulerType, renderFeeTokenImages } from '../constants'
 import { FeeSchedulerGraph } from './Simple/FeeSchedulerGraph'
 import { useCpAmm } from '../contexts/CpAmmContext'
+import { NATIVE_MINT } from '@solana/spl-token'
+import { unwrapSOLInstruction } from '@meteora-ag/cp-amm-sdk'
 
 const DammPositions: React.FC = () => {
   const { connection } = useConnection()
   const { publicKey, connected } = useWallet()
   const { cpAmm } = useCpAmm();
   const { sendTxn, sendMultiTxn } = useTransactionManager();
-  const { positions, totalLiquidityValue, loading, refreshPositions, updatePosition, removePosition, sortPositionsBy, removeLiquidityAndSwapToQuote, sortedBy, sortedAscending } = useDammUserPositions();
+  const { positions, totalLiquidityValue, loading, refreshPositions, updatePosition, removePosition, sortPositionsBy, removeLiquidityAndSwapToQuote, getZapOutTx, zapOutProgress, sortedBy, sortedAscending } = useDammUserPositions();
   const [selectedPositions, setSelectedPositions] = useState<Set<PoolPositionInfo>>(new Set());
   const [lastSelectedPosition, setLastSelectedPosition] = useState<PoolPositionInfo | null>(null);
 
@@ -33,7 +35,7 @@ const DammPositions: React.FC = () => {
   const handleClaimFees = async (position: PoolPositionInfo) => {
     if (position.positionUnclaimedFee <= 0) return;
 
-    const txn = await cpAmm.claimPositionFee2({
+    let txn = await cpAmm.claimPositionFee2({
       receiver: publicKey!,
       owner: publicKey!,
       feePayer: publicKey!,
@@ -47,6 +49,17 @@ const DammPositions: React.FC = () => {
       tokenAVault: position.poolState.tokenAVault,
       tokenBVault: position.poolState.tokenBVault,
     })
+
+    txn.feePayer = publicKey!;
+    const sim = await connection.simulateTransaction(txn);
+    if (!sim.value.err) {
+      const final = new Transaction();
+      console.log(sim.value.unitsConsumed!);
+      final.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100000 }));
+      final.add(ComputeBudgetProgram.setComputeUnitLimit({ units: sim.value.unitsConsumed! * 1.1 }));
+      final.add(txn);
+      txn = final;
+    }
 
     try {
       await sendTxn(txn, undefined, {
@@ -61,27 +74,67 @@ const DammPositions: React.FC = () => {
     }
   }
 
-  const getClaimFeesTx = async (position: PoolPositionInfo) => {
-    if (position.positionUnclaimedFee <= 0) return;
+  const getClaimFeesTx = async (positions: PoolPositionInfo[]) => {
 
-    const txn = await cpAmm.claimPositionFee2({
-      receiver: publicKey!,
-      owner: publicKey!,
-      feePayer: publicKey!,
-      pool: position.poolAddress,
-      position: position.positionAddress,
-      positionNftAccount: position.positionNftAccount,
-      tokenAMint: position.poolState.tokenAMint,
-      tokenBMint: position.poolState.tokenBMint,
-      tokenAProgram: new PublicKey(position.tokenA.tokenProgram),
-      tokenBProgram: new PublicKey(position.tokenB.tokenProgram),
-      tokenAVault: position.poolState.tokenAVault,
-      tokenBVault: position.poolState.tokenBVault,
-    })
+    const txns = [];
+    positions = positions.filter(x => x.positionUnclaimedFee > 0);
 
-    return txn;
-  }
+    while (positions.length > 0) {
+      const innerPositions = positions.splice(0, 2)
+      const t = new Transaction();
 
+      let unwrapSol = false;
+
+      const atas: TransactionInstruction[] = [];
+      const claims: TransactionInstruction[] = [];
+
+      for (const pos of innerPositions) {
+
+        const tokenAProgram = new PublicKey(pos.tokenA.tokenProgram)
+        const tokenBProgram = new PublicKey(pos.tokenB.tokenProgram)
+        const txn = await cpAmm.claimPositionFee2({
+          receiver: publicKey!,
+          owner: publicKey!,
+          feePayer: publicKey!,
+          pool: pos.poolAddress,
+          position: pos.positionAddress,
+          positionNftAccount: pos.positionNftAccount,
+          tokenAMint: pos.poolState.tokenAMint,
+          tokenBMint: pos.poolState.tokenBMint,
+          tokenAProgram: tokenAProgram,
+          tokenBProgram: tokenBProgram,
+          tokenAVault: pos.poolState.tokenAVault,
+          tokenBVault: pos.poolState.tokenBVault,
+        })
+
+        if (pos.poolState.tokenAMint.equals(NATIVE_MINT) || pos.poolState.tokenBMint.equals(NATIVE_MINT)) {
+          unwrapSol = true;
+          txn.instructions.pop();
+        }
+
+        const claimIx = txn.instructions.pop();
+        claims.push(claimIx!);
+
+        if (txn.instructions.length > 0) atas.push(...txn.instructions);
+      }
+
+      t.instructions.push(...atas, ...claims);
+      console.log(atas);
+      if (unwrapSol) t.instructions.push(await unwrapSOLInstruction(publicKey!, publicKey!, true));
+
+      t.feePayer = publicKey!;
+      const sim = await connection.simulateTransaction(t);
+      if (!sim.value.err) {
+        const final = new Transaction();
+        console.log(sim.value.unitsConsumed!);
+        final.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100000 }));
+        final.add(ComputeBudgetProgram.setComputeUnitLimit({ units: sim.value.unitsConsumed! * 1.1 }));
+        final.add(t);
+        txns.push(final);
+      }
+    }
+    return txns;
+  };
 
   const handleClosePosition = async (position: PoolPositionInfo) => {
     if (cpAmm.isLockedPosition(position.positionState)) {
@@ -89,7 +142,7 @@ const DammPositions: React.FC = () => {
       return;
     }
 
-    const txn = await cpAmm.removeAllLiquidityAndClosePosition({
+    let txn = await cpAmm.removeAllLiquidityAndClosePosition({
       owner: publicKey!,
       position: position.positionAddress,
       positionNftAccount: position.positionNftAccount,
@@ -100,6 +153,17 @@ const DammPositions: React.FC = () => {
       vestings: [],
       currentPoint: new BN(0),
     });
+
+    txn.feePayer = publicKey!;
+    const sim = await connection.simulateTransaction(txn);
+    if (!sim.value.err) {
+      const final = new Transaction();
+      console.log(sim.value.unitsConsumed!);
+      final.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100000 }));
+      final.add(ComputeBudgetProgram.setComputeUnitLimit({ units: sim.value.unitsConsumed! * 1.1 }));
+      final.add(txn);
+      txn = final;
+    }
 
     try {
       await sendTxn(txn, undefined, {
@@ -115,25 +179,38 @@ const DammPositions: React.FC = () => {
     }
   };
 
-  const getClosePositionTx = async (position: PoolPositionInfo) => {
-    if (cpAmm.isLockedPosition(position.positionState)) {
-      toast.error("Cannot close a locked position");
-      return;
+  const getClosePositionTx = async (positions: PoolPositionInfo[]) => {
+    const txns = [];
+    positions = positions.filter(x => !cpAmm.isLockedPosition(x.positionState))
+
+    while (positions.length > 0) {
+      const innerPositions = positions.splice(0, 2)
+      const t = new Transaction();
+      for (const pos of innerPositions) {
+        const txn = await cpAmm.removeAllLiquidityAndClosePosition({
+          owner: publicKey!,
+          position: pos.positionAddress,
+          positionNftAccount: pos.positionNftAccount,
+          positionState: pos.positionState,
+          poolState: pos.poolState,
+          tokenAAmountThreshold: new BN(0),
+          tokenBAmountThreshold: new BN(0),
+          vestings: [],
+          currentPoint: new BN(0),
+        });
+        t.add(...txn.instructions);
+      }
+      t.feePayer = publicKey!;
+      const sim = await connection.simulateTransaction(t)
+      if (!sim.value.err) {
+        const final = new Transaction();
+        final.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100000 }));
+        final.add(ComputeBudgetProgram.setComputeUnitLimit({ units: sim.value.unitsConsumed! * 1.1 }));
+        final.add(t);
+        txns.push(final);
+      }
     }
-
-    const txn = await cpAmm.removeAllLiquidityAndClosePosition({
-      owner: publicKey!,
-      position: position.positionAddress,
-      positionNftAccount: position.positionNftAccount,
-      positionState: position.positionState,
-      poolState: position.poolState,
-      tokenAAmountThreshold: new BN(0),
-      tokenBAmountThreshold: new BN(0),
-      vestings: [],
-      currentPoint: new BN(0),
-    });
-
-    return txn;
+    return txns;
   };
 
   const handleClosePositionAndSwap = async (position: PoolPositionInfo) => {
@@ -143,6 +220,13 @@ const DammPositions: React.FC = () => {
     }
     removeLiquidityAndSwapToQuote(position);
   }
+
+  const getClosePositionAndSwapTx = async (positions: PoolPositionInfo[]) => {
+    positions = positions.filter(x => !cpAmm.isLockedPosition(x.positionState))
+    const txns = getZapOutTx(positions);
+
+    return txns;
+  };
 
   const poolContainsString = (pool: PoolPositionInfo, searchString: string): boolean => {
     const lowerSearch = searchString.toLowerCase();
@@ -159,7 +243,6 @@ const DammPositions: React.FC = () => {
     setSelectedPositions(new Set());
   }, [connection, publicKey])
 
-  // Close popup and sort menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
@@ -224,15 +307,15 @@ const DammPositions: React.FC = () => {
         onChange={(e) => setSearchString(e.target.value)}
         placeholder="Search by token mint, name or symbol..."
       />
-      <div className="flex flex-row items-start justify-between gap-2">
-        <div className="flex flex-col items-stretch justify-start gap-1">
+      <div className="flex flex-row items-start justify-between gap-1">
+        <div className="flex md:flex-col items-stretch justify-start md:gap-1 gap-0.5">
           <button
             onClick={() => {
               refreshPositions()
               setSelectedPositions(new Set())
             }}
             disabled={loading}
-            className="flex items-center gap-1 px-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded-lg font-medium transition-colors w-auto justify-center"
+            className="flex items-center gap-1 px-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded font-medium transition-colors w-auto justify-center"
           >
             {loading ? (
               <RefreshCw className="w-4 h-4 animate-spin" />
@@ -246,21 +329,21 @@ const DammPositions: React.FC = () => {
               setSelectedPositions(new Set([...positions]))
             }}
             disabled={loading}
-            className="flex items-center gap-1 px-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded-lg font-medium transition-colors w-auto justify-center"
+            className="flex items-center gap-1 px-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded font-medium transition-colors w-auto justify-center"
           >
             Select All
 
           </button>
         </div>
         {/* Sort Menu */}
-        <div className="relative">
+        <div className="relative md:text-md text-sm">
           <button
             onClick={() => setShowSortMenu(!showSortMenu)}
-            className="flex items-center gap-2 px-4 py-1 bg-gray-700 hover:bg-gray-600 rounded-lg text-white w-auto justify-center"
+            className="flex items-center gap-1 px-2 py-0.5 bg-gray-700 hover:bg-gray-600 rounded text-white w-auto justify-center"
           >
             <Menu className="w-4 h-4" />
             Sort
-            {showSortMenu ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            {showSortMenu ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
           </button>
           {showSortMenu && (
             <div className="absolute right-0 top-12 bg-gray-800 border border-gray-600 rounded-lg p-2 z-10 min-w-56 shadow-lg">
@@ -359,16 +442,12 @@ const DammPositions: React.FC = () => {
             </div>
             <div className="flex justify-between px-2 w-full sm:w-auto">
               <button
-                className="bg-blue-600 hover:bg-blue-500 px-4 py-1 rounded text-white flex-1 sm:flex-none"
+                className="bg-blue-600 hover:bg-blue-500 px-2 md:py-1 rounded text-white flex-1 sm:flex-none"
                 onClick={async () => {
                   const selectedPositionsTemp = [...selectedPositions];
 
-                  const txns: Transaction[] = [];
-                  for (const pos of selectedPositionsTemp) {
-                    const txn = await getClaimFeesTx(pos)
-                    if (txn)
-                      txns.push(txn);
-                  }
+                  const txns: Transaction[] = await getClaimFeesTx(selectedPositionsTemp)
+
                   setSelectedPositions(new Set());
 
                   if (txns.length > 0)
@@ -386,33 +465,51 @@ const DammPositions: React.FC = () => {
               >
                 Claim Fees ({selectedPositions.size})
               </button>
-              <button
-                className="bg-purple-600 hover:bg-purple-500 px-4 py-1 rounded text-white flex-1 sm:flex-none"
-                onClick={async () => {
-                  const selectedPositionsTemp = [...selectedPositions];
-                  const txns: Transaction[] = [];
-                  for (const pos of selectedPositionsTemp) {
-                    const txn = await getClosePositionTx(pos)
-                    if (txn)
-                      txns.push(txn);
-                  }
-                  setSelectedPositions(new Set());
+              <div className='flex md:flex-row flex-col gap-0.5'>
+                <button
+                  className="bg-purple-600 hover:bg-purple-500 px-2 md:py-1 rounded text-white flex-1 sm:flex-none"
+                  onClick={async () => {
+                    const selectedPositionsTemp = [...selectedPositions];
+                    const txns: Transaction[] = await getClosePositionAndSwapTx(selectedPositionsTemp)
+                    setSelectedPositions(new Set());
 
-                  if (txns.length > 0)
-                    await sendMultiTxn(txns.map(x => {
-                      return {
-                        tx: x,
-                      }
-                    }), {
-                      onSuccess: async () => {
-                        await refreshPositions();
-                      }
-                    })
-                }}
-              >
-                Close All ({selectedPositions.size})
-              </button>
+                    if (txns.length > 0)
+                      await sendMultiTxn(txns.map(x => {
+                        return {
+                          tx: x,
+                        }
+                      }), {
+                        onSuccess: async () => {
+                          await refreshPositions();
+                        }
+                      })
+                  }}
+                >
 
+                  {zapOutProgress.length > 0 && (zapOutProgress)} Close and Swap All ({selectedPositions.size})
+                </button>
+                <button
+                  className="bg-purple-600 hover:bg-purple-500 px-2 md:py-1 rounded text-white flex-1 sm:flex-none"
+                  onClick={async () => {
+                    const selectedPositionsTemp = [...selectedPositions];
+                    const txns: Transaction[] = await getClosePositionTx(selectedPositionsTemp)
+                    setSelectedPositions(new Set());
+
+                    if (txns.length > 0)
+                      await sendMultiTxn(txns.map(x => {
+                        return {
+                          tx: x,
+                        }
+                      }), {
+                        onSuccess: async () => {
+                          await refreshPositions();
+                        }
+                      })
+                  }}
+                >
+                  Close All ({selectedPositions.size})
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -546,34 +643,34 @@ const DammPositions: React.FC = () => {
                   </div>
 
                   {/* Claimable/Claimed Fees */}
-{/* Claimable/Claimed Fees */}
-<div className="col-span-2">
-  <div className="flex items-center gap-2">
-    {/* Token Images */}
-    {renderFeeTokenImages(position)}
+                  {/* Claimable/Claimed Fees */}
+                  <div className="col-span-2">
+                    <div className="flex items-center gap-2">
+                      {/* Token Images */}
+                      {renderFeeTokenImages(position)}
 
-    {/* Fees row */}
-    <div className="grid grid-cols-2 gap-2 text-sm min-w-[120px]">
-      {/* Unclaimed */}
-      {position.positionUnclaimedFee > 0 ? (
-        <span className="text-green-400 font-medium">
-          ${position.positionUnclaimedFee.toFixed(2)}
-        </span>
-      ) : (
-        <span className="text-gray-500">-</span>
-      )}
+                      {/* Fees row */}
+                      <div className="grid grid-cols-2 gap-2 text-sm min-w-[120px]">
+                        {/* Unclaimed */}
+                        {position.positionUnclaimedFee > 0 ? (
+                          <span className="text-green-400 font-medium">
+                            ${position.positionUnclaimedFee.toFixed(2)}
+                          </span>
+                        ) : (
+                          <span className="text-gray-500">-</span>
+                        )}
 
-      {/* Claimed */}
-      {position.positionClaimedFee > 0 ? (
-        <span className="text-green-700 font-medium">
-          ${position.positionClaimedFee.toFixed(2)}
-        </span>
-      ) : (
-        <span className="text-gray-500">-</span>
-      )}
-    </div>
-  </div>
-</div>
+                        {/* Claimed */}
+                        {position.positionClaimedFee > 0 ? (
+                          <span className="text-green-700 font-medium">
+                            ${position.positionClaimedFee.toFixed(2)}
+                          </span>
+                        ) : (
+                          <span className="text-gray-500">-</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
 
 
                   {/* Scheduler */}
