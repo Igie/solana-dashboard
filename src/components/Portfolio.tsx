@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 
-import { ComputeBudgetProgram, LAMPORTS_PER_SOL, PublicKey, Transaction, VersionedTransaction } from '@solana/web3.js'
+import { LAMPORTS_PER_SOL, VersionedTransaction } from '@solana/web3.js'
 
 import { Coins, RefreshCw, Wallet, ExternalLink, CheckCircle, XCircle } from 'lucide-react'
 import { type TokenAccount } from '../tokenUtils'
@@ -10,7 +10,7 @@ import { toast } from 'sonner'
 import { getQuote, getSwapTransactionVersioned } from '../JupSwapApi'
 import { useTransactionManager } from '../contexts/TransactionManagerContext'
 import { txToast } from './Simple/TxToast'
-import { createBurnCheckedInstruction, createCloseAccountInstruction, getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID } from '@solana/spl-token'
+import { TOKEN_PROGRAM_ID } from '@solana/spl-token'
 import Decimal from "decimal.js"
 import { useSettings } from '../contexts/SettingsContext'
 
@@ -108,98 +108,98 @@ const Portfolio: React.FC = () => {
     });
   }
 
-  const getMultiBurnAndCloseTokenAccountTx = async (tas: TokenAccount[]) => {
-    const txns = [];
-    let tx = new Transaction();
-    tx.feePayer = publicKey!
-    let count = 0;
+  // const getMultiBurnAndCloseTokenAccountTx = async (tas: TokenAccount[]) => {
+  //   const txns = [];
+  //   let tx = new Transaction();
+  //   tx.feePayer = publicKey!
+  //   let count = 0;
 
-    for (const ta of tas) {
-      try {
-        const mintPubKey = new PublicKey(ta.mint);
-        let tokenProgram = null;
-        try {
-        tokenProgram = new PublicKey(ta.tokenProgram);
-        } catch(e){
-          console.log(ta);
-          continue;
-        }
+  //   for (const ta of tas) {
+  //     try {
+  //       const mintPubKey = new PublicKey(ta.mint);
+  //       let tokenProgram = null;
+  //       try {
+  //       tokenProgram = new PublicKey(ta.tokenProgram);
+  //       } catch(e){
+  //         console.log(ta);
+  //         continue;
+  //       }
 
-        if (!tokenProgram) continue;
+  //       if (!tokenProgram) continue;
 
-        const ataPubKey = getAssociatedTokenAddressSync(mintPubKey, publicKey!, false, tokenProgram);
-        if (ta.amount.greaterThan(0)) {
-          const burnIx = createBurnCheckedInstruction(
-            ataPubKey,
-            mintPubKey,
-            publicKey!,
-            BigInt(ta.amount.mul(Decimal.pow(10, ta.decimals)).toString()),
-            ta.decimals,
-            [],
-            tokenProgram
-          );
-          tx.add(burnIx);
-          tx.signatures.length
-        }
+  //       const ataPubKey = getAssociatedTokenAddressSync(mintPubKey, publicKey!, false, tokenProgram);
+  //       if (ta.amount.greaterThan(0)) {
+  //         const burnIx = createBurnCheckedInstruction(
+  //           ataPubKey,
+  //           mintPubKey,
+  //           publicKey!,
+  //           BigInt(ta.amount.mul(Decimal.pow(10, ta.decimals)).toString()),
+  //           ta.decimals,
+  //           [],
+  //           tokenProgram
+  //         );
+  //         tx.add(burnIx);
+  //         tx.signatures.length
+  //       }
 
-        const closeAccountIx = createCloseAccountInstruction(
-          ataPubKey,
-          publicKey!,
-          publicKey!,
-          [],
-          tokenProgram
-        )
-        tx.add(closeAccountIx);
-        count++;
+  //       const closeAccountIx = createCloseAccountInstruction(
+  //         ataPubKey,
+  //         publicKey!,
+  //         publicKey!,
+  //         [],
+  //         tokenProgram
+  //       )
+  //       tx.add(closeAccountIx);
+  //       count++;
 
-        if (count > 10) {
-          count = 0;
+  //       if (count > 10) {
+  //         count = 0;
 
-          try {
-            const simulated = await connection.simulateTransaction(tx);
-            if (!simulated.value.err) {
-              console.log(simulated);
-              const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
-                units: simulated.value.unitsConsumed! * 1.2,
-              });
+  //         try {
+  //           const simulated = await connection.simulateTransaction(tx);
+  //           if (!simulated.value.err) {
+  //             console.log(simulated);
+  //             const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
+  //               units: simulated.value.unitsConsumed! * 1.2,
+  //             });
 
-              const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
-                microLamports: 1000000,
-              });
-              const txFinal = new Transaction();
-              txFinal.add(modifyComputeUnits, addPriorityFee, ...tx.instructions);
-              txns.push(txFinal);
-            }
-          } catch (e) {
-            console.log(ta);
-            console.log(e);
-          };
+  //             const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
+  //               microLamports: 1000000,
+  //             });
+  //             const txFinal = new Transaction();
+  //             txFinal.add(modifyComputeUnits, addPriorityFee, ...tx.instructions);
+  //             txns.push(txFinal);
+  //           }
+  //         } catch (e) {
+  //           console.log(ta);
+  //           console.log(e);
+  //         };
 
-          tx.instructions.splice(0);
+  //         tx.instructions.splice(0);
 
-        }
-      } catch (e) { console.log(e) };
-    }
+  //       }
+  //     } catch (e) { console.log(e) };
+  //   }
 
-    try {
-      const simulated = await connection.simulateTransaction(tx);
-      if (!simulated.value.err) {
-        console.log(simulated);
-        const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
-          units: simulated.value.unitsConsumed! * 1.2,
-        });
+  //   try {
+  //     const simulated = await connection.simulateTransaction(tx);
+  //     if (!simulated.value.err) {
+  //       console.log(simulated);
+  //       const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
+  //         units: simulated.value.unitsConsumed! * 1.2,
+  //       });
 
-        const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
-          microLamports: 1000000,
-        });
-        const txFinal = new Transaction();
-        txFinal.add(modifyComputeUnits, addPriorityFee, ...tx.instructions);
-        txns.push(txFinal);
-      }
-    } catch (e) { console.log(e) };
+  //       const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
+  //         microLamports: 1000000,
+  //       });
+  //       const txFinal = new Transaction();
+  //       txFinal.add(modifyComputeUnits, addPriorityFee, ...tx.instructions);
+  //       txns.push(txFinal);
+  //     }
+  //   } catch (e) { console.log(e) };
 
-    return txns;
-  }
+  //   return txns;
+  // }
 
   const handleCopyMint = async (mint: string) => {
     await navigator.clipboard.writeText(mint)

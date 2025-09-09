@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { RefreshCcw, RefreshCw } from 'lucide-react'
+import { ChevronDown, ChevronUp, Menu, RefreshCcw, RefreshCw } from 'lucide-react'
 import { feeNumeratorToBps, getBaseFeeNumerator, getFeeNumerator, getPriceFromSqrtPrice, getTokenProgram } from '@meteora-ag/cp-amm-sdk'
 import { PublicKey, type KeyedAccountInfo, } from '@solana/web3.js'
 import { BN } from '@coral-xyz/anchor'
@@ -11,6 +11,7 @@ import Dammv2PoolList from './Simple/Dammv2PoolList'
 import { useConnection } from '@jup-ag/wallet-adapter'
 import { useCpAmm } from '../contexts/CpAmmContext'
 import { useDammUserPositions } from '../contexts/DammUserPositionsContext'
+import { launchpads } from './launchpads/Launchpads'
 
 const MainPoolFilters = ["Include", "Exclude", "Only"];
 const bn0 = new BN(0);
@@ -38,6 +39,11 @@ const Dammv2Browser: React.FC = () => {
     const [currentSlot, setCurrentSlot] = useState(0);
     const [poolPublicKeyOrMint, setPoolPublicKeyOrMint] = useState('')
     const [poolCreatorAddress, setPoolCreatorAddress] = useState('')
+
+    const [showlaunchpadSelector, setShowLaunchpadSelector] = useState(false);
+    const [selectedLaunchpads, setSelectedLaunchpads] =
+        useState<Set<string>>(new Set())
+
 
     const fetchPool = async () => {
         const pubKeyOrMint = poolPublicKeyOrMint.trim();
@@ -159,7 +165,7 @@ const Dammv2Browser: React.FC = () => {
     }
 
     const mapPools = (p: PoolInfo[], tm: TokenMetadataMap) => {
-        const detailedPools: PoolDetailedInfo[] = []
+        let newDetailedPools: PoolDetailedInfo[] = []
         for (const x of p) {
 
             const withdrawPoolQuote = cpAmm.getWithdrawQuote({
@@ -223,7 +229,7 @@ const Dammv2Browser: React.FC = () => {
                 activationTime = currentTime - x.account.activationPoint.toNumber();
             }
 
-            detailedPools.push({
+            newDetailedPools.push({
                 poolInfo: x,
                 tokenA: poolTokenA,
                 tokenB: poolTokenB,
@@ -251,9 +257,19 @@ const Dammv2Browser: React.FC = () => {
                 totalFees: poolTokenA.totalFees.add(poolTokenB.totalFees),
             });
         };
-        sortPools(detailedPools, sortBy, sortAscending);
-        setDetailedPools(detailedPools);
+
+        sortPools(newDetailedPools, sortBy, sortAscending);
+        newDetailedPools = filterDetailedPools(newDetailedPools);
+        setDetailedPools(newDetailedPools);
     };
+
+    const filterDetailedPools = (pools: PoolDetailedInfo[]) => {
+        return pools.filter(x => {
+            if (!x.tokenA.launchpad) return true;
+            //if (!x.tokenB.launchpad) return true;
+            if (selectedLaunchpads.has(x.tokenA.launchpad)) return true;
+        })
+    }
 
     const addOrQueuePool = async (newPool: PoolInfo) => {
         const existing = pools.find(x => x.publicKey.toBase58() == newPool.publicKey.toBase58());
@@ -354,6 +370,9 @@ const Dammv2Browser: React.FC = () => {
 
                 x[entries[0]] = entries[1];
             }
+
+
+
             refreshPositions();
             setTokenMetadataMap(x);
             mapPools(finalPools, x);
@@ -396,11 +415,16 @@ const Dammv2Browser: React.FC = () => {
     }, [websocketPool]);
 
     useEffect(() => {
+        mapPools(pools, tokenMetadataMap);
+    }, [selectedLaunchpads]);
+
+    useEffect(() => {
         setCurrentTime(new BN((Date.now())).divn(1000).toNumber());
         const slot = connection.getSlot();
         slot.then((x) => {
-            setCurrentSlot(x)
+            setCurrentSlot(x);
         });
+        setSelectedLaunchpads(new Set(Object.entries(launchpads).map(x => x[0])));
     }, [])
 
     return (
@@ -478,7 +502,6 @@ const Dammv2Browser: React.FC = () => {
             <div className='grid md:grid-cols-2 lg:grid-cols-4 gap-1'>
 
                 <div className="relative w-full">
-
                     <div className="grid grid-cols-2" >
                         <button
                             type="button"
@@ -498,6 +521,64 @@ const Dammv2Browser: React.FC = () => {
                             className="bg-gray-800 border-t border-b border-r border-gray-700 rounded-r-md px-2 py-0.5 text-white md:text-sm"
                         >
                             Main Pools
+                        </div>
+                    </div>
+                </div>
+                <div className="relative w-full">
+
+                    <div className="grid grid-cols-2" >
+                        <div className='flex flex-col'>
+                            <button
+                                onClick={() => setShowLaunchpadSelector(!showlaunchpadSelector)}
+                                className="flex items-center justify-center px-2 py-0.5 bg-gray-700 border border-gray-600 rounded-md md:text-sm hover:bg-gray-600 text-white"
+                            >
+                                <Menu className="w-4 h-4" />
+                                Launchpads
+                                {showlaunchpadSelector ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                            </button>
+                            {showlaunchpadSelector &&
+                                <div className="overflow-y-auto max-h-[40vh] lg:max-h-[70vh] absolute top-6 bg-gray-800 border border-gray-600 rounded-lg p-2 z-10 shadow-lg">
+
+                                    {Object.entries(launchpads).map((x, i) => (
+                                        <div key={i} className='flex'>
+
+                                            <label
+                                                onClick={() => { }}
+                                                className={`flex w-full text-left px-2 py-1 gap-1 text-white hover:bg-gray-700 rounded text-sm`}
+                                            >
+                                                <input
+                                                    type='checkbox'
+                                                    checked={selectedLaunchpads.has(x[0])}
+                                                    onChange={(e) => {
+                                                        if (e.target.checked) {
+                                                            setSelectedLaunchpads(new Set(selectedLaunchpads.add(x[0])));
+                                                        }
+                                                        if (!e.target.checked) {
+                                                            const array = Array.from(selectedLaunchpads);
+                                                            const itemIndex = array.indexOf(x[0]);
+                                                            if (itemIndex >= 0) {
+                                                                array.splice(itemIndex, 1)
+                                                                setSelectedLaunchpads(new Set<string>(array));
+                                                            }
+                                                        }
+                                                    }}
+                                                >
+                                                </input>
+                                                <div className="max-w-4 max-h-4 object-scale-down">
+                                                    {
+                                                        (() => {
+                                                            const Launchpad = x[1].logo;
+
+                                                            return <Launchpad />;
+                                                        }
+                                                        )()
+                                                    }
+                                                </div>
+                                                <div className="">{x[0]}</div>
+                                            </label>
+                                        </div>
+                                    ))}
+                                </div>}
                         </div>
                     </div>
                 </div>
