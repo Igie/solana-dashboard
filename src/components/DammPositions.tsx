@@ -525,14 +525,14 @@ const DammPositions: React.FC = () => {
       ) : (
         <div className="flex flex-col bg-gray-900 border border-gray-700 rounded-xl overflow-hidden">
           {/* Desktop Table Header - Sticky */}
-          <div className="hidden md:block bg-gray-800 border-b border-gray-600 sticky top-0">
-            <div className="grid grid-cols-12 gap-2 px-4 py-3 text-xs font-medium text-gray-300 uppercase tracking-wider">
+          <div className="hidden md:block bg-gray-800 border-b border-gray-600 sticky top-0 pr-4">
+            <div className="grid grid-cols-11 gap-2 px-4 py-3 text-xs font-medium text-gray-300 uppercase tracking-wider">
               <div className="col-span-1"></div>
               <div className="col-span-2">Pair</div>
               <div className="col-span-2">Your Liquidity</div>
-              <div className="col-span-2">Fees</div>
               <div className="col-span-2">Claimable/Claimed</div>
               <div className="col-span-2">Scheduler</div>
+              <div className="col-span-2">Fees</div>
             </div>
           </div>
           {/* Scrollable Content */}
@@ -540,7 +540,7 @@ const DammPositions: React.FC = () => {
             {positions.filter((x) => poolContainsString(x, searchString)).map((position, index) => (
               <div key={index}>
                 {/* Desktop Table Row */}
-                <div className="hidden md:grid grid-cols-12 gap-1 px-4 py-1 border-b border-gray-700 hover:bg-gray-800/50 items-center">
+                <div className="hidden md:grid grid-cols-11 gap-2 px-4 py-1 border-b border-gray-700 hover:bg-gray-800/50 items-center">
                   {/* Checkbox */}
                   <div className="flex flex-cols gap-2 justify-center col-span-1">
                     <input
@@ -632,17 +632,6 @@ const DammPositions: React.FC = () => {
 
                   </div>
 
-                  {/* Current/Base Fees */}
-                  <div className="col-span-2">
-                    <div className="text-white text-sm">
-                      {(position.poolCurrentFeeBPS / 100).toFixed(2)}%
-                    </div>
-                    <div className="text-xs text-gray-400">
-                      Base: {(position.poolBaseFeeBPS / 100).toFixed(2)}%
-                    </div>
-                  </div>
-
-                  {/* Claimable/Claimed Fees */}
                   {/* Claimable/Claimed Fees */}
                   <div className="col-span-2">
                     <div className="flex items-center gap-2">
@@ -672,11 +661,20 @@ const DammPositions: React.FC = () => {
                     </div>
                   </div>
 
-
                   {/* Scheduler */}
                   <div className="col-span-2">
                     <div className="text-white text-sm">
                       {getSchedulerType(position.poolState.poolFees.baseFee.feeSchedulerMode)}
+                    </div>
+                  </div>
+
+                  {/* Current/Base Fees */}
+                  <div className="col-span-2">
+                    <div className="text-white text-sm">
+                      {(position.poolCurrentFeeBPS / 100).toFixed(2)}%
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      Base: {(position.poolBaseFeeBPS / 100).toFixed(2)}%
                     </div>
                   </div>
                 </div>
