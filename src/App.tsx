@@ -17,6 +17,8 @@ import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom'
 import { SettingsProvider } from './contexts/SettingsContext'
 import { DammV2PoolProvider } from './contexts/Dammv2PoolContext'
 
+import { Analytics } from '@vercel/analytics/react';
+
 interface GlobalProvidersProps {
   children: React.ReactNode
 }
@@ -72,6 +74,7 @@ const App: React.FC = () => {
               network={network}
               setNetwork={setNetwork}
             />
+            <Analytics />
           </GlobalProviders>
         </WalletModalProvider>
       </UnifiedWalletProvider>
