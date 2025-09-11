@@ -4,8 +4,8 @@ import { tabs } from './config/tabs'
 
 import { Navigation, MobileNavigation } from './components/layout/Navigation'
 import { ArrowLeftRight } from 'lucide-react'
-import { LAMPORTS_PER_SOL, type Cluster } from '@solana/web3.js'
-import { useTransactionManager } from './contexts/TransactionManagerContext'
+import { type Cluster } from '@solana/web3.js'
+import { useTokenAccounts } from './contexts/TokenAccountsContext'
 
 
 
@@ -26,7 +26,7 @@ const AppInner: React.FC<AppInnerProps> = ({
   const [components, setComponents] = useState<ComponentMap>({})
   const [activeTab, setActiveTab] = useState('dashboard')
 
-  const { solBalance, refreshBalance } = useTransactionManager()
+  const { solBalance } = useTokenAccounts()
   const ActiveComponent =
     components[activeTab] || (() => <div>Loading...</div>)
 
@@ -44,7 +44,7 @@ const AppInner: React.FC<AppInnerProps> = ({
         <div className="max-w-screen-xl mx-auto px-4 flex items-center justify-between h-16">
           <h1 className="text-xl font-bold">DAMMv2 Dashboard</h1>
           <h3 className="font-medium text-green-500">
-            SOL: {(solBalance / LAMPORTS_PER_SOL).toFixed(4)}
+            SOL: {(solBalance).toFixed(4)}
           </h3>
           <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
 
@@ -53,9 +53,6 @@ const AppInner: React.FC<AppInnerProps> = ({
               onClick={async () => {
                 window.Jupiter.init({
                   displayMode: 'modal',
-                  onSuccess: async () => {
-                    refreshBalance()
-                  },
                 })
               }}
               className="flex items-center px-2 py-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-md font-medium"

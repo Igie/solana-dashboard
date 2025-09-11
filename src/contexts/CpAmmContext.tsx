@@ -18,6 +18,9 @@ export const CpAmmProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const { connection } = useConnection();
     let cpAmm = new CpAmm(connection);
     let zap = new Zap(connection);
+
+    console.log("really?")
+
     useEffect(() => {
         cpAmm = new CpAmm(connection);
         zap = new Zap(connection);

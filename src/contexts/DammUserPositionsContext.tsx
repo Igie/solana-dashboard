@@ -100,7 +100,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
     const { jupZapOutSlippage, includeDammv2Route } = useSettings();
     const { publicKey } = useWallet();
     const { connection } = useConnection();
-    const { sendTxn, refreshBalance } = useTransactionManager();
+    const { sendTxn } = useTransactionManager();
     const { cpAmm, zap } = useCpAmm();
     const { refreshTokenAccounts } = useTokenAccounts();
     const [sortedBy, setSortBy] = useState<SortType>(SortType.PoolBaseFee);
@@ -321,7 +321,6 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
             setTotalLiquidityValue(0);
         }
         setLoading(false)
-        refreshBalance();
     }
 
     const updateLiquidity = (p: PoolPositionInfo[]) => {

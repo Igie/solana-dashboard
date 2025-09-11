@@ -28,7 +28,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
     }
 ) => {
     const { publicKey, connected } = useWallet();
-    const { sendTxn, refreshBalance } = useTransactionManager();
+    const { sendTxn } = useTransactionManager();
     const { tokenAccounts, refreshTokenAccounts } = useTokenAccounts();
     const { positions, refreshPositions } = useDammUserPositions();
 
@@ -163,7 +163,6 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                     },
                                     onSuccess: async () => {
                                         await refreshTokenAccounts();
-                                        await refreshBalance();
                                     }
                                 });
                             }}
@@ -592,7 +591,6 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                                     },
                                                     onSuccess: async () => {
                                                         await refreshTokenAccounts();
-                                                        await refreshBalance();
                                                     }
                                                 });
                                             }}

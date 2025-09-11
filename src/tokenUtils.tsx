@@ -1,6 +1,7 @@
 import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token"
-import { Connection, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js"
+import { Connection, PublicKey } from "@solana/web3.js"
 import Decimal from "decimal.js"
+import { sleep } from "./constants"
 
 
 export interface TokenMetadataMap {
@@ -91,11 +92,11 @@ export const fetchTokenMetadataJup = async (mintAddresses: string[]): Promise<{ 
         return metadataMap;
 
     try {
-        let i = 0;
-        while (i < mintAddresses.length) {
-            const end = Math.min(i + 100, mintAddresses.length);
-            const response = await fetch("https://lite-api.jup.ag/tokens/v2/search?query=" + mintAddresses.slice(i, end).join(','));
+        while (mintAddresses.length > 0) {
+            const innerMints = mintAddresses.splice(0, 100);
+            const response = await fetch("https://lite-api.jup.ag/tokens/v2/search?query=" + innerMints.join(','));
             const tokenMetadata: JupTokenMetadata[] = await response.json();
+            console.log("Jup returned " + tokenMetadata.length + " tokens of " + innerMints.length)
             for (const tm of tokenMetadata) {
                 metadataMap[tm.id] = {
                     mint: tm.id,
@@ -109,7 +110,7 @@ export const fetchTokenMetadataJup = async (mintAddresses: string[]): Promise<{ 
                     isVerified: tm.isVerified,
                 }
             }
-            i = end;
+            await sleep(1000)
         }
 
         return metadataMap;
@@ -119,7 +120,7 @@ export const fetchTokenMetadataJup = async (mintAddresses: string[]): Promise<{ 
     }
 }
 
-export const fetchTokenMetadataJ = async (mintAddresses: string[]): Promise<{ [key: string]: TokenMetadata }> => {
+export const fetchTokenMetadata = async (mintAddresses: string[]): Promise<{ [key: string]: TokenMetadata }> => {
     return await fetchTokenMetadataJup(mintAddresses);
 }
 
@@ -143,17 +144,17 @@ export const fetchTokenAccounts = async (c: Connection, publicKey: PublicKey): P
     const accounts: TokenAccount[] = []
     const mintAddresses: string[] = ["So11111111111111111111111111111111111111112"]
 
-    accounts.push({
-        mint: "So11111111111111111111111111111111111111112",
-        tokenProgram: "",
-        amount: new Decimal(await c.getBalance(publicKey)).div(LAMPORTS_PER_SOL),
-        decimals: 9,
-        symbol: 'Loading...',
-        name: 'Loading...',
-        price: new Decimal(0),
-        value: new Decimal(0),
-        isVerified: false,
-    })
+    // accounts.push({
+    //     mint: "So11111111111111111111111111111111111111112",
+    //     tokenProgram: "",
+    //     amount: new Decimal(await c.getBalance(publicKey)).div(LAMPORTS_PER_SOL),
+    //     decimals: 9,
+    //     symbol: 'Loading...',
+    //     name: 'Loading...',
+    //     price: new Decimal(0),
+    //     value: new Decimal(0),
+    //     isVerified: false,
+    // })
 
     for (const account of tokenAccounts) {
         const parsedInfo = account.account.data.parsed.info
@@ -179,14 +180,13 @@ export const fetchTokenAccounts = async (c: Connection, publicKey: PublicKey): P
 
     if (mintAddresses.length > 0) {
         const metadataMap = await fetchTokenMetadataJup(mintAddresses);
-        const priceMap = await fetchTokenPrices(mintAddresses, metadataMap);
 
         const metadataArray: TokenMetadata[] = [];
         const updatedAccounts = accounts.map(account => {
             if (metadataMap[account.mint]?.name.startsWith("kVault") ||
                 !metadataMap[account.mint]?.tokenProgram
             ) return;
-            const price = priceMap[account.mint]?.price || 0
+            const price: Decimal = metadataMap[account.mint].price;
             const value = account.amount.mul(price)
             metadataArray.push(metadataMap[account.mint]);
             return {
@@ -200,21 +200,9 @@ export const fetchTokenAccounts = async (c: Connection, publicKey: PublicKey): P
                 isVerified: metadataMap[account.mint]?.isVerified,
             }
         })
-        return [metadataArray, updatedAccounts.filter(x => x !== undefined)];
+        const finalAccounts = updatedAccounts.filter(x => x !== undefined)
+        return [metadataArray, finalAccounts];
     }
 
     return [[], []];
-}
-
-export const fetchTokenPrices = async (mintAddresses: string[], tokenMetadata: TokenMetadataMap): Promise<{ [key: string]: { price: Decimal; } }> => {
-
-    const allMints = ['So11111111111111111111111111111111111111112', ...mintAddresses]
-
-    const priceMap: { [key: string]: { price: Decimal } } = {}
-
-    for (const mint of allMints) {
-        priceMap[mint] = tokenMetadata[mint];
-    }
-    return priceMap;
-
 }

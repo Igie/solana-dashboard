@@ -19,7 +19,7 @@ const Portfolio: React.FC = () => {
   const { jupSlippage, includeDammv2Route } = useSettings();
   const { connection } = useConnection()
   const { publicKey, connected } = useWallet()
-  const { sendTxn, sendMultiTxn, refreshBalance } = useTransactionManager();
+  const { sendTxn, sendMultiTxn } = useTransactionManager();
 
   const [solBalance, setSolBalance] = useState<number | null>(null)
   const { tokenAccounts, refreshTokenAccounts } = useTokenAccounts()
@@ -63,7 +63,6 @@ const Portfolio: React.FC = () => {
 
     window.Jupiter.onSuccess = async () => {
       await fetchPortfolioData();
-      await refreshBalance();
     }
   }
 
