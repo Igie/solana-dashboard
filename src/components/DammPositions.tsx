@@ -395,6 +395,22 @@ const DammPositions: React.FC = () => {
                 Lowest to Highest ↑
               </button>
 
+              <div className="text-xs text-gray-400 px-3 py-1 font-medium mt-2">Claimed Fees</div>
+              <button
+                onClick={() => handleSort(SortType.PositionClaimedFee, false)}
+                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortedBy === SortType.PositionClaimedFee && sortedAscending === false ? 'bg-gray-700' : ''
+                  }`}
+              >
+                Highest to Lowest ↓
+              </button>
+              <button
+                onClick={() => handleSort(SortType.PositionClaimedFee, true)}
+                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortedBy === SortType.PositionClaimedFee && sortedAscending === true ? 'bg-gray-700' : ''
+                  }`}
+              >
+                Lowest to Highest ↑
+              </button>
+
               <div className="text-xs text-gray-400 px-3 py-1 font-medium mt-2">Current Fee</div>
               <button
                 onClick={() => handleSort(SortType.PoolCurrentFee, false)}

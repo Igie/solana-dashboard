@@ -59,6 +59,7 @@ export enum SortType {
     PoolShare,
     PositionValue,
     PositionUnclaimedFee,
+    PositionClaimedFee,
     PoolBaseFee,
     PoolCurrentFee,
 }
@@ -273,6 +274,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                 position.positionValue = (positionTokenAAmount * poolPrice +
                     positionTokenBAmount) * tokenBMetadata!.price.toNumber();
                 position.shareOfPoolPercentage = shareOfPool;
+
                 position.positionUnclaimedFee =
                     tokenAUnclaimedFees * tokenAMetadata!.price.toNumber() +
                     tokenBUnclaimedFees * tokenBMetadata!.price.toNumber();
@@ -280,6 +282,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                 position.positionClaimedFee =
                     tokenAClaimedFees * tokenAMetadata!.price.toNumber() +
                     tokenBClaimedFees * tokenBMetadata!.price.toNumber();
+
 
                 position.poolBaseFeeBPS = feeNumeratorToBps(getBaseFeeNumerator(
                     position.poolState.poolFees.baseFee.feeSchedulerMode,
@@ -354,6 +357,9 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                 case SortType.PositionUnclaimedFee:
                     r = (x.positionUnclaimedFee - y.positionUnclaimedFee);
                     break;
+                case SortType.PositionClaimedFee:
+                    r = (x.positionClaimedFee - y.positionClaimedFee);
+                    break;
                 case SortType.PoolBaseFee:
                     r = (x.poolBaseFeeBPS - y.poolBaseFeeBPS);
                     break;
@@ -374,6 +380,8 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
     const sortPositionsByInternal = (pools: PoolPositionInfo[], sortType: SortType, ascending?: boolean) => {
         setSortBy(sortType);
         setSortAscending(ascending);
+        if (sortType === SortType.PositionClaimedFee)
+            console.log(pools.map(x => x.positionClaimedFee))
         const p = pools.sort((x, y) => {
             let r = 0;
             if (ascending === null) {
@@ -391,6 +399,9 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                     break;
                 case SortType.PositionUnclaimedFee:
                     r = (x.positionUnclaimedFee - y.positionUnclaimedFee);
+                    break;
+                case SortType.PositionClaimedFee:
+                    r = (x.positionClaimedFee - y.positionClaimedFee);
                     break;
                 case SortType.PoolBaseFee:
                     r = (x.poolBaseFeeBPS - y.poolBaseFeeBPS);
