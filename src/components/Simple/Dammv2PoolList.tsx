@@ -49,8 +49,8 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
     };
 
     const handleDepositClick = async (e: React.MouseEvent) => {
-        await refreshTokenAccounts();
-        await refreshPositions();
+        refreshTokenAccounts();
+        refreshPositions();
         const rect = (e.target as HTMLElement).getBoundingClientRect();
 
         // Calculate smart position that stays within viewport

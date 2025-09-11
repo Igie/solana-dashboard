@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const vite_plugin_node_polyfills_1 = require("vite-plugin-node-polyfills");
 const vite_1 = require("vite");
 const plugin_react_1 = require("@vitejs/plugin-react");
 const vite_2 = require("@tailwindcss/vite");
@@ -10,7 +11,7 @@ exports.default = (0, vite_1.defineConfig)({
         host: '0.0.0.0',
     },
     plugins: [
-        nodePolyfills({}),
+        (0, vite_plugin_node_polyfills_1.nodePolyfills)({}),
         (0, plugin_react_1.default)(),
         (0, vite_2.default)()
     ],

@@ -110,7 +110,8 @@ export const fetchTokenMetadataJup = async (mintAddresses: string[]): Promise<{ 
                     isVerified: tm.isVerified,
                 }
             }
-            await sleep(1000)
+            if (mintAddresses.length > 0)
+                await sleep(1000)
         }
 
         return metadataMap;
