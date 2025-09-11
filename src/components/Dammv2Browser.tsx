@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { ChevronDown, ChevronUp, Menu, RefreshCcw } from 'lucide-react'
+import { ChevronDown, ChevronUp, Menu, RefreshCcw, RefreshCw } from 'lucide-react'
 
 
 import Dammv2PoolList from './Simple/Dammv2PoolList'
@@ -14,7 +14,7 @@ const Dammv2Browser: React.FC = () => {
     const { cpAmm } = useCpAmm();
 
     const {
-        update, setUpdate,
+        update, setUpdate, fetchAllPools, fetchingPools,
         filteredDetailedPools, tokenMetadataMap,
         creatorAddressFilter, setCreatorAddressFilter,
         mainPoolFilter, setMainPoolFilter,
@@ -33,8 +33,8 @@ const Dammv2Browser: React.FC = () => {
         <div className="flex flex-col h-[calc(100vh-140px)] lg:h-[calc(100vh-75px)] space-y-1 px-2 md:px-0">
             {/* Header */}
             <div className="flex md:grid justify-start items-stretch gap-1">
-                {/* <button
-                    onClick={fetchPools}
+                <button
+                    onClick={fetchAllPools}
                     disabled={fetchingPools}
                     className="flex items-center gap-1 px-2 w-full lg:max-w-40 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded-md md:text-sm transition-colors"
                 >
@@ -48,7 +48,7 @@ const Dammv2Browser: React.FC = () => {
                     ) : (
                         "Refresh"
                     )}
-                </button> */}
+                </button>
                 <label className='flex items-center gap-1 px-2 w-full lg:max-w-40 bg-purple-600 hover:bg-purple-700 rounded-md md:text-sm transition-colors'>
                     <input type='checkbox'
                         checked={update}
