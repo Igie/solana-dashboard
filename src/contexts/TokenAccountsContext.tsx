@@ -39,7 +39,6 @@ export const TokenAccountsProvider: React.FC<{ children: React.ReactNode }> = ({
         if (!connection || !publicKey) return;
         const accountChangeId = connection.onAccountChange(publicKey!, x => {
             setSolBalance(new Decimal(x.lamports).div(LAMPORTS_PER_SOL))
-            console.log(x);
         }, { commitment: "confirmed", encoding: "jsonParsed" })
         connection.getBalance(publicKey).then(x => setSolBalance(new Decimal(x).div(LAMPORTS_PER_SOL)));
 

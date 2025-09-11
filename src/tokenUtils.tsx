@@ -96,7 +96,7 @@ export const fetchTokenMetadataJup = async (mintAddresses: string[]): Promise<{ 
             const innerMints = mintAddresses.splice(0, 100);
             const response = await fetch("https://lite-api.jup.ag/tokens/v2/search?query=" + innerMints.join(','));
             const tokenMetadata: JupTokenMetadata[] = await response.json();
-            console.log("Jup returned " + tokenMetadata.length + " tokens of " + innerMints.length)
+            //console.log("Jup returned " + tokenMetadata.length + " tokens of " + innerMints.length)
             for (const tm of tokenMetadata) {
                 metadataMap[tm.id] = {
                     mint: tm.id,
