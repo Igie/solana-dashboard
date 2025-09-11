@@ -1,5 +1,5 @@
 import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token"
-import { Connection, PublicKey } from "@solana/web3.js"
+import { Connection, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js"
 import Decimal from "decimal.js"
 import { sleep } from "./constants"
 
@@ -144,17 +144,17 @@ export const fetchTokenAccounts = async (c: Connection, publicKey: PublicKey): P
     const accounts: TokenAccount[] = []
     const mintAddresses: string[] = ["So11111111111111111111111111111111111111112"]
 
-    // accounts.push({
-    //     mint: "So11111111111111111111111111111111111111112",
-    //     tokenProgram: "",
-    //     amount: new Decimal(await c.getBalance(publicKey)).div(LAMPORTS_PER_SOL),
-    //     decimals: 9,
-    //     symbol: 'Loading...',
-    //     name: 'Loading...',
-    //     price: new Decimal(0),
-    //     value: new Decimal(0),
-    //     isVerified: false,
-    // })
+    accounts.push({
+        mint: "So11111111111111111111111111111111111111112",
+        tokenProgram: "",
+        amount: new Decimal(await c.getBalance(publicKey)).div(LAMPORTS_PER_SOL),
+        decimals: 9,
+        symbol: 'Loading...',
+        name: 'Loading...',
+        price: new Decimal(0),
+        value: new Decimal(0),
+        isVerified: false,
+    })
 
     for (const account of tokenAccounts) {
         const parsedInfo = account.account.data.parsed.info

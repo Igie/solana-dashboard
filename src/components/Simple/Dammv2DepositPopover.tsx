@@ -53,8 +53,11 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
   const setTokensAB = async () => {
     if (!poolInfo) return;
     const ta = await refreshTokenAccounts();
-    setTokenA(ta.tokenAccounts.find(x => x.mint == poolInfo.poolInfo.account.tokenAMint.toBase58()))
-    setTokenB(ta.tokenAccounts.find(x => x.mint == poolInfo.poolInfo.account.tokenBMint.toBase58()))
+    const mintA = poolInfo.poolInfo.account.tokenAMint.toBase58();
+    const mintB = poolInfo.poolInfo.account.tokenBMint.toBase58();
+
+    setTokenA(ta.tokenAccounts.find(x => x.mint == mintA))
+    setTokenB(ta.tokenAccounts.find(x => x.mint == mintB))
   }
 
   const refreshPool = async () => {
@@ -215,6 +218,8 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
     )
   }
 
+  console.log(tokenA, tokenB)
+
   return (
     <div
       ref={ref}
@@ -244,6 +249,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
 
       </div>
       {(!tokenA || !tokenB) && (
+
         <div className="justify-self-center text-sm text-gray-700">Could not find one of tokens</div>
       )}
 
