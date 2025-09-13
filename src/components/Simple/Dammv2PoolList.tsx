@@ -1,22 +1,34 @@
-import { Copy, ExternalLink, PanelsTopLeft } from "lucide-react";
+import { Copy, ExternalLink, PanelsTopLeft, TargetIcon, X } from "lucide-react";
 import { SortArrow } from "./SortArrow";
-import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { DepositPopover } from "./Dammv2DepositPopover";
 import React, { useEffect, useState } from "react";
 import { useTokenAccounts } from "../../contexts/TokenAccountsContext";
 import type { CpAmm } from "@meteora-ag/cp-amm-sdk";
 import { useTransactionManager } from "../../contexts/TransactionManagerContext";
 import { GetTokenAccountMap, type TokenAccountMap, type TokenMetadataMap } from "../../tokenUtils";
-import { formatDuration, getShortMint, PoolSortType, sortPools, type PoolDetailedInfo } from "../../constants";
+import { formatDuration, getAllPoolPositions, getShortMint, PoolSortType, sortPools, type PoolDetailedInfo, type PoolPositionInfo, type PoolPositionInfoMap } from "../../constants";
 import { useWallet } from "@jup-ag/wallet-adapter";
-import { getPoolPositionMap, useDammUserPositions, type PoolPositionInfoMap } from "../../contexts/DammUserPositionsContext";
+import { getPoolPositionMap, useDammUserPositions } from "../../contexts/DammUserPositionsContext";
 import { DynamicTable, type Column } from "./DynamicTable";
 import { launchpads } from "./../launchpads/Launchpads";
+import { useGetSlot } from "../../contexts/GetSlotContext";
 interface Dammv2PoolListProps {
     cpAmm: CpAmm
     pools: PoolDetailedInfo[]
     tokenMetadataMap: TokenMetadataMap,
     sortParamsCallback?: (sortType: PoolSortType, ascending: boolean | undefined) => void,
+}
+
+enum TargetType {
+    None,
+    PoolInfo,
+    UserInfo
+}
+
+interface DisplayTarget {
+    target: string | PoolDetailedInfo,
+    type: TargetType
 }
 
 const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
@@ -27,6 +39,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
         sortParamsCallback,
     }
 ) => {
+    const { getSlot } = useGetSlot();
     const { publicKey, connected } = useWallet();
     const { sendTxn } = useTransactionManager();
     const { tokenAccounts, refreshTokenAccounts } = useTokenAccounts();
@@ -41,6 +54,10 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
     const [popoverVisible, setPopoverVisible] = useState(false);
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [depositPool, setDepositPool] = useState<PoolDetailedInfo | null>(null);
+
+    const [target, setTarget] = useState<DisplayTarget>({ target: "", type: TargetType.None });
+
+    const [poolPositions, setPoolPositions] = useState<{ owner: PublicKey, position: PoolPositionInfo }[]>([]);
 
     const handleSort = (sortType: PoolSortType, ascending?: boolean) => {
         setSortBy(sortType);
@@ -105,14 +122,34 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
         setPopoverVisible(true);
     };
 
+
+
     const poolColumns: Column<PoolDetailedInfo>[] = [
         {
             header: 'Links',
             render: (pool) => (
                 <div className="flex w-full justify-center gap-1">
                     <div className="grid gap-1">
+                        <button
+                            className="bg-blue-600 hover:bg-blue-500 text-white text-xs py-0.5 px-1 rounded flex items-center justify-start gap-1"
+                            onClick={async () => {
+                                const poolPositions = await getAllPoolPositions(cpAmm, pool, getSlot());
+                                setPoolPositions(poolPositions);
+
+
+                                setTarget({ target: pool, type: TargetType.PoolInfo });
+
+                            }}
+                        >
+                            <div className="flex gap-1 items-center justify-center">
+                                <TargetIcon size={12} />
+                            </div>
+                        </button>
+
+                    </div>
+                    <div className="grid gap-1">
                         <a
-                            className="bg-purple-800 hover:bg-purple-700 text-white text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
+                            className="bg-purple-800 hover:bg-purple-600 text-white text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
                             href={`https://edge.meteora.ag/dammv2/${pool.poolInfo.publicKey.toBase58()}`}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -121,7 +158,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                             <ExternalLink size={12} />
                         </a>
                         <a
-                            className="bg-purple-800 hover:bg-purple-700 text-white text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
+                            className="bg-purple-800 hover:bg-purple-600 text-white text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
                             href={`https://gmgn.ai/sol/token/NQhHUcmQ_${pool.tokenA.mint}`}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -132,7 +169,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                     </div>
                     <div className="grid gap-1">
                         <a
-                            className="bg-purple-800 hover:bg-purple-700 text-white text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
+                            className="bg-purple-800 hover:bg-purple-600 text-white text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
                             href={`https://www.dextools.io/app/en/solana/pair-explorer/${pool.poolInfo.publicKey.toBase58()}`}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -141,7 +178,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                             <ExternalLink size={12} />
                         </a>
                         <a
-                            className="bg-purple-800 hover:bg-purple-700 text-white text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
+                            className="bg-purple-800 hover:bg-purple-600 text-white text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
                             href={`https://axiom.trade/t/${pool.tokenA.mint}`}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -383,6 +420,68 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
         },
     ]
 
+    const positionColumns: Column<{ owner: PublicKey, position: PoolPositionInfo }>[] = [
+        {
+            header: 'NFT Account',
+            render: (x) => (
+                <div className="flex justify-center font-mono">
+                    <div className="flex gap-0.5 w-max">
+                        <a
+                            className="bg-blue-600 hover:bg-blue-500 text-white text-xs py-0.5 px-1 rounded flex items-center gap-1"
+                            href={`https://solscan.io/account/${x.position.positionNftAccount.toBase58()}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            {getShortMint(x.position.positionNftAccount)}
+                            <ExternalLink size={12} />
+                        </a>
+
+                    </div>
+                </div>
+            )
+        },
+        {
+            header: 'Share',
+            render: (x) => (
+                <div className="flex w-full justify-center gap-1">
+                    <div className="grid gap-1">
+                        {x.position.shareOfPoolPercentage + "%"}
+                    </div>
+                </div>
+            )
+        },
+        {
+            header: 'Value',
+            render: (x) => (
+                <div className="flex w-full justify-center gap-1">
+                    <div className="grid gap-1">
+                        {"$" + x.position.positionValue.toFixed(2)}
+                    </div>
+                </div>
+            )
+        },
+        {
+            header: 'Claimed fee',
+            render: (x) => (
+                <div className="flex w-full justify-center gap-1">
+                    <div className="grid gap-1">
+                        {"$" + x.position.positionClaimedFee.toFixed(2)}
+                    </div>
+                </div>
+            )
+        },
+        {
+            header: 'Unclaimed fee',
+            render: (x) => (
+                <div className="flex w-full justify-center gap-1">
+                    <div className="grid gap-1">
+                        {"$" + x.position.positionUnclaimedFee.toFixed(2)}
+                    </div>
+                </div>
+            )
+        }
+    ]
+
     useEffect(() => {
         refreshTokenAccounts();
         refreshPositions();
@@ -403,10 +502,67 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
 
     return (
         <div className="flex flex-col overflow-hidden">
-            {pools.length > 0 && (
-                <div className="flex-grow overflow-y-auto bg-gray-900 border border-gray-700 rounded-2xl p-3 md:p-3 space-y-2">
-                    <DynamicTable tableClassName="hidden lg:table sticky" data={pools} columns={poolColumns} />
+            {target.type !== TargetType.None && (
+                <div className="flex gap-1 py-1">
+                    <button
+                        className="bg-red-600 hover:bg-red-500 text-white text-xs py-0.5 px-1 rounded grid items-left justify-start gap-1"
+                        onClick={() => {
+                            setTarget({ target: "", type: TargetType.None });
 
+                        }}
+                    >
+                        <div className="flex gap-1 items-center justify-start">
+                            <X size={12} />
+                        </div>
+                    </button>
+                    {target.type == TargetType.PoolInfo && (
+                        <div className="flex gap-1">
+                            <div className="flex flex-grow items-center justify-center">
+                                {(target.target as PoolDetailedInfo).tokenA.symbol.slice(0, 10) + ((target.target as PoolDetailedInfo).tokenA.symbol.length > 10 ? "..." : "")}/
+                                {(target.target as PoolDetailedInfo).tokenB.symbol.slice(0, 10) + ((target.target as PoolDetailedInfo).tokenB.symbol.length > 10 ? "..." : "")}
+                            </div>
+                            <a
+                                className="bg-purple-800 hover:bg-purple-600 text-white text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
+                                href={`https://edge.meteora.ag/dammv2/${(target.target as PoolDetailedInfo).poolInfo.publicKey.toBase58()}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+
+                                Pool
+                                <ExternalLink size={12} />
+                            </a>
+
+                        </div>
+
+                    )}
+                    {target.type == TargetType.UserInfo && (
+                        <div>
+                            <a
+                                className="bg-purple-800 hover:bg-purple-600 text-white text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
+                                href={`https://edge.meteora.ag/dammv2/${(target.target as PoolDetailedInfo).poolInfo.publicKey.toBase58()}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                Pool
+                                <ExternalLink size={12} />
+                            </a>
+                        </div>
+                    )}
+                </div>
+            )}
+            {target.type === TargetType.PoolInfo && (
+                <div className="flex-grow overflow-y-auto bg-gray-900 border border-gray-700 rounded-2xl p-3 md:p-3 space-y-2">
+
+                    <DynamicTable tableClassName="hidden lg:table sticky" data={poolPositions} columns={positionColumns} />
+                </div>
+
+            )}
+
+            {pools.length > 0 && target.type === TargetType.None && (
+                <div className="flex-grow overflow-y-auto bg-gray-900 border border-gray-700 rounded-2xl p-3 md:p-3 space-y-2">
+                    {target.type === TargetType.None &&
+                        (<DynamicTable tableClassName="hidden lg:table sticky" data={pools} columns={poolColumns} />
+                        )}
                     {/* Mobile Sort Controls */}
                     <div className="lg:hidden mb-4">
                         <div className="flex flex-wrap gap-2 text-xs">

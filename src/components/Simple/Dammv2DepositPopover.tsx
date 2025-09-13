@@ -6,13 +6,14 @@ import { type TokenAccount } from '../../tokenUtils';
 import { DecimalInput } from './DecimalInput';
 import { BN } from '@coral-xyz/anchor';
 import { useTokenAccounts } from '../../contexts/TokenAccountsContext';
-import type { PoolDetailedInfo } from '../../constants';
-import { useDammUserPositions, type PoolPositionInfo } from '../../contexts/DammUserPositionsContext';
+import type { PoolDetailedInfo, PoolPositionInfo } from '../../constants';
+import { useDammUserPositions } from '../../contexts/DammUserPositionsContext';
 import { getQuote, getSwapTransactionVersioned } from '../../JupSwapApi';
-import { NATIVE_MINT } from '@solana/spl-token';
+import { getMint, NATIVE_MINT, TOKEN_2022_PROGRAM_ID, type Mint } from '@solana/spl-token';
 import { useTransactionManager } from '../../contexts/TransactionManagerContext';
 import { txToast } from './TxToast';
 import { useSettings } from '../../contexts/SettingsContext';
+import { useConnection } from '@jup-ag/wallet-adapter';
 
 
 interface DepositPopoverProps {
@@ -46,9 +47,13 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
   const [swapSolAmount, setSwapSolAmount] = useState(new Decimal(0.01));
 
   const { jupSlippage, includeDammv2Route, setIncludeDammv2Route } = useSettings();
+  const { connection } = useConnection();
   const { sendTxn } = useTransactionManager();
   const { refreshTokenAccounts } = useTokenAccounts();
   const { refreshPositions } = useDammUserPositions();
+
+  const tokenAInfo = useRef<{ mint: Mint, currentEpoch: number }>(undefined)
+  const tokenBInfo = useRef<{ mint: Mint, currentEpoch: number }>(undefined)
 
   const setTokensAB = async () => {
     if (!poolInfo) return;
@@ -56,8 +61,41 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
     const mintA = poolInfo.poolInfo.account.tokenAMint.toBase58();
     const mintB = poolInfo.poolInfo.account.tokenBMint.toBase58();
 
-    setTokenA(ta.tokenAccounts.find(x => x.mint == mintA))
-    setTokenB(ta.tokenAccounts.find(x => x.mint == mintB))
+    const tokenAATA = ta.tokenAccounts.find(x => x.mint == mintA);
+    const tokenBATA = ta.tokenAccounts.find(x => x.mint == mintB)
+
+    let currentEpoch = 0;
+
+    if (tokenAATA?.tokenProgram == TOKEN_2022_PROGRAM_ID.toBase58() ||
+      tokenAATA?.tokenProgram == TOKEN_2022_PROGRAM_ID.toBase58())
+      currentEpoch = (await connection.getEpochInfo()).epoch;
+
+    if (tokenAATA?.tokenProgram == TOKEN_2022_PROGRAM_ID.toBase58())
+      tokenAInfo.current = {
+        mint: await getMint(connection,
+          poolInfo.poolInfo.account.tokenAMint,
+          connection.commitment,
+          new PublicKey(tokenAATA?.tokenProgram)
+        ),
+        currentEpoch,
+      }
+    else
+      tokenAInfo.current = undefined;
+
+    if (tokenBATA?.tokenProgram == TOKEN_2022_PROGRAM_ID.toBase58())
+      tokenBInfo.current = {
+        mint: await getMint(connection,
+          poolInfo.poolInfo.account.tokenBMint,
+          connection.commitment,
+          new PublicKey(tokenBATA?.tokenProgram)
+        ),
+        currentEpoch,
+      }
+    else
+      tokenBInfo.current = undefined;
+
+    setTokenA(tokenAATA)
+    setTokenB(tokenBATA)
   }
 
   const refreshPool = async () => {
@@ -75,6 +113,8 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
       minSqrtPrice: poolInfo.poolInfo.account.sqrtMinPrice,
       maxSqrtPrice: poolInfo.poolInfo.account.sqrtMaxPrice,
       isTokenA: true,
+      inputTokenInfo: tokenAInfo.current,
+      outputTokenInfo: tokenBInfo.current,
       inAmount: new BN(input.mul(Decimal.pow(10, tokenA!.decimals)).toString()),
     })
 
@@ -93,6 +133,8 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
       minSqrtPrice: poolInfo.poolInfo.account.sqrtMinPrice,
       maxSqrtPrice: poolInfo.poolInfo.account.sqrtMaxPrice,
       isTokenA: false,
+      inputTokenInfo: tokenBInfo.current,
+      outputTokenInfo: tokenAInfo.current,
       inAmount: new BN(input.mul(Decimal.pow(10, tokenB!.decimals)).toString()),
     });
 
@@ -188,7 +230,6 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
         liquidityDelta: depositQuote.liquidityDelta,
         maxAmountTokenA: inputA,
         maxAmountTokenB: inputB,
-
         tokenAAmountThreshold: inputA.muln(1.50),
         tokenBAmountThreshold: inputB.muln(1.50),
         tokenAMint: poolInfo.poolInfo.account.tokenAMint,
@@ -217,8 +258,6 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
       </div>
     )
   }
-
-  console.log(tokenA, tokenB)
 
   return (
     <div

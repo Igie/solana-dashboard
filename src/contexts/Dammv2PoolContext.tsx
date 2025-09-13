@@ -7,6 +7,7 @@ import { fetchTokenMetadata, type TokenMetadataMap } from '../tokenUtils';
 import { launchpads } from '../components/launchpads/Launchpads';
 import { feeNumeratorToBps, getFeeNumerator } from '@meteora-ag/cp-amm-sdk';
 import { BN } from '@coral-xyz/anchor';
+import { useGetSlot } from './GetSlotContext';
 
 interface PoolSorting {
     type: PoolSortType,
@@ -68,8 +69,8 @@ export const useDammV2PoolsWebsocket = () => useContext(DammV2PoolContext)
 export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { connection } = useConnection();
     const { cpAmm } = useCpAmm();
+    const {getSlot} = useGetSlot();
 
-    const currentSlot = useRef<number>(0)
     const updateTimeout = useRef<NodeJS.Timeout | undefined>(undefined);
 
     const [fetchingPools, setFetchingPools] = useState(false);
@@ -156,7 +157,7 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     const updateCallback = async (fetchMetadata: boolean) => {
         const startTime = Date.now() / 1000;
-        const slotNow = currentSlot.current;
+        const slotNow = getSlot();
         const maxSlotBnNow = new BN(slotNow).addn(10);
         const maxTimeBnNow = new BN(startTime).addn(5);
 
@@ -194,10 +195,10 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
         currentSimplePools = currentSimplePools.sort((x, y) =>
             (x.account.activationType === 0 ?
-                (currentSlot.current - x.account.activationPoint.toNumber()) * 400 / 1000 :
+                (slotNow - x.account.activationPoint.toNumber()) * 400 / 1000 :
                 startTime - x.account.activationPoint.toNumber()) -
             (y.account.activationType === 0 ?
-                (currentSlot.current - y.account.activationPoint.toNumber()) * 400 / 1000 :
+                (slotNow - y.account.activationPoint.toNumber()) * 400 / 1000 :
                 startTime - y.account.activationPoint.toNumber())
         )
 
@@ -217,7 +218,7 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         if (fetchMetadata)
             tokenMetadataMap.current = await fetchTokenMetadata(mints);
         try {
-            detailedPools.current = getDetailedPools(cpAmm, filteredSimplePools.current, tokenMetadataMap.current, currentSlot.current, startTime);
+            detailedPools.current = getDetailedPools(cpAmm, filteredSimplePools.current, tokenMetadataMap.current, slotNow, startTime);
         } catch (e) {
             console.error(e)
             console.log("fetched metadata? " + fetchMetadata);
@@ -239,7 +240,7 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         if (fetchingPools) return;
 
         const startTime = Date.now() / 1000;
-        const slotNow = currentSlot.current;
+        const slotNow = getSlot();
         const maxSlotBnNow = new BN(slotNow).addn(10);
         const maxTimeBnNow = new BN(startTime).addn(5);
 
@@ -339,10 +340,10 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
             pools = pools.sort((x, y) =>
                 (x.account.activationType === 0 ?
-                    (currentSlot.current - x.account.activationPoint.toNumber()) * 400 / 1000 :
+                    (slotNow - x.account.activationPoint.toNumber()) * 400 / 1000 :
                     startTime - x.account.activationPoint.toNumber()) -
                 (y.account.activationType === 0 ?
-                    (currentSlot.current - y.account.activationPoint.toNumber()) * 400 / 1000 :
+                    (slotNow - y.account.activationPoint.toNumber()) * 400 / 1000 :
                     startTime - y.account.activationPoint.toNumber())
             )
 
@@ -360,7 +361,7 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         if (!connection || fetchingPools) return
         setFetchingPools(true);
         const startTime = Date.now() / 1000;
-        const slotNow = currentSlot.current;
+        const slotNow = getSlot();
         const maxSlotBnNow = new BN(slotNow).addn(10);
         const maxTimeBnNow = new BN(startTime).addn(5);
         try {
@@ -401,10 +402,10 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
             pools = pools.sort((x, y) =>
                 (x.account.activationType === 0 ?
-                    (currentSlot.current - x.account.activationPoint.toNumber()) * 400 / 1000 :
+                    (slotNow - x.account.activationPoint.toNumber()) * 400 / 1000 :
                     startTime - x.account.activationPoint.toNumber()) -
                 (y.account.activationType === 0 ?
-                    (currentSlot.current - y.account.activationPoint.toNumber()) * 400 / 1000 :
+                    (slotNow - y.account.activationPoint.toNumber()) * 400 / 1000 :
                     startTime - y.account.activationPoint.toNumber())
             )
 
@@ -543,7 +544,7 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             if (updateRef.current === true) {
                 const accountInfo = { publicKey: e.accountId, account: decoded };
                 const currentFee = feeNumeratorToBps(getFeeNumerator(
-                    decoded.activationType === 0 ? currentSlot.current :
+                    decoded.activationType === 0 ? getSlot() :
                         decoded.activationType === 1 ? Date.now() / 1000 : 0,
                     decoded.activationPoint,
                     decoded.poolFees.baseFee.numberOfPeriod,
@@ -564,17 +565,12 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             commitment: 'processed',
         });
 
-        const slotChangeId = connection.onSlotChange((x) => {
-            currentSlot.current = x.slot;
-        })
-
         console.log("Dammv2Pool websocket mounted.")
 
         setUpdate(false);
 
         return () => {
             connection.removeProgramAccountChangeListener(programAccountChangeId);
-            connection.removeSlotChangeListener(slotChangeId);
         }
     }, [connection]);
     return (

@@ -1,9 +1,8 @@
-import { CpAmm, feeNumeratorToBps, getBaseFeeNumerator, getFeeNumerator, getPriceFromSqrtPrice, getTokenProgram, type PoolState } from "@meteora-ag/cp-amm-sdk";
+import { CpAmm, feeNumeratorToBps, getBaseFeeNumerator, getFeeNumerator, getPriceFromSqrtPrice, getUnClaimReward, type PoolState, type PositionState } from "@meteora-ag/cp-amm-sdk";
 import { PublicKey } from "@solana/web3.js";
 
 import Decimal from 'decimal.js'
-import type { PoolPositionInfo } from "./contexts/DammUserPositionsContext";
-import type { TokenMetadataMap } from "./tokenUtils";
+import type { TokenMetadata, TokenMetadataMap } from "./tokenUtils";
 import { BN } from "@coral-xyz/anchor";
 
 export const MAINNET_HELIUS_RPC: string = `https://mainnet.helius-rpc.com/?api-key=${import.meta.env.VITE_HELIUS_API_KEY}`;
@@ -13,22 +12,43 @@ export const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
 };
 
+export interface PoolPositionTokenInfo extends TokenMetadata {
+    poolAmount: number
+    positionAmount: number
+    unclaimedFee: number
+    claimedFee: number
+}
+
+export interface PoolPositionInfo {
+    poolAddress: PublicKey
+    positionAddress: PublicKey
+    positionNftAccount: PublicKey
+    poolState: PoolState
+    positionState: PositionState
+    tokenA: PoolPositionTokenInfo
+    tokenB: PoolPositionTokenInfo
+    shareOfPoolPercentage: number
+    poolValue: number // USD value
+    positionValue: number
+    positionUnclaimedFee: number
+    positionClaimedFee: number
+    poolBaseFeeBPS: number
+    poolCurrentFeeBPS: number
+}
+
+
+export interface PoolPositionInfoMap {
+    [key: string]: PoolPositionInfo
+}
+
 export interface PoolInfo {
     publicKey: PublicKey;
     account: PoolState;
 }
 
-export interface PoolTokenInfo {
-    mint: string
-    tokenProgram: string
-    symbol: string
-    name: string
+export interface PoolTokenInfo extends TokenMetadata  {
     poolAmount: number
-    decimals: number
-    price: number
-    image?: string,
     totalFees: Decimal,
-    launchpad?: string,
 }
 
 export interface PoolDetailedInfo {
@@ -43,6 +63,7 @@ export interface PoolDetailedInfo {
     lockedTVL: number
     totalFees: Decimal
 }
+
 
 export interface PoolDetailedInfoMap {
     [key: string]: PoolDetailedInfo
@@ -106,31 +127,16 @@ export const getDetailedPools = (cpAmm: CpAmm, p: PoolInfo[], tm: TokenMetadataM
         const poolPrice = new Decimal(getPriceFromSqrtPrice(x.account.sqrtPrice, tokenAMetadata?.decimals || 6, tokenBMetadata?.decimals || 6));
 
         const poolTokenA = {
-            mint: x.account.tokenAMint.toBase58(),
-            tokenProgram: tokenAMetadata.tokenProgram,
-            symbol: tokenAMetadata?.symbol || 'UNK',
-            name: tokenAMetadata?.name || 'Unknown',
+            ...tokenAMetadata,
             poolAmount: poolTokenAAmount,
-            decimals: tokenAMetadata?.decimals,
-            price: tokenAMetadata?.price.toNumber(),
-            image: tokenAMetadata?.image || undefined,
             totalFees: new Decimal(x.account.metrics.totalLpAFee.add(x.account.metrics.totalProtocolAFee).toString()).div(Decimal.pow(10, tokenAMetadata?.decimals || 6)).mul(tokenAMetadata?.price),
-            launchpad: tokenAMetadata.launchpad,
-            isVerified: tokenAMetadata.isVerified,
         }
 
         const poolTokenB = {
-            mint: x.account.tokenBMint.toBase58(),
-            tokenProgram: getTokenProgram(x.account.tokenBFlag).toBase58(),
-            symbol: tokenBMetadata?.symbol || 'UNK',
-            name: tokenBMetadata?.name || 'Unknown',
+            ...tokenBMetadata,
             poolAmount: poolTokenBAmount,
-            decimals: tokenBMetadata?.decimals,
-            price: tokenBMetadata?.price.toNumber(),
-            image: tokenBMetadata?.image || undefined,
             totalFees: new Decimal(x.account.metrics.totalLpBFee.add(x.account.metrics.totalProtocolBFee).toString()).div(Decimal.pow(10, tokenBMetadata?.decimals)).mul(tokenBMetadata?.price),
-            launchpad: tokenBMetadata.launchpad,
-            isVerified: tokenBMetadata.isVerified,
+
         }
 
         const poolTokenAAmountLocked = new Decimal(lockedWithdrawPoolQuote.outAmountA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
@@ -215,6 +221,166 @@ export const sortPools = (pools: PoolDetailedInfo[], sortType: PoolSortType, asc
     pools = p;
 }
 
+export const getAllPoolPositions = async (cpAmm: CpAmm, pool: PoolDetailedInfo, currentSlot: number):
+    Promise<{ owner: PublicKey, position: PoolPositionInfo }[]> => {
+    if (!pool) return [];
+    try {
+        const currentTime = Date.now() / 1000;
+        const positionsTemp: PoolPositionInfo[] = [];
+
+        const allPoolPositions = await cpAmm.getAllPositionsByPool(pool.poolInfo.publicKey)
+
+        if (allPoolPositions.length == 0) return [];
+        for (const userPosition of allPoolPositions) {
+
+
+            positionsTemp.push({
+                poolAddress: pool.poolInfo.publicKey,
+                positionAddress: userPosition.publicKey,
+                positionNftAccount: userPosition.account.nftMint,
+                poolState: pool.poolInfo.account,
+                positionState: userPosition.account,
+                tokenA:
+                {
+                    ...pool.tokenA,
+                    poolAmount: 0,
+                    positionAmount: 0,
+                    decimals: 1,
+                    unclaimedFee: 0,
+                    claimedFee: 0,
+                },
+                tokenB: {
+                    ...pool.tokenB,
+                    poolAmount: 0,
+                    positionAmount: 0,
+                    decimals: 1,
+                    unclaimedFee: 0,
+                    claimedFee: 0,
+                },
+                shareOfPoolPercentage: 0.5,
+                poolValue: 0,
+                positionValue: 0,
+                positionUnclaimedFee: 0,
+                positionClaimedFee: 0,
+                poolBaseFeeBPS: 0,
+                poolCurrentFeeBPS: 0,
+            })
+
+        };
+
+        if (positionsTemp.length === 0) {
+            return [];
+        }
+
+        const positionsParsed: PoolPositionInfo[] = [];
+        for (const position of positionsTemp) {
+
+            const tokenAMetadata = pool.tokenA;
+            const tokenBMetadata = pool.tokenB;
+
+            const positionLP = position.positionState.permanentLockedLiquidity.add(
+                position.positionState.unlockedLiquidity).add(
+                    position.positionState.vestedLiquidity)
+
+            const poolLP = position.poolState.liquidity;
+
+            const withdrawPoolQuote = cpAmm!.getWithdrawQuote({
+                liquidityDelta: poolLP,
+                sqrtPrice: position.poolState.sqrtPrice,
+                minSqrtPrice: position.poolState.sqrtMinPrice,
+                maxSqrtPrice: position.poolState.sqrtMaxPrice,
+            });
+
+            const poolTokenAAmount = new Decimal(withdrawPoolQuote.outAmountA.toString()).div(Decimal.pow(10, tokenAMetadata.decimals)).toNumber();
+            const poolTokenBAmount = new Decimal(withdrawPoolQuote.outAmountB.toString()).div(Decimal.pow(10, tokenBMetadata.decimals)).toNumber();
+
+            const withdrawPositionQuote = cpAmm!.getWithdrawQuote({
+                liquidityDelta: positionLP,
+                sqrtPrice: position.poolState.sqrtPrice,
+                minSqrtPrice: position.poolState.sqrtMinPrice,
+                maxSqrtPrice: position.poolState.sqrtMaxPrice,
+            });
+
+            const positionTokenAAmount = new Decimal(withdrawPositionQuote.outAmountA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
+            const positionTokenBAmount = new Decimal(withdrawPositionQuote.outAmountB.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
+
+            const unclaimedRewards = getUnClaimReward(position.poolState, position.positionState);
+
+            const tokenAUnclaimedFees = new Decimal(unclaimedRewards.feeTokenA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
+            const tokenBUnclaimedFees = new Decimal(unclaimedRewards.feeTokenB.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
+            const tokenAClaimedFees = new Decimal(position.positionState.metrics.totalClaimedAFee.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
+            const tokenBClaimedFees = new Decimal(position.positionState.metrics.totalClaimedBFee.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
+
+            const poolPrice = getPriceFromSqrtPrice(position.poolState.sqrtPrice, tokenAMetadata!.decimals, tokenBMetadata!.decimals).toNumber();
+
+            const shareOfPool = positionLP.muln(10000).div(poolLP).toNumber() / 100;
+
+            position.tokenA.tokenProgram = tokenAMetadata?.tokenProgram;
+            position.tokenA.name = tokenAMetadata?.name || 'Unknown Token';
+            position.tokenA.symbol = tokenAMetadata?.symbol || 'UNK';
+            position.tokenA.image = tokenAMetadata?.image;
+            position.tokenA.decimals = tokenAMetadata?.decimals;
+            position.tokenA.poolAmount = poolTokenAAmount;
+            position.tokenA.positionAmount = positionTokenAAmount;
+            position.tokenA.unclaimedFee = tokenAUnclaimedFees;
+            position.tokenA.claimedFee = tokenAClaimedFees;
+
+            position.tokenB.tokenProgram = tokenBMetadata?.tokenProgram;
+            position.tokenB.name = tokenBMetadata?.name || 'Unknown Token';
+            position.tokenB.symbol = tokenBMetadata?.symbol || 'UNK';
+            position.tokenB.image = tokenBMetadata?.image;
+            position.tokenB.decimals = tokenBMetadata?.decimals;
+            position.tokenB.poolAmount = poolTokenBAmount;
+            position.tokenB.positionAmount = positionTokenBAmount;
+            position.tokenB.unclaimedFee = tokenBUnclaimedFees;
+            position.tokenB.claimedFee = tokenBClaimedFees;
+
+            position.poolValue = (poolTokenAAmount * poolPrice +
+                poolTokenBAmount) * tokenBMetadata!.price.toNumber();
+
+            position.positionValue = (positionTokenAAmount * poolPrice +
+                positionTokenBAmount) * tokenBMetadata!.price.toNumber();
+            position.shareOfPoolPercentage = shareOfPool;
+
+            position.positionUnclaimedFee =
+                tokenAUnclaimedFees * tokenAMetadata!.price.toNumber() +
+                tokenBUnclaimedFees * tokenBMetadata!.price.toNumber();
+
+            position.positionClaimedFee =
+                tokenAClaimedFees * tokenAMetadata!.price.toNumber() +
+                tokenBClaimedFees * tokenBMetadata!.price.toNumber();
+
+
+            position.poolBaseFeeBPS = feeNumeratorToBps(getBaseFeeNumerator(
+                position.poolState.poolFees.baseFee.feeSchedulerMode,
+                position.poolState.poolFees.baseFee.cliffFeeNumerator,
+                new BN(position.poolState.poolFees.baseFee.numberOfPeriod),
+                position.poolState.poolFees.baseFee.reductionFactor));
+
+            position.poolCurrentFeeBPS = feeNumeratorToBps(getFeeNumerator(
+                position.poolState.activationType === 0 ? currentSlot :
+                    position.poolState.activationType === 1 ? currentTime : 0,
+                position.poolState.activationPoint,
+                position.poolState.poolFees.baseFee.numberOfPeriod,
+                position.poolState.poolFees.baseFee.periodFrequency,
+                position.poolState.poolFees.baseFee.feeSchedulerMode,
+                position.poolState.poolFees.baseFee.cliffFeeNumerator,
+                position.poolState.poolFees.baseFee.reductionFactor,
+                position.poolState.poolFees.dynamicFee
+            ));
+            positionsParsed.push(position)
+        };
+
+        return positionsParsed.map(x => { return { owner: new PublicKey(0), position: x } });
+
+
+    } catch (e) {
+        console.log(e);
+        return [];
+    }
+
+}
+
 export const getShortMint = (mint: PublicKey) => {
     const m = mint.toBase58();
     return m.slice(0, 4) + ".." + m.slice(m.length - 4, m.length);
@@ -268,7 +434,7 @@ export function formatDurationNumber(seconds: number | null): string {
 }
 
 export const sleep = async (delay: number) => {
-    return new Promise( res => setTimeout(res, delay) );
+    return new Promise(res => setTimeout(res, delay));
 }
 
 export const getSchedulerType = (mode: number) => {

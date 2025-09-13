@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { RefreshCw, Wallet, ExternalLink, Droplets, TrendingUp, ChevronDown, ChevronUp, Menu } from 'lucide-react'
-import { SortType, useDammUserPositions, type PoolPositionInfo } from '../contexts/DammUserPositionsContext'
+import { SortType, useDammUserPositions } from '../contexts/DammUserPositionsContext'
 import { useTransactionManager } from '../contexts/TransactionManagerContext'
 import { toast } from 'sonner'
 import { BN } from '@coral-xyz/anchor'
 import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-adapter'
 import { ComputeBudgetProgram, PublicKey, Transaction, TransactionInstruction } from '@solana/web3.js'
-import { copyToClipboard, getSchedulerType, renderFeeTokenImages } from '../constants'
+import { copyToClipboard, getSchedulerType, renderFeeTokenImages, type PoolPositionInfo } from '../constants'
 import { FeeSchedulerGraph } from './Simple/FeeSchedulerGraph'
 import { useCpAmm } from '../contexts/CpAmmContext'
-import { NATIVE_MINT } from '@solana/spl-token'
+import { getMint, NATIVE_MINT, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token'
 import { unwrapSOLInstruction } from '@meteora-ag/cp-amm-sdk'
 
 const DammPositions: React.FC = () => {
@@ -26,6 +26,7 @@ const DammPositions: React.FC = () => {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const [showSortMenu, setShowSortMenu] = useState(false);
 
+  const [closePositionRange, setClosePositionRange] = useState(100);
   const popupRef = useRef<HTMLDivElement | null>(null)
 
   const toggleRowExpand = (index: number) => {
@@ -159,7 +160,7 @@ const DammPositions: React.FC = () => {
     if (!sim.value.err) {
       const final = new Transaction();
       console.log(sim.value.unitsConsumed!);
-      final.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100000 }));
+      final.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 10000 }));
       final.add(ComputeBudgetProgram.setComputeUnitLimit({ units: sim.value.unitsConsumed! * 1.1 }));
       final.add(txn);
       txn = final;
@@ -179,7 +180,11 @@ const DammPositions: React.FC = () => {
     }
   };
 
-  const getClosePositionTx = async (positions: PoolPositionInfo[]) => {
+  const getClosePositionTx = async (positions: PoolPositionInfo[], amount: number) => {
+
+    if (amount < 100)
+      return await getRemoveLiquidityTx(positions, amount);
+
     const txns = [];
     positions = positions.filter(x => !cpAmm.isLockedPosition(x.positionState))
 
@@ -208,6 +213,87 @@ const DammPositions: React.FC = () => {
         final.add(ComputeBudgetProgram.setComputeUnitLimit({ units: sim.value.unitsConsumed! * 1.1 }));
         final.add(t);
         txns.push(final);
+      }
+    }
+    return txns;
+  };
+
+  const getRemoveLiquidityTx = async (positions: PoolPositionInfo[], amount: number) => {
+    const txns = [];
+    positions = positions.filter(x => !cpAmm.isLockedPosition(x.positionState))
+
+    let epoch = 0;
+
+    const poolStates = [...positions.map(x => x.tokenA.tokenProgram), positions.map(x => x.tokenB.tokenProgram)]
+    if (poolStates.indexOf(TOKEN_2022_PROGRAM_ID.toBase58()))
+      epoch = (await connection.getEpochInfo("confirmed")).epoch;
+
+    while (positions.length > 0) {
+      const innerPositions = positions.splice(0, 2)
+      const t = new Transaction();
+      for (const pos of innerPositions) {
+
+        const tokenAProgram = new PublicKey(pos.tokenA.tokenProgram);
+        const tokenBProgram = new PublicKey(pos.tokenB.tokenProgram);
+        const tokenInfoA = pos.tokenA.tokenProgram == TOKEN_2022_PROGRAM_ID.toBase58() ?
+          {
+            mint: await getMint(connection,
+              new PublicKey(pos.tokenA.mint),
+              connection.commitment,
+              tokenAProgram,
+            ),
+            currentEpoch: epoch
+          } : undefined
+
+        const tokenInfoB = pos.tokenB.tokenProgram == TOKEN_2022_PROGRAM_ID.toBase58() ?
+          {
+            mint: await getMint(connection,
+              new PublicKey(pos.tokenB.mint),
+              connection.commitment,
+              tokenBProgram,
+            ),
+            currentEpoch: epoch
+          } : undefined
+
+        const withdrawQuote = cpAmm.getWithdrawQuote({
+          liquidityDelta: pos.positionState.unlockedLiquidity.muln(amount).divn(100),
+          sqrtPrice: pos.poolState.sqrtPrice,
+          maxSqrtPrice: pos.poolState.sqrtMaxPrice,
+          minSqrtPrice: pos.poolState.sqrtMinPrice,
+
+          tokenATokenInfo: tokenInfoA,
+          tokenBTokenInfo: tokenInfoB,
+        })
+
+        const txn = await cpAmm.removeLiquidity({
+          owner: publicKey!,
+          pool: pos.poolAddress,
+          position: pos.positionAddress,
+          positionNftAccount: pos.positionNftAccount,
+          liquidityDelta: withdrawQuote.liquidityDelta,
+          tokenAMint: pos.poolState.tokenAMint,
+          tokenBMint: pos.poolState.tokenBMint,
+          tokenAVault: pos.poolState.tokenAVault,
+          tokenBVault: pos.poolState.tokenBVault,
+          tokenAProgram,
+          tokenBProgram,
+          tokenAAmountThreshold: new BN(0),
+          tokenBAmountThreshold: new BN(0),
+          vestings: [],
+          currentPoint: new BN(0),
+        });
+        t.add(...txn.instructions);
+      }
+      t.feePayer = publicKey!;
+      const sim = await connection.simulateTransaction(t)
+      if (!sim.value.err) {
+        const final = new Transaction();
+        final.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100000 }));
+        final.add(ComputeBudgetProgram.setComputeUnitLimit({ units: sim.value.unitsConsumed! * 1.1 }));
+        final.add(t);
+        txns.push(final);
+      } else {
+        console.log(sim)
       }
     }
     return txns;
@@ -504,27 +590,44 @@ const DammPositions: React.FC = () => {
 
                   {zapOutProgress.length > 0 && (zapOutProgress)} Close and Swap All ({selectedPositions.size})
                 </button> */}
-                <button
-                  className="bg-purple-600 hover:bg-purple-500 px-2 md:py-1 rounded text-white flex-1 sm:flex-none"
-                  onClick={async () => {
-                    const selectedPositionsTemp = [...selectedPositions];
-                    const txns: Transaction[] = await getClosePositionTx(selectedPositionsTemp)
-                    setSelectedPositions(new Set());
+                <div className="flex flex-col">
+                  <button
+                    className="bg-purple-600 hover:bg-purple-500 px-2 md:py-1 rounded text-white flex-1 sm:flex-none"
+                    onClick={async () => {
+                      const selectedPositionsTemp = [...selectedPositions];
+                      const txns: Transaction[] = await getClosePositionTx(selectedPositionsTemp, closePositionRange)
+                      setSelectedPositions(new Set());
 
-                    if (txns.length > 0)
-                      await sendMultiTxn(txns.map(x => {
-                        return {
-                          tx: x,
-                        }
-                      }), {
-                        onSuccess: async () => {
-                          await refreshPositions();
-                        }
-                      })
-                  }}
-                >
-                  Close All ({selectedPositions.size})
-                </button>
+                      if (txns.length > 0)
+                        await sendMultiTxn(txns.map(x => {
+                          return {
+                            tx: x,
+                          }
+                        }), {
+                          onSuccess: async () => {
+                            await refreshPositions();
+                          }
+                        })
+                    }}
+                  >
+                    {closePositionRange < 100 ? "Remove Liquidity" : "Close Position"} ({selectedPositions.size})
+                  </button>
+                  <div className="flex gap-1">
+                    <input id='closePositionRangeId' type='range' min={10} max={100} step={10}
+                      onInput={e => {
+                        if (e.currentTarget.nextElementSibling)
+                          e.currentTarget.nextElementSibling.innerHTML = e.currentTarget.value + '%'
+                      }}
+
+                      defaultValue={100}
+                      //value={closePositionRange}
+                      onMouseUp={e => setClosePositionRange(parseFloat(e.currentTarget.value))}
+                      onTouchEnd={e => setClosePositionRange(parseFloat(e.currentTarget.value))}
+                    >
+                    </input>
+                    <div className='min-w-10'>{closePositionRange + "%"}</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

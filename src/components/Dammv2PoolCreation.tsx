@@ -16,11 +16,13 @@ import { toast } from 'sonner'
 import { useConnection, useWallet } from '@jup-ag/wallet-adapter'
 import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from '@solana/spl-token'
 import { useCpAmm } from '../contexts/CpAmmContext'
+import { useGetSlot } from '../contexts/GetSlotContext'
 
 
 const Dammv2PoolCreation: React.FC = () => {
-    const { publicKey, connected } = useWallet()
     const { connection } = useConnection()
+    const {getSlot} = useGetSlot();
+    const { publicKey, connected } = useWallet()
     const { cpAmm } = useCpAmm();
     const [searchMint, setSearchMint] = useState('')
     const { refreshTokenAccounts } = useTokenAccounts()
@@ -33,7 +35,6 @@ const Dammv2PoolCreation: React.FC = () => {
     const [fetchingPools, setFetchingPools] = useState(false)
     const [tokenMetadataMap, setTokenMetadataMap] = useState<TokenMetadataMap>({});
     const [currentTime, setCurrentTime] = useState(new BN((Date.now())).divn(1000).toNumber())
-    const [currentSlot, setCurrentSlot] = useState(0)
 
     const [showCreateForm, setShowCreateForm] = useState(true)
 
@@ -139,7 +140,6 @@ const Dammv2PoolCreation: React.FC = () => {
         mapPools([], {});
         setFetchingPools(true)
         setCurrentTime(new BN((Date.now())).divn(1000).toNumber());
-        setCurrentSlot(await connection.getSlot())
         let mints: string[] = [];
         if (searchMint === '') {
             const pools = await cpAmm.getAllPools();
@@ -231,7 +231,7 @@ const Dammv2PoolCreation: React.FC = () => {
                 name: tokenAMetadata.name || 'Unknown',
                 poolAmount: poolTokenAAmount,
                 decimals: tokenAMetadata?.decimals || 9,
-                price: tokenAMetadata.price.toNumber(),
+                price: tokenAMetadata.price,
                 image: tokenAMetadata.image || undefined,
                 totalFees: new Decimal(x.account.metrics.totalLpAFee.add(x.account.metrics.totalProtocolAFee).toString()).div(Decimal.pow(10, tokenAMetadata?.decimals)).mul(tokenAMetadata?.price),
                 launchpad: tokenAMetadata.launchpad,
@@ -244,7 +244,7 @@ const Dammv2PoolCreation: React.FC = () => {
                 name: tokenBMetadata.name || 'Unknown',
                 poolAmount: poolTokenBAmount,
                 decimals: tokenBMetadata?.decimals || 9,
-                price: tokenBMetadata.price.toNumber(),
+                price: tokenBMetadata.price,
                 image: tokenBMetadata.image || undefined,
                 totalFees: new Decimal(x.account.metrics.totalLpBFee.add(x.account.metrics.totalProtocolBFee).toString()).div(Decimal.pow(10, tokenBMetadata?.decimals)).mul(tokenBMetadata?.price),
                 launchpad: tokenBMetadata.launchpad,
@@ -252,7 +252,7 @@ const Dammv2PoolCreation: React.FC = () => {
 
             let activationTime = 0;
             if (x.account.activationType === 0) {
-                activationTime = ((currentSlot - x.account.activationPoint.toNumber()) * 400 / 1000);
+                activationTime = ((getSlot() - x.account.activationPoint.toNumber()) * 400 / 1000);
             } else {
                 activationTime = currentTime - x.account.activationPoint.toNumber();
             }
@@ -269,7 +269,7 @@ const Dammv2PoolCreation: React.FC = () => {
                     x.account.poolFees.baseFee.reductionFactor
                 )),
                 totalFeeBPS: feeNumeratorToBps(getFeeNumerator(
-                    x.account.activationType === 0 ? currentSlot :
+                    x.account.activationType === 0 ? getSlot() :
                         x.account.activationType === 1 ? currentTime : 0,
                     x.account.activationPoint,
                     x.account.poolFees.baseFee.numberOfPeriod,

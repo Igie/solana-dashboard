@@ -19,9 +19,12 @@ export interface TokenMetadata {
     symbol: string
     price: Decimal
     decimals: number
+    supply: number
     image?: string
     launchpad?: string
     isVerified: boolean
+    mintAuthority?: string
+    freezeAuthority?: string
 }
 
 export interface TokenAccount {
@@ -31,30 +34,36 @@ export interface TokenAccount {
     symbol: string
     price: Decimal
     decimals: number
+    supply: number,
     image?: string
     description?: string
     value: Decimal
     amount: Decimal
     isVerified: boolean
+    mintAuthority?: string
+    freezeAuthority?: string
 }
 
 export interface JupData {
-    blockId: number,
-    decimals: number,
-    priceChange24h: number,
+    blockId: number
+    decimals: number
+    priceChange24h: number
     usdPrice: number
 }
 
 export interface JupTokenMetadata {
-    id: string,
-    name: string,
-    symbol: string,
-    icon?: string,
-    decimals?: number,
-    tokenProgram: string,
-    usdPrice?: number,
-    launchpad?: string,
-    isVerified: boolean,
+    id: string
+    name: string
+    symbol: string
+    icon?: string
+    decimals?: number
+    totalSupply: number
+    tokenProgram: string
+    usdPrice?: number
+    launchpad?: string
+    isVerified: boolean
+    mintAuthority?: string
+    freezeAuthority?: string
 
 }
 
@@ -108,6 +117,9 @@ export const fetchTokenMetadataJup = async (mintAddresses: string[]): Promise<{ 
                     image: tm.icon,
                     launchpad: tm.launchpad,
                     isVerified: tm.isVerified,
+                    supply: tm.totalSupply,
+                    mintAuthority: tm.mintAuthority,
+                    freezeAuthority: tm.freezeAuthority
                 }
             }
             if (mintAddresses.length > 0)
@@ -155,6 +167,8 @@ export const fetchTokenAccounts = async (c: Connection, publicKey: PublicKey): P
         price: new Decimal(0),
         value: new Decimal(0),
         isVerified: false,
+        supply: 0,
+
     })
 
     for (const account of tokenAccounts) {
@@ -175,6 +189,9 @@ export const fetchTokenAccounts = async (c: Connection, publicKey: PublicKey): P
                 price: new Decimal(0),
                 value: new Decimal(0),
                 isVerified: false,
+                supply: 0,
+                mintAuthority: undefined,
+                freezeAuthority: undefined,
             })
         }
     }
