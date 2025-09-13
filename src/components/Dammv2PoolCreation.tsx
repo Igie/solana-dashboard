@@ -21,7 +21,7 @@ import { useGetSlot } from '../contexts/GetSlotContext'
 
 const Dammv2PoolCreation: React.FC = () => {
     const { connection } = useConnection()
-    const {getSlot} = useGetSlot();
+    const { getSlot } = useGetSlot();
     const { publicKey, connected } = useWallet()
     const { cpAmm } = useCpAmm();
     const [searchMint, setSearchMint] = useState('')
@@ -225,29 +225,15 @@ const Dammv2PoolCreation: React.FC = () => {
             const poolPrice = new Decimal(getPriceFromSqrtPrice(x.account.sqrtPrice, tokenAMetadata!.decimals, tokenBMetadata!.decimals));
 
             const poolTokenA = {
-                mint: tokenAMetadata.mint,
-                tokenProgram: tokenAMetadata.tokenProgram,
-                symbol: tokenAMetadata.symbol || 'UNK',
-                name: tokenAMetadata.name || 'Unknown',
+                ...tokenAMetadata,
                 poolAmount: poolTokenAAmount,
-                decimals: tokenAMetadata?.decimals || 9,
-                price: tokenAMetadata.price,
-                image: tokenAMetadata.image || undefined,
                 totalFees: new Decimal(x.account.metrics.totalLpAFee.add(x.account.metrics.totalProtocolAFee).toString()).div(Decimal.pow(10, tokenAMetadata?.decimals)).mul(tokenAMetadata?.price),
-                launchpad: tokenAMetadata.launchpad,
             }
 
             const poolTokenB = {
-                mint: tokenBMetadata.mint,
-                tokenProgram: tokenBMetadata.tokenProgram,
-                symbol: tokenBMetadata.symbol || 'UNK',
-                name: tokenBMetadata.name || 'Unknown',
+                ...tokenBMetadata,
                 poolAmount: poolTokenBAmount,
-                decimals: tokenBMetadata?.decimals || 9,
-                price: tokenBMetadata.price,
-                image: tokenBMetadata.image || undefined,
                 totalFees: new Decimal(x.account.metrics.totalLpBFee.add(x.account.metrics.totalProtocolBFee).toString()).div(Decimal.pow(10, tokenBMetadata?.decimals)).mul(tokenBMetadata?.price),
-                launchpad: tokenBMetadata.launchpad,
             }
 
             let activationTime = 0;
