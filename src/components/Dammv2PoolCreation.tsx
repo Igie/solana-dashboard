@@ -4,7 +4,7 @@ import { RefreshCcw } from 'lucide-react'
 import { CollectFeeMode, deriveCustomizablePoolAddress, feeNumeratorToBps, FeeSchedulerMode, getBaseFeeNumerator, getBaseFeeParams, getDynamicFeeParams, getFeeNumerator, getPriceFromSqrtPrice, getSqrtPriceFromPrice, MAX_SQRT_PRICE, MIN_SQRT_PRICE } from '@meteora-ag/cp-amm-sdk'
 import { Keypair, PublicKey } from '@solana/web3.js'
 import { BN } from '@coral-xyz/anchor'
-import { fetchTokenMetadataJup, metadataToAccounts, type TokenAccount, type TokenMetadataMap } from '../tokenUtils'
+import { fetchTokenMetadata, fetchTokenMetadataJup, GetTokenMetadataMap, type TokenMetadataMap } from '../tokenUtils'
 import Decimal from 'decimal.js'
 import { MintSelectorInput } from './Simple/MintSelectorInput'
 import { useTokenAccounts } from '../contexts/TokenAccountsContext'
@@ -79,17 +79,15 @@ const Dammv2PoolCreation: React.FC = () => {
     const [feeModeDropdownOpen, setFeeModeDropdownOpen] = useState(false)
 
 
-    const [commonTokens, setCommonTokens] = useState<TokenAccount[]>([]);
-
     const updateCommonTokens = async (): Promise<void> => {
         const poolTokens = Object.values(tokenMetadataMap);
-        const { tokenAccounts } = await refreshTokenAccounts();
-        const merged = [...tokenAccounts, ...metadataToAccounts(poolTokens)];
-        const uniqueByMint = Array.from(
-            new Map(merged.map(token => [token.mint, token])).values()
-        );
-        uniqueByMint.sort((a, b) => b.amount.sub(a.amount).toNumber());
-        setCommonTokens(uniqueByMint);
+        const { tokenMetadata } = await refreshTokenAccounts();
+
+
+
+        setTokenMetadataMap(GetTokenMetadataMap([...new Set([...poolTokens, ...tokenMetadata])]));
+
+        console.log("test")
     }
 
     useEffect(() => {
@@ -120,6 +118,7 @@ const Dammv2PoolCreation: React.FC = () => {
 
             const tokenAPrice = data?.[tokenAMint]?.usdPrice;
             const tokenBPrice = data?.[tokenBMint]?.usdPrice;
+
             if (tokenAPrice && tokenBPrice) {
                 setInitialPrice(Decimal.div(tokenAPrice, tokenBPrice))
             } else {
@@ -288,23 +287,19 @@ const Dammv2PoolCreation: React.FC = () => {
             const tokenA = new PublicKey(tokenAMint)
             const tokenB = new PublicKey(tokenBMint)
 
-            const metadata = await fetchTokenMetadataJup([tokenAMint, tokenBMint])
+            const metadata = await fetchTokenMetadata([tokenAMint, tokenBMint])
 
             const tokenAMetadata = metadata[tokenAMint];
             const tokenBMetadata = metadata[tokenBMint];
 
-            const decimalsA = tokenAMetadata?.decimals || 9
-            const decimalsB = tokenBMetadata?.decimals || 9
-            console.log(decimalsA, decimalsB);
+            const decimalsA = tokenAMetadata.decimals;
+            const decimalsB = tokenBMetadata.decimals;
+
             const tokenAAmount = new BN(tokenBaseAmount.toNumber() * (10 ** decimalsA));
             const tokenBAmount = new BN(tokenQuoteAmount.toNumber() * (10 ** decimalsB));
 
-            console.log(minPrice.toString());
-            console.log(minPrice.mul(Decimal.pow(10, decimalsA)).toNumber());
-            console.log(new BN(maxPrice.mul(Decimal.pow(10, decimalsA)).toNumber()));
-
             const minSqrtPrice = (minPrice.greaterThan(0) && useMinPrice) ? getSqrtPriceFromPrice(minPrice.toString(), decimalsA, decimalsB) : MIN_SQRT_PRICE;
-            const maxSqrtPrice = (maxPrice.greaterThan(0) && useMinPrice) ? getSqrtPriceFromPrice(maxPrice.toString(), decimalsA, decimalsB) : MAX_SQRT_PRICE;
+            const maxSqrtPrice = (maxPrice.greaterThan(0) && useMaxPrice) ? getSqrtPriceFromPrice(maxPrice.toString(), decimalsA, decimalsB) : MAX_SQRT_PRICE;
 
             const { liquidityDelta: initPoolLiquidityDelta, initSqrtPrice } =
                 cpAmm.preparePoolCreationParams({
@@ -398,9 +393,31 @@ const Dammv2PoolCreation: React.FC = () => {
     }, [tokenAMint, tokenBMint])
 
     useEffect(() => {
-        if (tokenAMint && tokenBMint)
-            setTokenQuoteAmount(tokenBaseAmount.mul(initialPrice))
-    }, [initialPrice, tokenBaseAmount])
+        if (tokenAMint && tokenBMint) {
+            try {
+                const aDecimals = tokenMetadataMap[tokenAMint].decimals;
+                const bDecimals = tokenMetadataMap[tokenBMint].decimals;
+                const quote = cpAmm.getDepositQuote({
+                    isTokenA: true,
+                    sqrtPrice: getSqrtPriceFromPrice(initialPrice.toString(), aDecimals, bDecimals),
+                    inAmount: new BN(tokenBaseAmount.mul(Decimal.pow(10, aDecimals)).toString()),
+                    maxSqrtPrice: (useMaxPrice && maxPrice.greaterThan(0)) ?
+                        getSqrtPriceFromPrice(maxPrice.toString(), aDecimals, bDecimals) :
+                        MAX_SQRT_PRICE,
+                    minSqrtPrice: (useMinPrice && minPrice.greaterThan(0)) ?
+                        getSqrtPriceFromPrice(minPrice.toString(), aDecimals, bDecimals) :
+                        MIN_SQRT_PRICE,
+                })
+                quote.outputAmount
+                setTokenQuoteAmount(new Decimal(quote.outputAmount.toString()).div(Decimal.pow(10, tokenMetadataMap[tokenBMint].decimals)))
+
+            } catch (e) {
+                console.error(e);
+                toast.error("Failed to get metadata for selected tokens!")
+
+            }
+        }
+    }, [initialPrice, tokenBaseAmount, minPrice, maxPrice, useMinPrice, useMaxPrice])
 
     useEffect(() => {
         updateCommonTokens();
@@ -432,11 +449,11 @@ const Dammv2PoolCreation: React.FC = () => {
                     </div>
                 </div>
             </div>
-            <div className="bg-gray-900 border border-gray-700 rounded-2xl p-2 space-y-2">
+            <div className="bg-gray-900 border border-gray-700 rounded-2xl p-1 space-y-1">
                 {connected && (
                     <button
                         onClick={() => setShowCreateForm(!showCreateForm)}
-                        className="bg-purple-600 hover:bg-purple-500 px-2 py-0.5 rounded-md text-white text-sm font-medium"
+                        className="bg-purple-600 hover:bg-purple-500  px-2 py-0.5 rounded-xs text-white text-xs font-medium"
                     >
                         {showCreateForm ? "Hide Create Pool Form" : "Show Create Pool Form"}
                     </button>
@@ -447,7 +464,7 @@ const Dammv2PoolCreation: React.FC = () => {
                             <div className="relative">
                                 <label className="block text-sm text-gray-400">Base Token</label>
                                 <MintSelectorInput
-                                    tokenAccounts={commonTokens}
+                                    //tokenAccounts={commonTokens}
                                     mint={tokenAMint}
                                     amount={tokenBaseAmount}
                                     onMintChange={(e) => setTokenAMint(e)}
@@ -458,7 +475,7 @@ const Dammv2PoolCreation: React.FC = () => {
                             <div className="relative">
                                 <label className="block text-sm text-gray-400">Quote Token</label>
                                 <MintSelectorInput
-                                    tokenAccounts={commonTokens}
+                                    //tokenAccounts={commonTokens}
                                     mint={tokenBMint}
                                     amount={tokenQuoteAmount}
                                     onMintChange={(e) => setTokenBMint(e)}

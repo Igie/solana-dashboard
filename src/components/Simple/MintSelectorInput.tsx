@@ -1,10 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react'
 import Decimal from 'decimal.js'
-import type { TokenAccount } from '../../tokenUtils'
 import { useTokenAccounts } from '../../contexts/TokenAccountsContext'
 
 type Props = {
-    tokenAccounts: TokenAccount[]
     mint: string
     amount: Decimal
     onMintChange: (mint: string) => void
@@ -13,7 +11,6 @@ type Props = {
 }
 
 export const MintSelectorInput: React.FC<Props> = ({
-    tokenAccounts,
     mint,
     amount,
     onMintChange,
@@ -26,7 +23,7 @@ export const MintSelectorInput: React.FC<Props> = ({
 
     const [dropdownOpen, setDropdownOpen] = useState(false)
 
-    const { loading } = useTokenAccounts();
+    const { loading, tokenAccounts } = useTokenAccounts();
 
     const inputRef = useRef<HTMLInputElement>(null)
     const dropdownRef = useRef<HTMLDivElement>(null)
