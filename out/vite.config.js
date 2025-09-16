@@ -15,8 +15,8 @@ exports.default = (0, vite_1.defineConfig)({
         (0, vite_2.default)()
     ],
     define: {
-        global: 'globalThis', // make sure global is defined
-        'process.env': {}, // Needed for many packages that access process.env.*
+        global: 'globalThis',
+        'process.env': {},
     },
     resolve: {
         alias: {

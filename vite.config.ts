@@ -16,8 +16,8 @@ export default defineConfig({
     react(),
     tailwindcss()],
   define: {
-    global: 'globalThis', // make sure global is defined
-    'process.env': {}, // Needed for many packages that access process.env.*
+    global: 'globalThis',
+    'process.env': {},
   },
   resolve: {
     alias: {

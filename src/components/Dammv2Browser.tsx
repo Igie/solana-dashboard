@@ -3,7 +3,6 @@ import { ChevronDown, ChevronUp, Menu, RefreshCcw, RefreshCw } from 'lucide-reac
 
 
 import Dammv2PoolList from './Simple/Dammv2PoolList'
-import { useCpAmm } from '../contexts/CpAmmContext'
 
 import { launchpads } from './launchpads/Launchpads'
 import { useDammV2PoolsWebsocket } from '../contexts/Dammv2PoolContext'
@@ -11,8 +10,6 @@ import { useDammV2PoolsWebsocket } from '../contexts/Dammv2PoolContext'
 const MainPoolFilters = ["Include", "Exclude", "Only"];
 
 const Dammv2Browser: React.FC = () => {
-    const { cpAmm } = useCpAmm();
-
     const {
         update, setUpdate, fetchAllPools, fetchingPools,
         filteredDetailedPools, tokenMetadataMap,
@@ -79,9 +76,8 @@ const Dammv2Browser: React.FC = () => {
                                 if (e.target.value.trim() == "")
                                     setPoolAddressOrMintFilter("");
                             }}
-                            onKeyDown={async e =>{
-                                if (e.ctrlKey && e.key == "v")
-                                {
+                            onKeyDown={async e => {
+                                if (e.ctrlKey && e.key == "v") {
                                     setPoolAddressOrMintFilter(await navigator.clipboard.readText())
                                 }
                             }}
@@ -110,9 +106,8 @@ const Dammv2Browser: React.FC = () => {
                                 if (e.target.value.trim() == "")
                                     setCreatorAddressFilter("");
                             }}
-                            onKeyDown={async e =>{
-                                if (e.ctrlKey && e.key == "v")
-                                {
+                            onKeyDown={async e => {
+                                if (e.ctrlKey && e.key == "v") {
                                     setCreatorAddressFilter(await navigator.clipboard.readText())
                                 }
                             }}
@@ -209,7 +204,6 @@ const Dammv2Browser: React.FC = () => {
                 <div className="text-sm text-gray-500">No DAMMv2 pools found.</div>
             )} */}
             <Dammv2PoolList
-                cpAmm={cpAmm}
                 pools={filteredDetailedPools}
                 tokenMetadataMap={tokenMetadataMap}
                 sortParamsCallback={(sortType, ascending) => {

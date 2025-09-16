@@ -14,10 +14,10 @@ import { useTransactionManager } from '../../contexts/TransactionManagerContext'
 import { txToast } from './TxToast';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useConnection } from '@jup-ag/wallet-adapter';
+import { useCpAmm } from '../../contexts/CpAmmContext';
 
 
 interface DepositPopoverProps {
-  cpAmm: CpAmm;
   owner: PublicKey,
   poolInfo: PoolDetailedInfo | null;
   positionInfo: PoolPositionInfo | null;
@@ -27,7 +27,7 @@ interface DepositPopoverProps {
 }
 
 export const DepositPopover: React.FC<DepositPopoverProps> = ({
-  cpAmm,
+
   owner,
   poolInfo,
   positionInfo,
@@ -48,6 +48,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
 
   const { jupSlippage, includeDammv2Route, setIncludeDammv2Route } = useSettings();
   const { connection } = useConnection();
+  const { cpAmm } = useCpAmm();
   const { sendTxn } = useTransactionManager();
   const { refreshTokenAccounts } = useTokenAccounts();
   const { refreshPositions } = useDammUserPositions();

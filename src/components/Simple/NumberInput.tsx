@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import Decimal from 'decimal.js';
 
-interface DecimalInputProps {
+interface NumberInputProps {
   value: string;
   onChange: (val: string) => void; // still string so user can freely type
-  onBlur?: (val: Decimal) => void;
+  onBlur?: (val: number) => void;
   placeholder?: string;
   className?: string;
 }
 
-export const DecimalInput: React.FC<DecimalInputProps> = ({
+export const NumberInput: React.FC<NumberInputProps> = ({
   value,
   onChange,
   onBlur,
@@ -25,7 +24,7 @@ export const DecimalInput: React.FC<DecimalInputProps> = ({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
 
-    if (/^[0-9]*\.?[0-9]*$/.test(val)) {
+    if (/^[0-9]+$/.test(val)) {
       setLocalValue(val);
       onChange(val);
     }
@@ -33,21 +32,21 @@ export const DecimalInput: React.FC<DecimalInputProps> = ({
 
   const handleBlur = () => {
     try {
-      const parsed = new Decimal(localValue);
+      const parsed = parseInt(localValue);
       setLocalValue(parsed.toString());
       onChange(parsed.toString());
       onBlur?.(parsed);
     } catch {
       setLocalValue('');
       onChange('');
-      onBlur?.(new Decimal(0));
+      onBlur?.(0);
     }
   };
 
   return (
     <input
       type="text"
-      inputMode="decimal"
+      inputMode="numeric"
       value={localValue}
       onChange={handleChange}
       onBlur={handleBlur}

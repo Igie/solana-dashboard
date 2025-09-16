@@ -4,7 +4,6 @@ import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { DepositPopover } from "./Dammv2DepositPopover";
 import React, { useEffect, useState } from "react";
 import { useTokenAccounts } from "../../contexts/TokenAccountsContext";
-import type { CpAmm } from "@meteora-ag/cp-amm-sdk";
 import { useTransactionManager } from "../../contexts/TransactionManagerContext";
 import { GetTokenAccountMap, type TokenAccountMap, type TokenMetadataMap } from "../../tokenUtils";
 import { formatDuration, getAllPoolPositions, getShortMint, PoolSortType, sortPools, type PoolDetailedInfo, type PoolPositionInfo, type PoolPositionInfoMap } from "../../constants";
@@ -13,8 +12,8 @@ import { getPoolPositionMap, useDammUserPositions } from "../../contexts/DammUse
 import { DynamicTable, type Column } from "./DynamicTable";
 import { launchpads } from "./../launchpads/Launchpads";
 import { useGetSlot } from "../../contexts/GetSlotContext";
+import { useCpAmm } from "../../contexts/CpAmmContext";
 interface Dammv2PoolListProps {
-    cpAmm: CpAmm
     pools: PoolDetailedInfo[]
     tokenMetadataMap: TokenMetadataMap,
     sortParamsCallback?: (sortType: PoolSortType, ascending: boolean | undefined) => void,
@@ -33,13 +32,13 @@ interface DisplayTarget {
 
 const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
     {
-        cpAmm,
         pools,
         tokenMetadataMap,
         sortParamsCallback,
     }
 ) => {
     const { getSlot } = useGetSlot();
+    const { cpAmm } = useCpAmm();
     const { publicKey, connected } = useWallet();
     const { sendTxn } = useTransactionManager();
     const { tokenAccounts, refreshTokenAccounts } = useTokenAccounts();
@@ -590,7 +589,6 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
 
                     {popoverVisible && (
                         <DepositPopover
-                            cpAmm={cpAmm}
                             owner={publicKey!}
                             positionInfo={positions.find(x => x.poolAddress.toBase58() === depositPool?.poolInfo.publicKey.toBase58()) || null}
                             poolInfo={depositPool}
