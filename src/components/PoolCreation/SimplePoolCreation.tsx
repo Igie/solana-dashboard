@@ -256,6 +256,51 @@ const SimplePoolCreation: React.FC<SimplePoolCreationProps> = (
         }
     }
 
+    const setConfig = (useFeeScheduler: boolean, baseFeePercentage: Decimal, selectedFeeScheduler: FeeSchedulerMode,
+        useDynamicFee: boolean, selectedFeeMode: CollectFeeMode
+    ) => {
+        const baseFeeParams = getBaseFeeParams(
+            useFeeScheduler ? 5000 : baseFeePercentage.mul(100).toNumber(),
+            baseFeePercentage.mul(100).toNumber(),
+            selectedFeeScheduler,
+            useFeeScheduler ?
+                (selectedFeeScheduler === FeeSchedulerMode.Exponential ?
+                    120 : 144) : 0,
+            useFeeScheduler ?
+                (selectedFeeScheduler === FeeSchedulerMode.Exponential ?
+                    7200 : 86400) : 0,
+        )
+
+        const b = feeNumeratorToBps(getBaseFeeNumerator(
+            baseFeeParams.feeSchedulerMode,
+            baseFeeParams.cliffFeeNumerator,
+            new BN(baseFeeParams.numberOfPeriod),
+            baseFeeParams.reductionFactor)) / 100;
+
+        let pools = poolConfigs.filter(x =>
+            useFeeScheduler === (x.schedulerPeriod > 0) &&
+            x.schedulerMode === (useFeeScheduler ? selectedFeeScheduler : FeeSchedulerMode.Linear) &&
+            x.dynamicFee === useDynamicFee &&
+            (useDynamicFee ? x.poolConfig.account.poolFees.dynamicFee.maxVolatilityAccumulator === 14460000 : true) &&
+            x.poolConfig.account.poolFees.baseFee.numberOfPeriod === baseFeeParams.numberOfPeriod &&
+            x.poolConfig.account.poolFees.baseFee.periodFrequency.eq(baseFeeParams.periodFrequency) &&
+            x.feeCollectionToken === selectedFeeMode
+        );
+
+        pools = pools.filter(x => x.baseFee >= b - 0.02 && x.baseFee <= b + 0.02)
+
+        console.log(pools.length);
+        if (pools.length !== 1) {
+            console.log(pools.length)
+            console.log(tokenAMint, tokenBMint)
+            setSelectedPoolConfig(undefined);
+            toast.error("Multiple configs found!");
+            return;
+        }
+
+        setSelectedPoolConfig(pools[0]);
+    }
+
     useEffect(() => {
         if (initialPrice) {
             setTokenBAmount(tokenAAmount.mul(initialPrice));
@@ -320,6 +365,8 @@ const SimplePoolCreation: React.FC<SimplePoolCreationProps> = (
         );
 
         pools = pools.filter(x => x.baseFee >= b - 0.02 && x.baseFee <= b + 0.02)
+
+        console.log(pools.length);
         if (pools.length !== 1) {
             console.log(pools.length)
             console.log(tokenAMint, tokenBMint)
@@ -395,12 +442,13 @@ const SimplePoolCreation: React.FC<SimplePoolCreationProps> = (
                         .map((x, i) => (
                             <div
                                 key={i}
-                                onClick={() => {
+                                onClick={async () => {
                                     setUseDynamicFee(x.useDynamicFee);
                                     setBaseFeePercentage(new Decimal(x.baseFee));
                                     setUseFeeScheduler(x.useScheduler);
                                     setSelectedFeeScheduler(x.feeSchedulerMode);
                                     setSelectedFeeMode(x.collectFeeMode);
+                                    setConfig(x.useScheduler, new Decimal(x.baseFee), x.feeSchedulerMode, x.useDynamicFee, x.collectFeeMode)
                                     setPresetsDropdownOpen(false)
                                 }}
                                 className={`px-2 cursor-pointer hover:bg-gray-700 text-white text-xs`}
