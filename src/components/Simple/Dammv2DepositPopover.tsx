@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { getTokenProgram, type CpAmm, type DepositQuote } from '@meteora-ag/cp-amm-sdk';
+import { getTokenProgram, type DepositQuote } from '@meteora-ag/cp-amm-sdk';
 import { Keypair, LAMPORTS_PER_SOL, PublicKey, Transaction } from '@solana/web3.js';
 import Decimal from 'decimal.js';
 import { type TokenAccount } from '../../tokenUtils';
