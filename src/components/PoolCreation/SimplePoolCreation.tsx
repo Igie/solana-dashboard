@@ -256,51 +256,6 @@ const SimplePoolCreation: React.FC<SimplePoolCreationProps> = (
         }
     }
 
-    const setConfig = (useFeeScheduler: boolean, baseFeePercentage: Decimal, selectedFeeScheduler: FeeSchedulerMode,
-        useDynamicFee: boolean, selectedFeeMode: CollectFeeMode
-    ) => {
-        const baseFeeParams = getBaseFeeParams(
-            useFeeScheduler ? 5000 : baseFeePercentage.mul(100).toNumber(),
-            baseFeePercentage.mul(100).toNumber(),
-            selectedFeeScheduler,
-            useFeeScheduler ?
-                (selectedFeeScheduler === FeeSchedulerMode.Exponential ?
-                    120 : 144) : 0,
-            useFeeScheduler ?
-                (selectedFeeScheduler === FeeSchedulerMode.Exponential ?
-                    7200 : 86400) : 0,
-        )
-
-        const b = feeNumeratorToBps(getBaseFeeNumerator(
-            baseFeeParams.feeSchedulerMode,
-            baseFeeParams.cliffFeeNumerator,
-            new BN(baseFeeParams.numberOfPeriod),
-            baseFeeParams.reductionFactor)) / 100;
-
-        let pools = poolConfigs.filter(x =>
-            useFeeScheduler === (x.schedulerPeriod > 0) &&
-            x.schedulerMode === (useFeeScheduler ? selectedFeeScheduler : FeeSchedulerMode.Linear) &&
-            x.dynamicFee === useDynamicFee &&
-            (useDynamicFee ? x.poolConfig.account.poolFees.dynamicFee.maxVolatilityAccumulator === 14460000 : true) &&
-            x.poolConfig.account.poolFees.baseFee.numberOfPeriod === baseFeeParams.numberOfPeriod &&
-            x.poolConfig.account.poolFees.baseFee.periodFrequency.eq(baseFeeParams.periodFrequency) &&
-            x.feeCollectionToken === selectedFeeMode
-        );
-
-        pools = pools.filter(x => x.baseFee >= b - 0.02 && x.baseFee <= b + 0.02)
-
-        console.log(pools.length);
-        if (pools.length !== 1) {
-            console.log(pools.length)
-            console.log(tokenAMint, tokenBMint)
-            setSelectedPoolConfig(undefined);
-            toast.error("Multiple configs found!");
-            return;
-        }
-
-        setSelectedPoolConfig(pools[0]);
-    }
-
     useEffect(() => {
         if (initialPrice) {
             setTokenBAmount(tokenAAmount.mul(initialPrice));
@@ -332,10 +287,10 @@ const SimplePoolCreation: React.FC<SimplePoolCreationProps> = (
                 setNewPoolAddressExists(false);
             }
         }
-    }, [tokenAMint, tokenBMint, selectedPoolConfig]);
+    }, [tokenAMint, tokenBMint]);
 
     useEffect(() => {
-        if (!baseFeePercentage || tokenAMint || tokenBMint) return;
+        if (!baseFeePercentage) return;
         const baseFeeParams = getBaseFeeParams(
             useFeeScheduler ? 5000 : baseFeePercentage.mul(100).toNumber(),
             baseFeePercentage.mul(100).toNumber(),
@@ -365,18 +320,15 @@ const SimplePoolCreation: React.FC<SimplePoolCreationProps> = (
         );
 
         pools = pools.filter(x => x.baseFee >= b - 0.02 && x.baseFee <= b + 0.02)
-
-        console.log(pools.length);
-        if (pools.length !== 1) {
-            console.log(pools.length)
-            console.log(tokenAMint, tokenBMint)
+        if (pools.length > 1) {
             setSelectedPoolConfig(undefined);
             toast.error("Multiple configs found!");
             return;
         }
-
+        if (pools.length == 0) return;
+        console.log(pools[0]);
         setSelectedPoolConfig(pools[0]);
-    }, [useDynamicFee, baseFeePercentage, useFeeScheduler, selectedFeeScheduler, selectedFeeMode]);
+    }, [useDynamicFee, baseFeePercentage, useFeeScheduler, selectedFeeScheduler, selectedFeeMode, poolConfigs]);
 
     useEffect(() => {
         if (tokenAMint && tokenBMint) {
@@ -429,7 +381,7 @@ const SimplePoolCreation: React.FC<SimplePoolCreationProps> = (
             <button
                 type="button"
                 onClick={() => setPresetsDropdownOpen(!presetsDropdownOpen!)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-md px-2 text-white text-xs text-left flex justify-between items-center"
+                className=" bg-emerald-800 border border-emerald-700 rounded-md px-2 text-white text-xs text-left flex justify-between items-center"
             >
                 {"Select Preset"}
                 <svg className="w-4 h-4 text-gray-400 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -448,7 +400,7 @@ const SimplePoolCreation: React.FC<SimplePoolCreationProps> = (
                                     setUseFeeScheduler(x.useScheduler);
                                     setSelectedFeeScheduler(x.feeSchedulerMode);
                                     setSelectedFeeMode(x.collectFeeMode);
-                                    setConfig(x.useScheduler, new Decimal(x.baseFee), x.feeSchedulerMode, x.useDynamicFee, x.collectFeeMode)
+                                    //setConfig(x.useScheduler, new Decimal(x.baseFee), x.feeSchedulerMode, x.useDynamicFee, x.collectFeeMode)
                                     setPresetsDropdownOpen(false)
                                 }}
                                 className={`px-2 cursor-pointer hover:bg-gray-700 text-white text-xs`}
@@ -597,7 +549,8 @@ const SimplePoolCreation: React.FC<SimplePoolCreationProps> = (
             </div>
             {!newPoolAddressExists && connected ?
                 <button
-                    className="bg-green-600 hover:bg-green-500 px-2 rounded-xs text-white font-semibold text-xs"
+                    className="bg-green-600 hover:bg-green-500 disabled:bg-red-600 px-2 rounded-xs text-white font-semibold text-xs"
+                    disabled={!tokenAMint || !tokenBMint}
                     onClick={() => handleCreatePool()}
                 >
                     Create Pool

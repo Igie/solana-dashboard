@@ -29,6 +29,40 @@ interface CustomPoolCreationProps {
     updateCommonTokens: () => Promise<void>
 }
 
+interface Preset {
+    name: String
+    useDynamicFee: boolean,
+    baseFee: number,
+    maxFee: number,
+    totalSchedulerDuration: number,
+    schedulerReductionPeriod: number,
+    feeSchedulerMode: FeeSchedulerMode,
+    collectFeeMode: CollectFeeMode,
+}
+
+const Presets: Preset[] = [
+    {
+        name: "Endless 50%",
+        useDynamicFee: true,
+        baseFee: 0.01,
+        maxFee: 50,
+        totalSchedulerDuration: 48000000,
+        schedulerReductionPeriod: 48000000,
+        feeSchedulerMode: FeeSchedulerMode.Linear,
+        collectFeeMode: CollectFeeMode.OnlyB,
+    },
+    {
+        name: "Endless 40%",
+        useDynamicFee: true,
+        baseFee: 0.01,
+        maxFee: 40,
+        totalSchedulerDuration: 48000000,
+        schedulerReductionPeriod: 48000000,
+        feeSchedulerMode: FeeSchedulerMode.Linear,
+        collectFeeMode: CollectFeeMode.OnlyB,
+    },
+]
+
 const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
     {
         tokenMetadata,
@@ -53,6 +87,8 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
     const [newPoolAddressExists, setNewPoolAddressExists] = useState(false)
 
     const [initialPrice, setInitialPrice] = useState(new Decimal(0))
+
+    const [presetsDropdownOpen, setPresetsDropdownOpen] = useState(false)
 
     const [useMaxPrice, setUseMaxPrice] = useState(false)
     const [maxPrice, setMaxPrice] = useState(new Decimal(0))
@@ -273,6 +309,41 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
                     />
                 </div>
             </div>
+            <button
+                type="button"
+                onClick={() => setPresetsDropdownOpen(!presetsDropdownOpen!)}
+                className=" bg-emerald-800 border border-emerald-700 rounded-md px-2 text-white text-xs text-left flex justify-between items-center"
+            >
+                {"Select Preset"}
+                <svg className="w-4 h-4 text-gray-400 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+            {presetsDropdownOpen && (
+                <div className="absolute z-50 mt-1 max-h-200 overflow-y-auto divide-y bg-gray-800 border border-gray-700 rounded-md shadow-lg">
+                    {Presets
+                        .map((x, i) => (
+                            <div
+                                key={i}
+                                onClick={async () => {
+                                    setUseDynamicFee(x.useDynamicFee);
+                                    setMaxBaseFeePercentage(new Decimal(x.maxFee))
+                                    setBaseFeePercentage(new Decimal(x.baseFee));
+                                    setSelectedFeeScheduler(x.feeSchedulerMode);
+                                    setTotalSchedulerDuration(x.totalSchedulerDuration);
+                                    setSchedulerReductionPeriod(x.schedulerReductionPeriod);
+                                    setSelectedFeeMode(x.collectFeeMode);
+                                    setPresetsDropdownOpen(false)
+                                }}
+                                className={`px-2 cursor-pointer hover:bg-gray-700 text-white text-xs`}
+                            >
+                                <div className="flex flex-col gap-0.5">
+                                    {x.name.toString()}
+                                </div>
+                            </div>
+                        ))}
+                </div>
+            )}
             <div className='grid grid-cols-2 gap-1'>
                 <div className="relative w-full">
                     <div className='flex flex-cols gap-1'>
