@@ -147,15 +147,27 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
 
                     </div>
                     <div className="grid gap-1">
-                        <a
-                            className="bg-purple-800 hover:bg-purple-600 text-white text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
-                            href={`https://edge.meteora.ag/dammv2/${pool.poolInfo.publicKey.toBase58()}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            Pool
-                            <ExternalLink size={12} />
-                        </a>
+                        <div className="flex gap-0.5 w-max">
+                            <a
+                                className="bg-purple-800 hover:bg-purple-600 text-white text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
+                                href={`https://edge.meteora.ag/dammv2/${pool.poolInfo.publicKey.toBase58()}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                Pool
+                                <ExternalLink size={12} />
+                            </a>
+                            <button
+                                className="bg-purple-800 hover:bg-purple-600 text-white text-xs py-0.5 px-1 rounded flex items-center gap-1"
+                                onClick={async () => {
+                                    await navigator.clipboard.writeText(pool.poolInfo.publicKey.toBase58());
+                                }}
+                            >
+                                <div className="flex gap-1 items-center justify-center">
+                                    <Copy size={12} />
+                                </div>
+                            </button>
+                        </div>
                         <a
                             className="bg-purple-800 hover:bg-purple-600 text-white text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
                             href={`https://gmgn.ai/sol/token/NQhHUcmQ_${pool.tokenA.mint}`}
