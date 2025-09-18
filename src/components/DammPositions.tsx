@@ -9,8 +9,9 @@ import { ComputeBudgetProgram, PublicKey, Transaction, TransactionInstruction } 
 import { copyToClipboard, getSchedulerType, renderFeeTokenImages, type PoolPositionInfo } from '../constants'
 import { FeeSchedulerGraph } from './Simple/FeeSchedulerGraph'
 import { useCpAmm } from '../contexts/CpAmmContext'
-import { getMint, NATIVE_MINT, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token'
+import { AuthorityType, createSetAuthorityInstruction, getMint, NATIVE_MINT, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token'
 import { unwrapSOLInstruction } from '@meteora-ag/cp-amm-sdk'
+import { txToast } from './Simple/TxToast'
 
 const DammPositions: React.FC = () => {
   const { connection } = useConnection()
@@ -27,6 +28,9 @@ const DammPositions: React.FC = () => {
   const [showSortMenu, setShowSortMenu] = useState(false);
 
   const [closePositionRange, setClosePositionRange] = useState(100);
+
+  const [sendPositionsRecipient, setSendPositionsRecipient] = useState("");
+  const [sendPositionsDropdownOpen, setSendPositionsDropdownOpen] = useState(false);
   const popupRef = useRef<HTMLDivElement | null>(null)
 
   const toggleRowExpand = (index: number) => {
@@ -307,6 +311,40 @@ const DammPositions: React.FC = () => {
     removeLiquidityAndSwapToQuote(position);
   }
 
+  const getSendPositionTx = async (positions: PoolPositionInfo[], recipient: PublicKey) => {
+
+    if (positions.length == 0) return [];
+    const txns = [];
+
+    while (positions.length > 0) {
+      const innerPositions = positions.splice(0, 14)
+
+      const t = new Transaction();
+      for (const pos of innerPositions) {
+        t.add(
+          createSetAuthorityInstruction(
+            pos.positionNftAccount,
+            publicKey!,
+            AuthorityType.AccountOwner,
+            recipient,
+            [],
+            TOKEN_2022_PROGRAM_ID
+          )
+        )
+      }
+      t.feePayer = publicKey!;
+      const sim = await connection.simulateTransaction(t)
+      if (!sim.value.err) {
+        const final = new Transaction();
+        final.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 0 }));
+        final.add(ComputeBudgetProgram.setComputeUnitLimit({ units: Math.max(sim.value.unitsConsumed! * 1.1, 5000) }));
+        final.add(t);
+        txns.push(final);
+      } else
+        console.log(sim)
+    }
+    return txns;
+  };
   // const getClosePositionAndSwapTx = async (positions: PoolPositionInfo[]) => {
   //   positions = positions.filter(x => !cpAmm.isLockedPosition(x.positionState))
   //   const txns = getZapOutTx(positions);
@@ -543,36 +581,14 @@ const DammPositions: React.FC = () => {
               </span>
             </div>
             <div className="flex justify-between px-2 w-full sm:w-auto">
-              <button
-                className="bg-blue-600 hover:bg-blue-500 px-2 md:py-1 rounded text-white flex-1 sm:flex-none"
-                onClick={async () => {
-                  const selectedPositionsTemp = [...selectedPositions];
-
-                  const txns: Transaction[] = await getClaimFeesTx(selectedPositionsTemp)
-
-                  setSelectedPositions(new Set());
-
-                  if (txns.length > 0)
-                    await sendMultiTxn(txns.map(x => {
-                      return {
-                        tx: x,
-                      }
-                    }), {
-                      onSuccess: async () => {
-                        await refreshPositions();
-                      }
-                    })
-                }
-                }
-              >
-                Claim Fees ({selectedPositions.size})
-              </button>
-              <div className='flex md:flex-row flex-col gap-0.5'>
-                {/* <button
-                  className="bg-purple-600 hover:bg-purple-500 px-2 md:py-1 rounded text-white flex-1 sm:flex-none"
+              <div className="flex gap-0.5">
+                <button
+                  className="bg-blue-600 hover:bg-blue-500 px-2 md:py-1 rounded text-white flex-1 sm:flex-none"
                   onClick={async () => {
                     const selectedPositionsTemp = [...selectedPositions];
-                    const txns: Transaction[] = await getClosePositionAndSwapTx(selectedPositionsTemp)
+
+                    const txns: Transaction[] = await getClaimFeesTx(selectedPositionsTemp)
+
                     setSelectedPositions(new Set());
 
                     if (txns.length > 0)
@@ -585,11 +601,69 @@ const DammPositions: React.FC = () => {
                           await refreshPositions();
                         }
                       })
-                  }}
+                  }
+                  }
                 >
+                  Claim Fees ({selectedPositions.size})
+                </button>
+                <div className="flex">
+                  <button
+                    className="bg-blue-600 hover:bg-blue-500 px-2 md:py-1 rounded text-white flex-1 sm:flex-none"
+                    onClick={async () => {
+                      if (selectedPositions.size > 0)
+                        setSendPositionsDropdownOpen(!sendPositionsDropdownOpen)
+                    }}
+                  >
 
-                  {zapOutProgress.length > 0 && (zapOutProgress)} Close and Swap All ({selectedPositions.size})
-                </button> */}
+                    Send ({selectedPositions.size})
+                  </button>
+                  {sendPositionsDropdownOpen && (
+                    <div className="absolute z-50 mt-15 max-h-200 overflow-y-auto bg-gray-800 border border-gray-700 placeholder-gray-500 rounded-md shadow-lg">
+                      <input type='text'
+                        placeholder='Enter wallet address...'
+                        value={sendPositionsRecipient}
+                        onChange={e => { setSendPositionsRecipient(e.target.value.trim()) }}
+                      >
+                      </input>
+                      <button
+                        className="bg-blue-600 hover:bg-blue-500 px-2 md:py-1 rounded text-white flex-1 sm:flex-none"
+                        onClick={async () => {
+                          const selectedPositionsTemp = [...selectedPositions];
+
+                          let recipient: PublicKey;
+                          try {
+
+                            recipient = new PublicKey(sendPositionsRecipient);
+                          } catch {
+                            console.error("failed to get send recipient!");
+                            txToast.error("Failed to find recipient!");
+                            return;
+                          }
+                          const txns: Transaction[] = await getSendPositionTx(selectedPositionsTemp, recipient)
+                          setSelectedPositions(new Set());
+                          setSendPositionsDropdownOpen(false);
+                          if (txns.length > 0)
+                            await sendMultiTxn(txns.map(x => {
+                              return {
+                                tx: x,
+                              }
+                            }), {
+                              onSuccess: async () => {
+                                await refreshPositions();
+                              }
+                            })
+
+                        }}
+                      >
+
+                        Submit
+                      </button>
+
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className='flex md:flex-row flex-col gap-0.5'>
                 <div className="flex flex-col">
                   <button
                     className="bg-purple-600 hover:bg-purple-500 px-2 md:py-1 rounded text-white flex-1 sm:flex-none"
