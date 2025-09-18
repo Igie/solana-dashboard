@@ -12,12 +12,13 @@ import { useCpAmm } from '../contexts/CpAmmContext'
 import { AuthorityType, createSetAuthorityInstruction, getMint, NATIVE_MINT, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token'
 import { unwrapSOLInstruction } from '@meteora-ag/cp-amm-sdk'
 import { txToast } from './Simple/TxToast'
+import { launchpads } from './launchpads/Launchpads'
 
 const DammPositions: React.FC = () => {
   const { connection } = useConnection()
   const { publicKey, connected } = useWallet()
   const { cpAmm } = useCpAmm();
-  const { sendTxn, sendMultiTxn } = useTransactionManager();
+  const { sendLegacyTxn, sendMultiTxn } = useTransactionManager();
   const { positions, totalLiquidityValue, loading, refreshPositions, updatePosition, removePosition, sortPositionsBy, removeLiquidityAndSwapToQuote, sortedBy, sortedAscending } = useDammUserPositions();
   const [selectedPositions, setSelectedPositions] = useState<Set<PoolPositionInfo>>(new Set());
   const [lastSelectedPosition, setLastSelectedPosition] = useState<PoolPositionInfo | null>(null);
@@ -40,7 +41,7 @@ const DammPositions: React.FC = () => {
   const handleClaimFees = async (position: PoolPositionInfo) => {
     if (position.positionUnclaimedFee <= 0) return;
 
-    let txn = await cpAmm.claimPositionFee2({
+    const txn = await cpAmm.claimPositionFee2({
       receiver: publicKey!,
       owner: publicKey!,
       feePayer: publicKey!,
@@ -54,20 +55,23 @@ const DammPositions: React.FC = () => {
       tokenAVault: position.poolState.tokenAVault,
       tokenBVault: position.poolState.tokenBVault,
     })
-
-    txn.feePayer = publicKey!;
-    const sim = await connection.simulateTransaction(txn);
-    if (!sim.value.err) {
-      const final = new Transaction();
-      console.log(sim.value.unitsConsumed!);
-      final.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100000 }));
-      final.add(ComputeBudgetProgram.setComputeUnitLimit({ units: sim.value.unitsConsumed! * 1.1 }));
-      final.add(txn);
-      txn = final;
+    const t = new Transaction();
+    t.add(...txn.instructions);
+    t.feePayer = publicKey!
+    const sim = await connection.simulateTransaction(t);
+    if (sim.value.err) {
+      console.log(sim);
+      txToast.error("Failed to simulate claimPositionFee2 transaction!");
+      return;
     }
 
+    const final = new Transaction();
+    final.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 0 }));
+    final.add(ComputeBudgetProgram.setComputeUnitLimit({ units: Math.max(sim.value.unitsConsumed! * 1.1, 5000) }));
+    final.add(...txn.instructions);
+
     try {
-      await sendTxn(txn, undefined, {
+      await sendLegacyTxn(final, undefined, {
         notify: true,
         onSuccess: () => {
           updatePosition(position.positionAddress);
@@ -158,20 +162,23 @@ const DammPositions: React.FC = () => {
       vestings: [],
       currentPoint: new BN(0),
     });
-
-    txn.feePayer = publicKey!;
-    const sim = await connection.simulateTransaction(txn);
-    if (!sim.value.err) {
-      const final = new Transaction();
-      console.log(sim.value.unitsConsumed!);
-      final.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 10000 }));
-      final.add(ComputeBudgetProgram.setComputeUnitLimit({ units: sim.value.unitsConsumed! * 1.1 }));
-      final.add(txn);
-      txn = final;
+    const t = new Transaction();
+    t.add(...txn.instructions);
+    t.feePayer = publicKey!
+    const sim = await connection.simulateTransaction(t);
+    if (sim.value.err) {
+      console.log(sim);
+      txToast.error("Failed to simulate claimPositionFee2 transaction!");
+      return;
     }
 
+    const final = new Transaction();
+    final.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 0 }));
+    final.add(ComputeBudgetProgram.setComputeUnitLimit({ units: Math.max(sim.value.unitsConsumed! * 1.1, 5000) }));
+    final.add(...txn.instructions);
+
     try {
-      await sendTxn(txn, undefined, {
+      await sendLegacyTxn(final, undefined, {
         notify: true,
         onSuccess: () => {
           removePosition(position.positionAddress);
@@ -694,7 +701,6 @@ const DammPositions: React.FC = () => {
                       }}
 
                       defaultValue={100}
-                      //value={closePositionRange}
                       onMouseUp={e => setClosePositionRange(parseFloat(e.currentTarget.value))}
                       onTouchEnd={e => setClosePositionRange(parseFloat(e.currentTarget.value))}
                     >
@@ -773,6 +779,9 @@ const DammPositions: React.FC = () => {
                   <div className="col-span-2">
                     <div className="flex items-center gap-2">
                       <div className="flex -space-x-1">
+
+
+
                         <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-700 border border-gray-600">
                           {position.tokenA.image ? (
                             <img src={position.tokenA.image} alt={position.tokenA.symbol} className="w-full h-full object-cover" />
@@ -791,6 +800,20 @@ const DammPositions: React.FC = () => {
                             </div>
                           )}
                         </div>
+                        <div className="w-6 h-6 px-2 flex items-center object-scale-down">
+                                        {
+                                            (() => {
+                                                if (!position.tokenA.launchpad) return "";
+                                                const launchpad = launchpads[position.tokenA.launchpad];
+                                                if (launchpad) {
+                                                    const Logo = launchpads[position.tokenA.launchpad].logo || null;
+                                                    if (!Logo) return "";
+                                                    return <Logo />;
+                                                } else console.log(position.tokenA.launchpad, position.tokenA.mint)
+                                                return "";
+                                            })()
+                                        }
+                                    </div>
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1 text-sm">

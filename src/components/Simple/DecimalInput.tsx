@@ -45,14 +45,14 @@ export const DecimalInput: React.FC<DecimalInputProps> = ({
   };
 
   return (
-    <input
-      type="text"
-      inputMode="decimal"
-      value={localValue}
-      onChange={handleChange}
-      onBlur={handleBlur}
-      placeholder={placeholder}
-      className={className}
-    />
+      <input
+        type="text"
+        inputMode="decimal"
+        value={localValue}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        placeholder={placeholder}
+        className={className}
+      />
   );
 };

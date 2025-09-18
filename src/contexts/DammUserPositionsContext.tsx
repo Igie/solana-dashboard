@@ -73,7 +73,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
     const { connection } = useConnection();
     const { getSlot } = useGetSlot();
     const { publicKey } = useWallet();
-    const { sendTxn } = useTransactionManager();
+    const { sendTxn, sendLegacyTxn } = useTransactionManager();
     const { cpAmm, zap } = useCpAmm();
     const { refreshTokenAccounts } = useTokenAccounts();
     const [sortedBy, setSortBy] = useState<SortType>(SortType.PoolBaseFee);
@@ -492,8 +492,8 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
         //if (success) {
         //    return true;
         //}
-        console.log("Falling back to simple remove liquidity and swap");
-        txToast.error("Remove liquidity and swap failed. Falling back to simple remove and swap.");
+        //console.log("Falling back to simple remove liquidity and swap");
+        //txToast.error("Remove liquidity and swap failed. Falling back to simple remove and swap.");
 
         const txn = await cpAmm.removeAllLiquidityAndClosePosition({
             owner: publicKey!,
@@ -501,15 +501,31 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
             positionNftAccount: position.positionNftAccount,
             positionState: position.positionState,
             poolState: position.poolState,
-            tokenAAmountThreshold: new BN(position.tokenA.positionAmount * (10 ** position.tokenA.decimals)).muln(0.9),
-            tokenBAmountThreshold: new BN(position.tokenB.positionAmount * (10 ** position.tokenB.decimals)).muln(0.9),
+            tokenAAmountThreshold: new BN(0),
+            tokenBAmountThreshold: new BN(0),
             vestings: [],
             currentPoint: new BN(0),
         });
-
         let closed = false;
+
+        const t = new Transaction();
+        t.add(...txn.instructions);
+        t.feePayer = publicKey!;
+
+        const sim = await connection.simulateTransaction(t)
+        if (sim.value.err) {
+            txToast.error("Failed to simulate removeAllLiquidityAndClosePosition transaction!");
+            return false;
+
+        }
+
+        const final = new Transaction();
+        final.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50000 }));
+        final.add(ComputeBudgetProgram.setComputeUnitLimit({ units: Math.max(sim.value.unitsConsumed! * 1.1, 5000) }));
+        final.add(...txn.instructions);
+
         try {
-            await sendTxn(txn, undefined, {
+            await sendLegacyTxn(final, undefined, {
                 notify: true,
                 onSuccess: () => {
                     removePosition(position.positionAddress);

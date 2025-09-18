@@ -10,7 +10,13 @@ export interface TxnSignersPair {
 }
 
 type TransactionManagerContextType = {
-    sendTxn: (tx: Transaction | VersionedTransaction, signers?: Keypair[], options?: {
+    sendTxn: (tx: VersionedTransaction, signers?: Keypair[], options?: {
+        onSuccess?: (sig: string) => void;
+        onError?: (err: any) => void;
+        notify?: boolean;
+    }) => Promise<string | null>;
+
+    sendLegacyTxn: (tx: Transaction, signers?: Keypair[], options?: {
         onSuccess?: (sig: string) => void;
         onError?: (err: any) => void;
         notify?: boolean;
@@ -30,7 +36,7 @@ export const TransactionManagerProvider = ({ children }: { children: ReactNode }
     const { connection } = useConnection();
 
     const sendTxn = async (
-        tx: Transaction | VersionedTransaction, signers?: Keypair[],
+        tx: VersionedTransaction, signers?: Keypair[],
         { onSuccess, onError, notify = true }: {
             onSuccess?: (sig: string) => void;
             onError?: (err: any) => void;
@@ -44,14 +50,7 @@ export const TransactionManagerProvider = ({ children }: { children: ReactNode }
 
         try {
             const { context: { slot: minContextSlot }, value: { blockhash, lastValidBlockHeight } } = await connection.getLatestBlockhashAndContext();
-            if (tx instanceof Transaction) {
-                tx.feePayer = publicKey;
-                tx.recentBlockhash = blockhash;
-                tx.lastValidBlockHeight = lastValidBlockHeight;
-            } else if (tx instanceof VersionedTransaction) {
-                tx.message.recentBlockhash = blockhash;
-            }
-
+            tx.message.recentBlockhash = blockhash;
             let sig = "";
 
             if (signers) {
@@ -59,12 +58,75 @@ export const TransactionManagerProvider = ({ children }: { children: ReactNode }
                     txToast.error("signTransaction is not available!");
                     return null;
                 }
+                console.log("signing transaction with generated keypair")
                 const signedTx = await signTransaction(tx);
-                if (signedTx instanceof Transaction) {
-                    signedTx.partialSign(...signers);
-                } else if (signedTx instanceof VersionedTransaction) {
-                    signedTx.sign(signers);
+
+                signedTx.sign(signers);
+                sig = await connection.sendRawTransaction(signedTx.serialize(), {
+                    maxRetries: 3,
+                    preflightCommitment: 'confirmed',
+                    minContextSlot: minContextSlot,
+                });
+
+            } else {
+                sig = await sendTransaction(tx, connection, { minContextSlot, preflightCommitment: 'confirmed', signers });
+            }
+            const confirmation = await connection.confirmTransaction(
+                {
+                    signature: sig,
+                    blockhash: blockhash,
+                    lastValidBlockHeight: lastValidBlockHeight
+                }, 'confirmed');
+
+            if (confirmation.value.err) {
+                if (notify) txToast.error('Transaction failed');
+                onError?.(confirmation.value.err);
+                return null;
+            }
+
+            if (notify) txToast.success('Transaction confirmed!', sig);
+            onSuccess?.(sig);
+            return sig;
+
+        } catch (err: any) {
+            console.error('Transaction error:', err);
+            if (notify) txToast.error('Error sending transaction');
+            onError?.(err);
+            return null;
+        }
+    };
+
+    const sendLegacyTxn = async (
+        tx: Transaction, signers?: Keypair[],
+        { onSuccess, onError, notify = true }: {
+            onSuccess?: (sig: string) => void;
+            onError?: (err: any) => void;
+            notify?: boolean;
+        } = {}
+    ): Promise<string | null> => {
+        if (!publicKey) {
+            if (notify) txToast.error('Wallet not connected.');
+            return null;
+        }
+
+        try {
+            const { context: { slot: minContextSlot }, value: { blockhash, lastValidBlockHeight } } = await connection.getLatestBlockhashAndContext();
+            console.log("getting context");
+            console.log("setting transaction params");
+            tx.feePayer = publicKey;
+            tx.recentBlockhash = blockhash;
+            tx.lastValidBlockHeight = lastValidBlockHeight;
+            let sig = "";
+
+            if (signers) {
+                if (signTransaction === undefined) {
+                    txToast.error("signTransaction is not available!");
+                    return null;
                 }
+                console.log("signing transaction with generated keypair")
+                const signedTx = await signTransaction(tx);
+
+                signedTx.partialSign(...signers);
                 sig = await connection.sendRawTransaction(signedTx.serialize(), {
                     maxRetries: 3,
                     preflightCommitment: 'confirmed',
@@ -214,11 +276,11 @@ export const TransactionManagerProvider = ({ children }: { children: ReactNode }
     }
 
     useEffect(() => {
-       console.log("TransactionManagerProvider mounted");
+        console.log("TransactionManagerProvider mounted");
     }, []);
 
     return (
-        <TransactionManagerContext.Provider value={{ sendTxn, sendMultiTxn}}>
+        <TransactionManagerContext.Provider value={{ sendTxn, sendLegacyTxn, sendMultiTxn }}>
             {children}
         </TransactionManagerContext.Provider>
     );

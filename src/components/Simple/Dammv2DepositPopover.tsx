@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { getTokenProgram, type DepositQuote } from '@meteora-ag/cp-amm-sdk';
-import { Keypair, LAMPORTS_PER_SOL, PublicKey, Transaction } from '@solana/web3.js';
+import { ComputeBudgetProgram, Keypair, LAMPORTS_PER_SOL, PublicKey, Transaction } from '@solana/web3.js';
 import Decimal from 'decimal.js';
 import { type TokenAccount } from '../../tokenUtils';
 import { DecimalInput } from './DecimalInput';
@@ -13,7 +13,7 @@ import { getMint, NATIVE_MINT, TOKEN_2022_PROGRAM_ID, type Mint } from '@solana/
 import { useTransactionManager } from '../../contexts/TransactionManagerContext';
 import { txToast } from './TxToast';
 import { useSettings } from '../../contexts/SettingsContext';
-import { useConnection } from '@jup-ag/wallet-adapter';
+import { useConnection, useWallet } from '@jup-ag/wallet-adapter';
 import { useCpAmm } from '../../contexts/CpAmmContext';
 
 
@@ -23,7 +23,6 @@ interface DepositPopoverProps {
   positionInfo: PoolPositionInfo | null;
   onClose: () => void;
   position: { x: number; y: number };
-  sendTransaction: (tx: Transaction, nft: Keypair | null) => Promise<boolean>;
 }
 
 export const DepositPopover: React.FC<DepositPopoverProps> = ({
@@ -33,9 +32,17 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
   positionInfo,
   onClose,
   position,
-  sendTransaction,
 }) => {
   const ref = useRef<HTMLDivElement>(null);
+
+  const { jupSlippage, includeDammv2Route, setIncludeDammv2Route } = useSettings();
+  const { publicKey } = useWallet();
+  const { connection } = useConnection();
+  const { cpAmm } = useCpAmm();
+  const { sendTxn, sendLegacyTxn } = useTransactionManager();
+  const { refreshTokenAccounts } = useTokenAccounts();
+  const { refreshPositions } = useDammUserPositions();
+
   const [amountA, setAmountA] = useState(new Decimal(0));
   const [amountB, setAmountB] = useState(new Decimal(0));
 
@@ -46,12 +53,9 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
 
   const [swapSolAmount, setSwapSolAmount] = useState(new Decimal(0.01));
 
-  const { jupSlippage, includeDammv2Route, setIncludeDammv2Route } = useSettings();
-  const { connection } = useConnection();
-  const { cpAmm } = useCpAmm();
-  const { sendTxn } = useTransactionManager();
-  const { refreshTokenAccounts } = useTokenAccounts();
-  const { refreshPositions } = useDammUserPositions();
+  const [closePositionRange, setClosePositionRange] = useState(100);
+
+
 
   const tokenAInfo = useRef<{ mint: Mint, currentEpoch: number }>(undefined)
   const tokenBInfo = useRef<{ mint: Mint, currentEpoch: number }>(undefined)
@@ -172,6 +176,125 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
     });
   }
 
+  const getClosePositionTx = async (positions: PoolPositionInfo[], amount: number) => {
+
+    if (amount < 100)
+      return await getRemoveLiquidityTx(positions, amount);
+
+    const txns = [];
+    positions = positions.filter(x => !cpAmm.isLockedPosition(x.positionState))
+
+    while (positions.length > 0) {
+      const innerPositions = positions.splice(0, 2)
+      const t = new Transaction();
+      for (const pos of innerPositions) {
+        const txn = await cpAmm.removeAllLiquidityAndClosePosition({
+          owner: publicKey!,
+          position: pos.positionAddress,
+          positionNftAccount: pos.positionNftAccount,
+          positionState: pos.positionState,
+          poolState: pos.poolState,
+          tokenAAmountThreshold: new BN(0),
+          tokenBAmountThreshold: new BN(0),
+          vestings: [],
+          currentPoint: new BN(0),
+        });
+        t.add(...txn.instructions);
+      }
+      t.feePayer = publicKey!;
+      const sim = await connection.simulateTransaction(t)
+      if (!sim.value.err) {
+        const final = new Transaction();
+        final.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100000 }));
+        final.add(ComputeBudgetProgram.setComputeUnitLimit({ units: sim.value.unitsConsumed! * 1.1 }));
+        final.add(t);
+        txns.push(final);
+      }
+    }
+    return txns;
+  };
+
+  const getRemoveLiquidityTx = async (positions: PoolPositionInfo[], amount: number) => {
+    const txns = [];
+    positions = positions.filter(x => !cpAmm.isLockedPosition(x.positionState))
+
+    let epoch = 0;
+
+    const poolStates = [...positions.map(x => x.tokenA.tokenProgram), positions.map(x => x.tokenB.tokenProgram)]
+    if (poolStates.indexOf(TOKEN_2022_PROGRAM_ID.toBase58()))
+      epoch = (await connection.getEpochInfo("confirmed")).epoch;
+
+    while (positions.length > 0) {
+      const innerPositions = positions.splice(0, 2)
+      const t = new Transaction();
+      for (const pos of innerPositions) {
+
+        const tokenAProgram = new PublicKey(pos.tokenA.tokenProgram);
+        const tokenBProgram = new PublicKey(pos.tokenB.tokenProgram);
+        const tokenInfoA = pos.tokenA.tokenProgram == TOKEN_2022_PROGRAM_ID.toBase58() ?
+          {
+            mint: await getMint(connection,
+              new PublicKey(pos.tokenA.mint),
+              connection.commitment,
+              tokenAProgram,
+            ),
+            currentEpoch: epoch
+          } : undefined
+
+        const tokenInfoB = pos.tokenB.tokenProgram == TOKEN_2022_PROGRAM_ID.toBase58() ?
+          {
+            mint: await getMint(connection,
+              new PublicKey(pos.tokenB.mint),
+              connection.commitment,
+              tokenBProgram,
+            ),
+            currentEpoch: epoch
+          } : undefined
+
+        const withdrawQuote = cpAmm.getWithdrawQuote({
+          liquidityDelta: pos.positionState.unlockedLiquidity.muln(amount).divn(100),
+          sqrtPrice: pos.poolState.sqrtPrice,
+          maxSqrtPrice: pos.poolState.sqrtMaxPrice,
+          minSqrtPrice: pos.poolState.sqrtMinPrice,
+
+          tokenATokenInfo: tokenInfoA,
+          tokenBTokenInfo: tokenInfoB,
+        })
+
+        const txn = await cpAmm.removeLiquidity({
+          owner: publicKey!,
+          pool: pos.poolAddress,
+          position: pos.positionAddress,
+          positionNftAccount: pos.positionNftAccount,
+          liquidityDelta: withdrawQuote.liquidityDelta,
+          tokenAMint: pos.poolState.tokenAMint,
+          tokenBMint: pos.poolState.tokenBMint,
+          tokenAVault: pos.poolState.tokenAVault,
+          tokenBVault: pos.poolState.tokenBVault,
+          tokenAProgram,
+          tokenBProgram,
+          tokenAAmountThreshold: new BN(0),
+          tokenBAmountThreshold: new BN(0),
+          vestings: [],
+          currentPoint: new BN(0),
+        });
+        t.add(...txn.instructions);
+      }
+      t.feePayer = publicKey!;
+      const sim = await connection.simulateTransaction(t)
+      if (!sim.value.err) {
+        const final = new Transaction();
+        final.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100000 }));
+        final.add(ComputeBudgetProgram.setComputeUnitLimit({ units: sim.value.unitsConsumed! * 1.1 }));
+        final.add(t);
+        txns.push(final);
+      } else {
+        console.log(sim)
+      }
+    }
+    return txns;
+  };
+
   useEffect(() => {
     if (tokenA) {
       getDepositAmountB(new Decimal(tokenA!.amount.toString()))
@@ -199,6 +322,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
     const inputB = new BN(amountB.mul(Decimal.pow(10, tokenB!.decimals)).toString());
 
     if (positionInfo) {
+      const t = new Transaction()
       const tx = await cpAmm.addLiquidity({
         owner: owner,
         positionNftAccount: positionInfo.positionNftAccount,
@@ -216,14 +340,35 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
         tokenAProgram: getTokenProgram(positionInfo.poolState.tokenAFlag),
         tokenBProgram: getTokenProgram(positionInfo.poolState.tokenBFlag),
       })
-      const success = await sendTransaction(tx, null);
-      if (success) {
-        onClose();
-        await refreshTokenAccounts();
-        await refreshPositions();
+      t.add(...tx.instructions);
+      t.feePayer = publicKey!;
+
+      const sim = await connection.simulateTransaction(t)
+      if (sim.value.err) {
+        txToast.error("Failed to simulate addLiquidity transaction!");
+        return;
       }
+
+      const final = new Transaction();
+      final.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50000 }));
+      final.add(ComputeBudgetProgram.setComputeUnitLimit({ units: Math.max(sim.value.unitsConsumed! * 1.1, 5000) }));
+      final.add(...tx.instructions);
+
+      await sendLegacyTxn(final, undefined, {
+        notify: true,
+        onSuccess: async () => {
+          onClose();
+          await setTokensAB();
+          await refreshPositions();
+        },
+        onError: () => {
+          txToast.error("Failed to deposit!")
+        }
+      });
+
     } else {
       const positionNft = Keypair.generate();
+      const t = new Transaction();
       const tx = await cpAmm.createPositionAndAddLiquidity({
         owner: owner,
         pool: poolInfo.poolInfo.publicKey,
@@ -239,12 +384,30 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
         tokenBProgram: getTokenProgram(poolInfo.poolInfo.account.tokenBFlag),
 
       });
-      const success = await sendTransaction(tx, positionNft);
-      if (success) {
-        onClose();
-        await refreshTokenAccounts();
-        await refreshPositions();
+      t.add(...tx.instructions);
+      t.feePayer = publicKey!;
+
+      const sim = await connection.simulateTransaction(t)
+      if (sim.value.err) {
+        txToast.error("Failed to simulate createPositionAndAddLiquidity transaction!");
+        return;
       }
+      const final = new Transaction();
+      final.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50000 }));
+      final.add(ComputeBudgetProgram.setComputeUnitLimit({ units: Math.max(sim.value.unitsConsumed! * 1.1, 5000) }));
+      final.add(...tx.instructions);
+
+      await sendLegacyTxn(tx, [positionNft], {
+        notify: true,
+        onSuccess: async () => {
+          onClose();
+          await setTokensAB();
+          await refreshPositions();
+        },
+        onError: () => {
+          txToast.error("Failed to add liquidity!")
+        }
+      });
     }
   };
 
@@ -252,7 +415,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
     return (
       <div
         ref={ref}
-        className="absolute z-50 w-80 bg-[#0d111c] text-gray-100 border border-gray-700 rounded-md p-2 text-sm"
+        className="absolute flex flex-col z-50 w-80 bg-[#0d111c] text-gray-100 border border-gray-700 rounded-xs p-2 text-sm"
         style={{ top: position.y, left: position.x }}
       >
         <div className="mb-3 text-sm text-gray-700">Pool does not exist</div>
@@ -263,7 +426,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
   return (
     <div
       ref={ref}
-      className="absolute z-50 bg-[#0d111c] text-gray-100 border border-gray-700 rounded-md p-2 text-sm justify-center"
+      className="absolute flex flex-col z-50 bg-[#0d111c] text-gray-100 border border-gray-700 rounded-md p-1 gap-1 text-sm justify-center"
       style={{ top: position.y, left: position.x }}
     >
       <div className="grid gap-1 text-sm font-semibold text-gray-100">
@@ -275,13 +438,13 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
         </div>
         <div className='flex gap-1 items-center'>
           <DecimalInput
-            className='flex-1 bg-[#1a1e2d] max-w-40 border border-gray-600 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500'
+            className="max-h-6 max-w-25 rounded-xs border border-gray-600 bg-[#1a1e2d] px-2 py-1 text-sm focus:ring-1 focus:ring-purple-500 focus:outline-none"
             value={swapSolAmount.toFixed()}
             onChange={() => { }}
             onBlur={(v) => setSwapSolAmount(v)}
           />
           <button
-            className="bg-green-600 hover:bg-green-700 text-white p-1 rounded text-sm"
+            className="rounded-xs max-h-6 bg-green-600 px-1 py-1 text-xs text-white hover:bg-green-700"
             onClick={() => swapSOLAndDeposit()}>
             Swap SOL
           </button>
@@ -299,15 +462,15 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
           {/* Token A */}
           <div>
             <div className="text-sm text-gray-400">{tokenA!.symbol} Balance: {tokenA!.amount.toNumber()}</div>
-            <div className="flex">
+            <div className="flex gap-1">
               <DecimalInput
-                className="flex-1 bg-[#1a1e2d] border border-gray-600 rounded p-1 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
+                className="max-h-6 max-w-35 rounded-xs border border-gray-600 bg-[#1a1e2d] px-1 py-1 text-sm focus:ring-1 focus:ring-purple-500 focus:outline-none"
                 value={amountA.toFixed(10)}
                 onChange={() => { }}
                 onBlur={(v) => getDepositAmountB(v)}
               />
               <button
-                className="text-xs py-1 px-2 ml-1 rounded-md bg-blue-600 hover:bg-blue-700 text-white"
+                className="text-xs py-1 px-1 rounded-xs max-h-6 bg-blue-600 hover:bg-blue-700 text-white"
                 onClick={() => getDepositAmountB(new Decimal(tokenA!.amount.toString()))}
               >
                 Max
@@ -318,9 +481,9 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
           {/* Token B */}
           <div>
             <div className="text-sm text-gray-400">{tokenB!.symbol} Balance: {tokenB!.amount.toNumber()}</div>
-            <div className="flex">
+            <div className="flex gap-1">
               <DecimalInput
-                className="flex-1 bg-[#1a1e2d] border border-gray-600 rounded p-1 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
+                className="max-h-6 max-w-35 rounded-xs border border-gray-600 bg-[#1a1e2d] px-1 py-1 text-sm focus:ring-1 focus:ring-purple-500 focus:outline-none"
                 value={amountB.toFixed(10)}
                 onChange={() => { }}
                 onBlur={async (v) => {
@@ -328,7 +491,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
                 }}
               />
               <button
-                className="text-xs py-1  px-2 ml-1 rounded-md bg-blue-600 hover:bg-blue-700 text-white"
+                className="text-xs py-1 px-1 rounded-xs max-h-6 bg-blue-600 hover:bg-blue-700 text-white"
                 onClick={async () => await getDepositAmountA(new Decimal(tokenB!.amount.toString()))}
               >
                 Max
@@ -338,7 +501,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
 
           {/* Submit Button */}
           <button
-            className="w-full bg-green-600 hover:bg-green-700 text-white py-1 rounded text-sm"
+            className="w-full rounded-xs max-h-6 bg-green-600 hover:bg-green-700 text-white text-sm"
             disabled={!amountA || !amountB}
             onClick={handleDeposit}
           >
@@ -346,6 +509,44 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
           </button>
         </div>
       )}
+      {positionInfo && (
+        <div className="flex flex-col">
+          <button
+            className="bg-purple-600 hover:bg-purple-500 px-2 rounded-xs max-h-6 text-white"
+            onClick={async () => {
+              const txns: Transaction[] = await getClosePositionTx([positionInfo], closePositionRange)
+              await sendLegacyTxn(txns[0], undefined, {
+                notify: true,
+                onSuccess: async () => {
+                  await setTokensAB();
+                  await refreshPositions();
+                },
+                onError: () => {
+                  txToast.error("Failed to remove liquidity!");
+                }
+              })
+            }}
+          >
+            {closePositionRange < 100 ? "Remove Liquidity" : "Close Position"}
+          </button>
+          <div className="flex gap-1">
+            <input type='range' min={10} max={100} step={10}
+              className='flex grow'
+              onInput={e => {
+                if (e.currentTarget.nextElementSibling)
+                  e.currentTarget.nextElementSibling.innerHTML = e.currentTarget.value + '%'
+              }}
+
+              defaultValue={100}
+              onMouseUp={e => setClosePositionRange(parseFloat(e.currentTarget.value))}
+              onTouchEnd={e => setClosePositionRange(parseFloat(e.currentTarget.value))}
+            >
+            </input>
+            <div className='min-w-10'>{closePositionRange + "%"}</div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

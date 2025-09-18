@@ -4,7 +4,6 @@ import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { DepositPopover } from "./Dammv2DepositPopover";
 import React, { useEffect, useState } from "react";
 import { useTokenAccounts } from "../../contexts/TokenAccountsContext";
-import { useTransactionManager } from "../../contexts/TransactionManagerContext";
 import { GetTokenAccountMap, type TokenAccountMap, type TokenMetadataMap } from "../../tokenUtils";
 import { formatDuration, getAllPoolPositions, getShortMint, PoolSortType, sortPools, type PoolDetailedInfo, type PoolPositionInfo, type PoolPositionInfoMap } from "../../constants";
 import { useWallet } from "@jup-ag/wallet-adapter";
@@ -40,7 +39,6 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
     const { getSlot } = useGetSlot();
     const { cpAmm } = useCpAmm();
     const { publicKey, connected } = useWallet();
-    const { sendTxn } = useTransactionManager();
     const { tokenAccounts, refreshTokenAccounts } = useTokenAccounts();
     const { positions, refreshPositions } = useDammUserPositions();
 
@@ -71,8 +69,8 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
 
         // Calculate smart position that stays within viewport
         const calculatePosition = (buttonRect: DOMRect) => {
-            const popoverWidth = 320; // Adjust based on your actual popover width
-            const popoverHeight = 400; // Adjust based on your actual popover height
+            const popoverWidth = 300; // Adjust based on your actual popover width
+            const popoverHeight = 90; // Adjust based on your actual popover height
             const padding = 16; // Minimum distance from viewport edges
 
             const viewport = {
@@ -606,16 +604,6 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                             poolInfo={depositPool}
                             onClose={() => setPopoverVisible(false)}
                             position={position}
-                            sendTransaction={async (x, nft) => {
-                                let success = false;
-                                await sendTxn(x, nft ? [nft] : undefined, {
-                                    notify: true,
-                                    onSuccess: () => {
-                                        success = true;
-                                    }
-                                })
-                                return success;
-                            }}
                         />
                     )}
 

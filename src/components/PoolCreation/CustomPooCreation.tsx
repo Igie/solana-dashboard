@@ -81,7 +81,7 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
 
     const { cpAmm } = useCpAmm();
     const { connected, publicKey } = useWallet();
-    const { sendTxn } = useTransactionManager();
+    const { sendLegacyTxn } = useTransactionManager();
 
     const [newPoolAddress, setNewPoolAddress] = useState<PublicKey | null>(null)
     const [newPoolAddressExists, setNewPoolAddressExists] = useState(false)
@@ -178,7 +178,7 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
                 tokenBProgram: new PublicKey(tokenBMetadata?.tokenProgram || TOKEN_PROGRAM_ID),
             });
             try {
-                await sendTxn(tx, [positionNft],
+                await sendLegacyTxn(tx, [positionNft],
                     {
                         notify: true,
                         onSuccess: async () => {
