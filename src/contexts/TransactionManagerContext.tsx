@@ -132,7 +132,6 @@ export const TransactionManagerProvider = ({ children }: { children: ReactNode }
                     preflightCommitment: 'confirmed',
                     minContextSlot: minContextSlot,
                 });
-
             } else {
                 sig = await sendTransaction(tx, connection, { minContextSlot, preflightCommitment: 'confirmed', signers });
             }

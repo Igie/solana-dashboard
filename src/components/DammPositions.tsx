@@ -198,9 +198,16 @@ const DammPositions: React.FC = () => {
 
     const txns = [];
     positions = positions.filter(x => !cpAmm.isLockedPosition(x.positionState))
-
     while (positions.length > 0) {
-      const innerPositions = positions.splice(0, 2)
+
+      const innerPositions = positions.splice(0, 1);
+      const index = positions.findIndex(x => innerPositions[0].tokenA.mint === x.tokenA.mint ||
+        innerPositions[0].tokenA.mint === x.tokenB.mint ||
+        innerPositions[0].tokenB.mint === x.tokenA.mint ||
+        innerPositions[0].tokenB.mint === x.tokenB.mint)
+      if (index > -1)
+        innerPositions.push(...positions.splice(index, 1));
+
       const t = new Transaction();
       for (const pos of innerPositions) {
         const txn = await cpAmm.removeAllLiquidityAndClosePosition({
@@ -405,7 +412,7 @@ const DammPositions: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-140px)] lg:h-[calc(100vh-75px)] space-y-2 px-2 md:px-0">
+    <div className="flex flex-col h-[calc(100vh-140px)] lg:h-[calc(100vh-75px)] space-y-1 px-2 md:px-0">
       {/* Pool Overview Stats */}
       <div className="grid grid-cols-2 gap-1">
         <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-700/50 rounded-2xl p-2">
@@ -439,14 +446,15 @@ const DammPositions: React.FC = () => {
         placeholder="Search by token mint, name or symbol..."
       />
       <div className="flex flex-row items-start justify-between gap-1">
-        <div className="flex md:flex-col items-stretch justify-start md:gap-1 gap-0.5">
+        <div className="flex items-stretch justify-start md:gap-1 gap-0.5">
+          <div className="flex flex-col justify-end  gap-1">
           <button
             onClick={() => {
               refreshPositions()
               setSelectedPositions(new Set())
             }}
             disabled={loading}
-            className="flex items-center gap-1 px-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded font-medium transition-colors w-auto justify-center"
+            className="flex items-center gap-1 px-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded text-md transition-colors w-auto justify-center"
           >
             {loading ? (
               <RefreshCw className="w-4 h-4 animate-spin" />
@@ -460,11 +468,22 @@ const DammPositions: React.FC = () => {
               setSelectedPositions(new Set([...positions]))
             }}
             disabled={loading}
-            className="flex items-center gap-1 px-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded font-medium transition-colors w-auto justify-center"
+            className="flex items-center gap-1 px-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded text-md transition-colors w-auto justify-center"
           >
             Select All
-
           </button>
+          </div>
+          <div className="flex flex-col justify-end gap-1">
+          <button
+            onClick={() => {
+              setSelectedPositions(new Set())
+            }}
+            disabled={loading}
+            className="flex items-center gap-1 px-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded text-md transition-colors w-auto justify-center"
+          >
+            Deselect All
+          </button>
+          </div>
         </div>
         {/* Sort Menu */}
         <div className="relative md:text-md text-sm">
@@ -801,19 +820,19 @@ const DammPositions: React.FC = () => {
                           )}
                         </div>
                         <div className="w-6 h-6 px-2 flex items-center object-scale-down">
-                                        {
-                                            (() => {
-                                                if (!position.tokenA.launchpad) return "";
-                                                const launchpad = launchpads[position.tokenA.launchpad];
-                                                if (launchpad) {
-                                                    const Logo = launchpads[position.tokenA.launchpad].logo || null;
-                                                    if (!Logo) return "";
-                                                    return <Logo />;
-                                                } else console.log(position.tokenA.launchpad, position.tokenA.mint)
-                                                return "";
-                                            })()
-                                        }
-                                    </div>
+                          {
+                            (() => {
+                              if (!position.tokenA.launchpad) return "";
+                              const launchpad = launchpads[position.tokenA.launchpad];
+                              if (launchpad) {
+                                const Logo = launchpads[position.tokenA.launchpad].logo || null;
+                                if (!Logo) return "";
+                                return <Logo />;
+                              } else console.log(position.tokenA.launchpad, position.tokenA.mint)
+                              return "";
+                            })()
+                          }
+                        </div>
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1 text-sm">
