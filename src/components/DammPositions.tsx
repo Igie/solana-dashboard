@@ -410,12 +410,8 @@ const DammPositions: React.FC = () => {
     for (const tx of transactions) {
       if (!tx) continue;
 
-      const selfIndex = tx.transaction.message.staticAccountKeys.map(x => x.toString()).indexOf(publicKey!.toBase58())
-      if (selfIndex === -1) {
-        console.log("could not find self index");
-        continue;
-      }
-
+      //const selfIndex = tx.transaction.message.staticAccountKeys.map(x => x.toString()).indexOf(publicKey!.toBase58()) || 0
+      const selfIndex = 0;
       const preBalance = tx.meta!.preBalances[selfIndex];
       const postBalance = tx.meta!.postBalances[selfIndex];
 
@@ -978,8 +974,8 @@ const DammPositions: React.FC = () => {
                             PnL
                           </button>
                           {pnlIndex === index && pnlInfo !== undefined && (
-                            <div ref={pnlRef} 
-                            className="absolute flex flex-col z-50 top-6 left-0 w-80 bg-gray-900 text-gray-100 border border-gray-700 rounded-xs p-2 text-sm">
+                            <div ref={pnlRef}
+                              className="absolute flex flex-col z-50 top-6 left-0 w-80 bg-gray-900 text-gray-100 border border-gray-700 rounded-xs p-2 text-sm">
                               <div>{position.tokenA.symbol + " / " + position.tokenB.symbol}</div>
                               <div className="flex flex-col divide-y divide-blue-700">
                                 {pnlInfo!.transactionPnl.map(x => (
