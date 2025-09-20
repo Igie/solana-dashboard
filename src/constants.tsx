@@ -46,7 +46,7 @@ export interface PoolInfo {
     account: PoolState;
 }
 
-export interface PoolTokenInfo extends TokenMetadata  {
+export interface PoolTokenInfo extends TokenMetadata {
     poolAmount: number
     totalFees: Decimal,
 }
@@ -340,6 +340,7 @@ export const getAllPoolPositions = async (cpAmm: CpAmm, pool: PoolDetailedInfo, 
 
             position.positionValue = (positionTokenAAmount * poolPrice +
                 positionTokenBAmount) * tokenBMetadata!.price.toNumber();
+
             position.shareOfPoolPercentage = shareOfPool;
 
             position.positionUnclaimedFee =

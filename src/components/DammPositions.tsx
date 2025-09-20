@@ -14,6 +14,7 @@ import { unwrapSOLInstruction } from '@meteora-ag/cp-amm-sdk'
 import { txToast } from './Simple/TxToast'
 import { launchpads } from './launchpads/Launchpads'
 import { fetchTokenMetadataJup } from '../tokenUtils'
+import Decimal from "decimal.js"
 
 interface PnlInfo {
   transactionPnl:
@@ -23,7 +24,8 @@ interface PnlInfo {
   }[],
   positionValue: number,
   unclaimedFees: number,
-  totalPnl: number,
+  dollarTotalPnl: number,
+  solTotalPnl: number,
 }
 
 const DammPositions: React.FC = () => {
@@ -404,7 +406,8 @@ const DammPositions: React.FC = () => {
       positionValue: pos.positionValue,
       unclaimedFees: pos.positionUnclaimedFee,
       transactionPnl: [],
-      totalPnl: 0
+      dollarTotalPnl: 0,
+      solTotalPnl: 0,
     }
 
     for (const tx of transactions) {
@@ -428,9 +431,19 @@ const DammPositions: React.FC = () => {
       pnlInfo.transactionPnl.push(instructionsPnl);
       profit += (postBalance - preBalance) / LAMPORTS_PER_SOL;
     }
-    const solMetadata = (await fetchTokenMetadataJup([NATIVE_MINT.toBase58()]))[NATIVE_MINT.toBase58()]
-    const solPrice = solMetadata.price;
-    pnlInfo.totalPnl = solPrice.mul(profit).toNumber() + pos.positionValue + pos.positionUnclaimedFee;
+    const metdata = await fetchTokenMetadataJup([NATIVE_MINT.toBase58()]);
+
+    const solPrice = metdata[NATIVE_MINT.toBase58()].price;
+    pnlInfo.dollarTotalPnl = solPrice.mul(profit).toNumber() + pos.positionValue + pos.positionUnclaimedFee;
+
+    let positionSolValue = 0;
+
+    positionSolValue = pos.tokenA.price.mul(new Decimal(pos.tokenA.positionAmount)).add(
+      pos.tokenB.price.mul(
+        new Decimal(pos.tokenB.positionAmount))).div(
+          metdata[NATIVE_MINT.toBase58()].price)
+      .toNumber();
+    pnlInfo.solTotalPnl = profit + positionSolValue + pos.positionUnclaimedFee / metdata[NATIVE_MINT.toBase58()].price.toNumber();
     setPnlInfo(pnlInfo);
     console.log(pnlInfo);
   }
@@ -996,7 +1009,7 @@ const DammPositions: React.FC = () => {
                                 {"Position Value: $" + pnlInfo.positionValue.toFixed(2)}
                               </div>
                               <div className="text-green-700">
-                                {"Total PnL: $" + pnlInfo.totalPnl.toFixed(2)}
+                                {"Total PnL: " + pnlInfo.solTotalPnl.toFixed(4) + " SOL ($" + pnlInfo.dollarTotalPnl.toFixed(2) + ")"}
                               </div>
                             </div>
                           )}
