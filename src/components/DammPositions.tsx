@@ -435,10 +435,7 @@ const DammPositions: React.FC = () => {
 
     const solPrice = metdata[NATIVE_MINT.toBase58()].price;
 
-    const positionSolValue = pos.tokenA.price.mul(new Decimal(pos.tokenA.positionAmount)).add(
-                             pos.tokenB.price.mul(new Decimal(pos.tokenB.positionAmount)))
-      .div(metdata[NATIVE_MINT.toBase58()].price)
-      .toNumber();
+    const positionSolValue = pos.positionValue / solPrice.toNumber()
     pnlInfo.solTotalPnl = profit + positionSolValue + pos.positionUnclaimedFee / solPrice.toNumber();
 
     pnlInfo.dollarTotalPnl = pnlInfo.solTotalPnl * solPrice.toNumber();
