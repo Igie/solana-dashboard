@@ -5,7 +5,7 @@ import { useTransactionManager } from '../contexts/TransactionManagerContext'
 import { toast } from 'sonner'
 import { BN } from '@coral-xyz/anchor'
 import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-adapter'
-import { ComputeBudgetProgram, PublicKey, Transaction, TransactionInstruction } from '@solana/web3.js'
+import { ComputeBudgetProgram, LAMPORTS_PER_SOL, PublicKey, Transaction, TransactionInstruction, TransactionMessage } from '@solana/web3.js'
 import { copyToClipboard, getSchedulerType, renderFeeTokenImages, type PoolPositionInfo } from '../constants'
 import { FeeSchedulerGraph } from './Simple/FeeSchedulerGraph'
 import { useCpAmm } from '../contexts/CpAmmContext'
@@ -13,17 +13,33 @@ import { AuthorityType, createSetAuthorityInstruction, getMint, NATIVE_MINT, TOK
 import { unwrapSOLInstruction } from '@meteora-ag/cp-amm-sdk'
 import { txToast } from './Simple/TxToast'
 import { launchpads } from './launchpads/Launchpads'
+import { fetchTokenMetadataJup } from '../tokenUtils'
+
+interface PnlInfo {
+  transactionPnl:
+  {
+    instructions: string[],
+    solPnl: number,
+  }[],
+  positionValue: number,
+  unclaimedFees: number,
+  totalPnl: number,
+}
 
 const DammPositions: React.FC = () => {
   const { connection } = useConnection()
   const { publicKey, connected } = useWallet()
-  const { cpAmm } = useCpAmm();
-  const { sendLegacyTxn, sendMultiTxn } = useTransactionManager();
+  const { sendLegacyTxn, sendMultiTxn } = useTransactionManager()
+  const { cpAmm, coder } = useCpAmm();
   const { positions, totalLiquidityValue, loading, refreshPositions, updatePosition, removePosition, sortPositionsBy, removeLiquidityAndSwapToQuote, sortedBy, sortedAscending } = useDammUserPositions();
   const [selectedPositions, setSelectedPositions] = useState<Set<PoolPositionInfo>>(new Set());
   const [lastSelectedPosition, setLastSelectedPosition] = useState<PoolPositionInfo | null>(null);
 
-  const [searchString, setSearchString] = useState<string>("")
+
+  const [pnlIndex, setPnlIndex] = useState<number | undefined>(undefined);
+  const [pnlInfo, setPnlInfo] = useState<PnlInfo | undefined>(undefined);
+
+  const [searchString, setSearchString] = useState<string>("");
 
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const [showSortMenu, setShowSortMenu] = useState(false);
@@ -33,6 +49,7 @@ const DammPositions: React.FC = () => {
   const [sendPositionsRecipient, setSendPositionsRecipient] = useState("");
   const [sendPositionsDropdownOpen, setSendPositionsDropdownOpen] = useState(false);
   const popupRef = useRef<HTMLDivElement | null>(null)
+  const pnlRef = useRef<HTMLDivElement | null>(null)
 
   const toggleRowExpand = (index: number) => {
     setExpandedIndex(expandedIndex === index ? null : index);
@@ -366,6 +383,62 @@ const DammPositions: React.FC = () => {
   //   return txns;
   // };
 
+  const calculatePnl = async (pos: PoolPositionInfo) => {
+    let signatures = await connection.getSignaturesForAddress(pos.positionNftAccount);
+    signatures = signatures.filter(x => x.err === null);
+    console.log(signatures.length);
+    if (signatures.length === 0) {
+      toast.error("No signatures returned.");
+      return;
+    }
+    let transactions = await connection.getTransactions(signatures.map(x => x.signature),
+      {
+        commitment: "confirmed",
+        maxSupportedTransactionVersion: 0,
+      });
+    transactions = transactions.filter(x => x !== null);
+    transactions.reverse();
+
+    let profit = 0;
+    const pnlInfo: PnlInfo = {
+      positionValue: pos.positionValue,
+      unclaimedFees: pos.positionUnclaimedFee,
+      transactionPnl: [],
+      totalPnl: 0
+    }
+
+    for (const tx of transactions) {
+      if (!tx) continue;
+
+      const selfIndex = tx.transaction.message.staticAccountKeys.map(x => x.toString()).indexOf(publicKey!.toBase58())
+      if (selfIndex === -1) {
+        console.log("could not find self index");
+        continue;
+      }
+
+      const preBalance = tx.meta!.preBalances[selfIndex];
+      const postBalance = tx.meta!.postBalances[selfIndex];
+
+      const instructionsPnl: { instructions: string[], solPnl: number } = {
+        instructions: [],
+        solPnl: (postBalance - preBalance) / LAMPORTS_PER_SOL,
+      };
+      const message = TransactionMessage.decompile(tx.transaction.message)
+
+      for (const ix of message.instructions)
+        if (ix.programId.equals(cpAmm._program.programId))
+          instructionsPnl.instructions.push(coder!.instruction.decode(ix.data, "base58")?.name!)
+
+      pnlInfo.transactionPnl.push(instructionsPnl);
+      profit += (postBalance - preBalance) / LAMPORTS_PER_SOL;
+    }
+    const solMetadata = (await fetchTokenMetadataJup([NATIVE_MINT.toBase58()]))[NATIVE_MINT.toBase58()]
+    const solPrice = solMetadata.price;
+    pnlInfo.totalPnl = solPrice.mul(profit).toNumber() + pos.positionValue + pos.positionUnclaimedFee;
+    setPnlInfo(pnlInfo);
+    console.log(pnlInfo);
+  }
+
   const poolContainsString = (pool: PoolPositionInfo, searchString: string): boolean => {
     const lowerSearch = searchString.toLowerCase();
     return pool.tokenA.name.toLowerCase().includes(lowerSearch) ||
@@ -385,6 +458,10 @@ const DammPositions: React.FC = () => {
     const handleClickOutside = (event: MouseEvent) => {
       if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
         setShowSortMenu(false)
+      }
+      if (pnlRef.current && !pnlRef.current.contains(event.target as Node)) {
+        setPnlIndex(undefined);
+        setPnlInfo(undefined);
       }
     }
 
@@ -448,41 +525,41 @@ const DammPositions: React.FC = () => {
       <div className="flex flex-row items-start justify-between gap-1">
         <div className="flex items-stretch justify-start md:gap-1 gap-0.5">
           <div className="flex flex-col justify-end  gap-1">
-          <button
-            onClick={() => {
-              refreshPositions()
-              setSelectedPositions(new Set())
-            }}
-            disabled={loading}
-            className="flex items-center gap-1 px-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded text-md transition-colors w-auto justify-center"
-          >
-            {loading ? (
-              <RefreshCw className="w-4 h-4 animate-spin" />
-            ) : (
-              <RefreshCw className="w-4 h-4" />
-            )}
-            Refresh
-          </button>
-          <button
-            onClick={() => {
-              setSelectedPositions(new Set([...positions]))
-            }}
-            disabled={loading}
-            className="flex items-center gap-1 px-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded text-md transition-colors w-auto justify-center"
-          >
-            Select All
-          </button>
+            <button
+              onClick={() => {
+                refreshPositions()
+                setSelectedPositions(new Set())
+              }}
+              disabled={loading}
+              className="flex items-center gap-1 px-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded text-md transition-colors w-auto justify-center"
+            >
+              {loading ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4" />
+              )}
+              Refresh
+            </button>
+            <button
+              onClick={() => {
+                setSelectedPositions(new Set([...positions]))
+              }}
+              disabled={loading}
+              className="flex items-center gap-1 px-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded text-md transition-colors w-auto justify-center"
+            >
+              Select All
+            </button>
           </div>
           <div className="flex flex-col justify-end gap-1">
-          <button
-            onClick={() => {
-              setSelectedPositions(new Set())
-            }}
-            disabled={loading}
-            className="flex items-center gap-1 px-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded text-md transition-colors w-auto justify-center"
-          >
-            Deselect All
-          </button>
+            <button
+              onClick={() => {
+                setSelectedPositions(new Set())
+              }}
+              disabled={loading}
+              className="flex items-center gap-1 px-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded text-md transition-colors w-auto justify-center"
+            >
+              Deselect All
+            </button>
           </div>
         </div>
         {/* Sort Menu */}
@@ -500,14 +577,14 @@ const DammPositions: React.FC = () => {
               <div className="text-xs text-gray-400 px-3 py-1 font-medium mt-2">Pool TVL</div>
               <button
                 onClick={() => handleSort(SortType.PoolValue, false)}
-                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortedBy === SortType.PoolValue && sortedAscending === false ? 'bg-gray-700' : ''
+                className={`block w-full text-left px-3 py-1 text-white hover:bg-gray-700 rounded text-sm ${sortedBy === SortType.PoolValue && sortedAscending === false ? 'bg-gray-700' : ''
                   }`}
               >
                 Highest to Lowest ↓
               </button>
               <button
                 onClick={() => handleSort(SortType.PoolValue, true)}
-                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortedBy === SortType.PoolValue && sortedAscending === true ? 'bg-gray-700' : ''
+                className={`block w-full text-left px-3 py-1 text-white hover:bg-gray-700 rounded text-sm ${sortedBy === SortType.PoolValue && sortedAscending === true ? 'bg-gray-700' : ''
                   }`}
               >
                 Lowest to Highest ↑
@@ -516,14 +593,14 @@ const DammPositions: React.FC = () => {
               <div className="text-xs text-gray-400 px-3 py-1 font-medium">Position Value</div>
               <button
                 onClick={() => handleSort(SortType.PositionValue, false)}
-                className={`block w-full text-left px-2 py-1 text-white hover:bg-gray-700 rounded text-sm ${sortedBy === SortType.PositionValue && sortedAscending === false ? 'bg-gray-700' : ''
+                className={`block w-full text-left px-3 py-1 text-white hover:bg-gray-700 rounded text-sm ${sortedBy === SortType.PositionValue && sortedAscending === false ? 'bg-gray-700' : ''
                   }`}
               >
                 Highest to Lowest ↓
               </button>
               <button
                 onClick={() => handleSort(SortType.PositionValue, true)}
-                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortedBy === SortType.PositionValue && sortedAscending === true ? 'bg-gray-700' : ''
+                className={`block w-full text-left px-3 py-1 text-white hover:bg-gray-700 rounded text-sm ${sortedBy === SortType.PositionValue && sortedAscending === true ? 'bg-gray-700' : ''
                   }`}
               >
                 Lowest to Highest ↑
@@ -532,14 +609,14 @@ const DammPositions: React.FC = () => {
               <div className="text-xs text-gray-400 px-3 py-1 font-medium mt-2">Unclaimed Fees</div>
               <button
                 onClick={() => handleSort(SortType.PositionUnclaimedFee, false)}
-                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortedBy === SortType.PositionUnclaimedFee && sortedAscending === false ? 'bg-gray-700' : ''
+                className={`block w-full text-left px-3 py-1 text-white hover:bg-gray-700 rounded text-sm ${sortedBy === SortType.PositionUnclaimedFee && sortedAscending === false ? 'bg-gray-700' : ''
                   }`}
               >
                 Highest to Lowest ↓
               </button>
               <button
                 onClick={() => handleSort(SortType.PositionUnclaimedFee, true)}
-                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortedBy === SortType.PositionUnclaimedFee && sortedAscending === true ? 'bg-gray-700' : ''
+                className={`block w-full text-left px-3 py-1 text-white hover:bg-gray-700 rounded text-sm ${sortedBy === SortType.PositionUnclaimedFee && sortedAscending === true ? 'bg-gray-700' : ''
                   }`}
               >
                 Lowest to Highest ↑
@@ -548,14 +625,14 @@ const DammPositions: React.FC = () => {
               <div className="text-xs text-gray-400 px-3 py-1 font-medium mt-2">Claimed Fees</div>
               <button
                 onClick={() => handleSort(SortType.PositionClaimedFee, false)}
-                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortedBy === SortType.PositionClaimedFee && sortedAscending === false ? 'bg-gray-700' : ''
+                className={`block w-full text-left px-3 py-1 text-white hover:bg-gray-700 rounded text-sm ${sortedBy === SortType.PositionClaimedFee && sortedAscending === false ? 'bg-gray-700' : ''
                   }`}
               >
                 Highest to Lowest ↓
               </button>
               <button
                 onClick={() => handleSort(SortType.PositionClaimedFee, true)}
-                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortedBy === SortType.PositionClaimedFee && sortedAscending === true ? 'bg-gray-700' : ''
+                className={`block w-full text-left px-3 py-1 text-white hover:bg-gray-700 rounded text-sm ${sortedBy === SortType.PositionClaimedFee && sortedAscending === true ? 'bg-gray-700' : ''
                   }`}
               >
                 Lowest to Highest ↑
@@ -564,14 +641,14 @@ const DammPositions: React.FC = () => {
               <div className="text-xs text-gray-400 px-3 py-1 font-medium mt-2">Current Fee</div>
               <button
                 onClick={() => handleSort(SortType.PoolCurrentFee, false)}
-                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortedBy === SortType.PoolCurrentFee && sortedAscending === false ? 'bg-gray-700' : ''
+                className={`block w-full text-left px-3 py-1 text-white hover:bg-gray-700 rounded text-sm ${sortedBy === SortType.PoolCurrentFee && sortedAscending === false ? 'bg-gray-700' : ''
                   }`}
               >
                 Highest to Lowest ↓
               </button>
               <button
                 onClick={() => handleSort(SortType.PoolCurrentFee, true)}
-                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortedBy === SortType.PoolCurrentFee && sortedAscending === true ? 'bg-gray-700' : ''
+                className={`block w-full text-left px-3 py-1 text-white hover:bg-gray-700 rounded text-sm ${sortedBy === SortType.PoolCurrentFee && sortedAscending === true ? 'bg-gray-700' : ''
                   }`}
               >
                 Lowest to Highest ↑
@@ -579,14 +656,14 @@ const DammPositions: React.FC = () => {
               <div className="text-xs text-gray-400 px-3 py-1 font-medium mt-2">Base Fee</div>
               <button
                 onClick={() => handleSort(SortType.PoolBaseFee, false)}
-                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortedBy === SortType.PoolBaseFee && sortedAscending === false ? 'bg-gray-700' : ''
+                className={`block w-full text-left px-3 py-1 text-white hover:bg-gray-700 rounded text-sm ${sortedBy === SortType.PoolBaseFee && sortedAscending === false ? 'bg-gray-700' : ''
                   }`}
               >
                 Highest to Lowest ↓
               </button>
               <button
                 onClick={() => handleSort(SortType.PoolBaseFee, true)}
-                className={`block w-full text-left px-3 py-2 text-white hover:bg-gray-700 rounded text-sm ${sortedBy === SortType.PoolBaseFee && sortedAscending === true ? 'bg-gray-700' : ''
+                className={`block w-full text-left px-3 py-1 text-white hover:bg-gray-700 rounded text-sm ${sortedBy === SortType.PoolBaseFee && sortedAscending === true ? 'bg-gray-700' : ''
                   }`}
               >
                 Lowest to Highest ↑
@@ -678,13 +755,10 @@ const DammPositions: React.FC = () => {
                                 await refreshPositions();
                               }
                             })
-
                         }}
                       >
-
                         Submit
                       </button>
-
                     </div>
                   )}
                 </div>
@@ -744,11 +818,11 @@ const DammPositions: React.FC = () => {
         <div className="flex flex-col bg-gray-900 border border-gray-700 rounded-xl overflow-hidden">
           {/* Desktop Table Header - Sticky */}
           <div className="hidden md:block bg-gray-800 border-b border-gray-600 sticky top-0 pr-4">
-            <div className="grid grid-cols-11 gap-2 px-4 py-3 text-xs font-medium text-gray-300 uppercase tracking-wider">
+            <div className="grid grid-cols-12 gap-2 px-4 py-3 text-xs font-medium text-gray-300 uppercase tracking-wider">
               <div className="col-span-1"></div>
               <div className="col-span-2">Pair</div>
               <div className="col-span-2">Your Liquidity</div>
-              <div className="col-span-2">Claimable/Claimed</div>
+              <div className="col-span-3">Claimable/Claimed</div>
               <div className="col-span-2">Scheduler</div>
               <div className="col-span-2">Fees</div>
             </div>
@@ -874,24 +948,63 @@ const DammPositions: React.FC = () => {
                       {renderFeeTokenImages(position)}
 
                       {/* Fees row */}
-                      <div className="grid grid-cols-2 gap-2 text-sm min-w-[120px]">
+                      <div className="grid grid-cols-3 gap-2 text-sm min-w-[120px]">
                         {/* Unclaimed */}
                         {position.positionUnclaimedFee > 0 ? (
-                          <span className="text-green-400 font-medium">
+                          <span className="text-green-400 min-w-[60px] font-medium">
                             ${position.positionUnclaimedFee.toFixed(2)}
                           </span>
                         ) : (
-                          <span className="text-gray-500">-</span>
+                          <span className="text-gray-500 min-w-[60px]">-</span>
                         )}
 
                         {/* Claimed */}
                         {position.positionClaimedFee > 0 ? (
-                          <span className="text-green-700 font-medium">
+                          <span className="text-green-700 min-w-[60px] font-medium">
                             ${position.positionClaimedFee.toFixed(2)}
                           </span>
                         ) : (
-                          <span className="text-gray-500">-</span>
+                          <span className="text-gray-500 min-w-[60px]">-</span>
                         )}
+
+                        {/* PnL */}
+                        <div className="relative">
+                          <button className="bg-green-600 hover:bg-green-500 px-0.5 rounded-xs text-white"
+                            onClick={() => {
+                              calculatePnl(position);
+                              setPnlIndex(index)
+                            }}
+                          >
+                            PnL
+                          </button>
+                          {pnlIndex === index && pnlInfo !== undefined && (
+                            <div ref={pnlRef} 
+                            className="absolute flex flex-col z-50 top-6 left-0 w-80 bg-gray-900 text-gray-100 border border-gray-700 rounded-xs p-2 text-sm">
+                              <div>{position.tokenA.symbol + " / " + position.tokenB.symbol}</div>
+                              <div className="flex flex-col divide-y divide-blue-700">
+                                {pnlInfo!.transactionPnl.map(x => (
+                                  <div className="flex flex-col">
+                                    {x.instructions.map(ix =>
+                                      <div className="text-blue-500">
+                                        {ix}
+                                      </div>
+                                    )}
+                                    <div>
+                                      {`SOL: ${x.solPnl > 0 ? "+" : ""}${x.solPnl}`}
+                                    </div>
+                                  </div>
+
+                                ))}
+                              </div>
+                              <div className="text-green-700">
+                                {"Position Value: $" + pnlInfo.positionValue.toFixed(2)}
+                              </div>
+                              <div className="text-green-700">
+                                {"Total PnL: $" + pnlInfo.totalPnl.toFixed(2)}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>

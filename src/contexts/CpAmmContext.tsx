@@ -2,13 +2,16 @@ import React, { createContext, useContext, useEffect, } from 'react'
 import { useConnection } from '@jup-ag/wallet-adapter'
 import { CpAmm } from '@meteora-ag/cp-amm-sdk'
 import { Zap } from "@meteora-ag/zap-sdk";
+import { BorshCoder } from '@coral-xyz/anchor';
 interface CpAmmContextType {
     cpAmm: CpAmm
+    coder: BorshCoder | undefined
     zap: Zap
 }
 
 const CpAmmContext = createContext<CpAmmContextType>({
     cpAmm: new CpAmm(null as any),
+    coder: undefined,
     zap: new Zap(null as any),
 })
 
@@ -17,18 +20,19 @@ export const useCpAmm = () => useContext(CpAmmContext)
 export const CpAmmProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { connection } = useConnection();
     let cpAmm = new CpAmm(connection);
+    let coder = new BorshCoder(cpAmm._program.idl);
     let zap = new Zap(connection);
-
     console.log("really?")
 
     useEffect(() => {
         cpAmm = new CpAmm(connection);
+        coder = new BorshCoder(cpAmm._program.idl);
         zap = new Zap(connection);
         console.log("CpAmmProvider set new connection")
     }, [connection]);
 
     return (
-        <CpAmmContext.Provider value={{ cpAmm, zap }}>
+        <CpAmmContext.Provider value={{ cpAmm, coder, zap }}>
             {children}
         </CpAmmContext.Provider>
     )
