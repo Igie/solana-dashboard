@@ -14,7 +14,6 @@ import { unwrapSOLInstruction } from '@meteora-ag/cp-amm-sdk'
 import { txToast } from './Simple/TxToast'
 import { launchpads } from './launchpads/Launchpads'
 import { fetchTokenMetadataJup } from '../tokenUtils'
-import Decimal from "decimal.js"
 
 interface PnlInfo {
   transactionPnl:
