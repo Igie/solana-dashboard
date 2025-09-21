@@ -36,7 +36,6 @@ const DammPositions: React.FC = () => {
   const [selectedPositions, setSelectedPositions] = useState<Set<PoolPositionInfo>>(new Set());
   const [lastSelectedPosition, setLastSelectedPosition] = useState<PoolPositionInfo | null>(null);
 
-
   const [pnlIndex, setPnlIndex] = useState<number | undefined>(undefined);
   const [pnlInfo, setPnlInfo] = useState<PnlInfo | undefined>(undefined);
 
@@ -217,7 +216,6 @@ const DammPositions: React.FC = () => {
     const txns = [];
     positions = positions.filter(x => !cpAmm.isLockedPosition(x.positionState))
     while (positions.length > 0) {
-
       const innerPositions = positions.splice(0, 1);
       const index = positions.findIndex(x => innerPositions[0].tokenA.mint === x.tokenA.mint ||
         innerPositions[0].tokenA.mint === x.tokenB.mint ||
@@ -438,7 +436,7 @@ const DammPositions: React.FC = () => {
     pnlInfo.solTotalPnl = profit + positionSolValue + pos.positionUnclaimedFee / solPrice.toNumber();
 
     pnlInfo.dollarTotalPnl = pnlInfo.solTotalPnl * solPrice.toNumber();
-    
+
     setPnlInfo(pnlInfo);
     console.log(pnlInfo);
   }
@@ -772,20 +770,24 @@ const DammPositions: React.FC = () => {
                   <button
                     className="bg-purple-600 hover:bg-purple-500 px-2 md:py-1 rounded text-white flex-1 sm:flex-none"
                     onClick={async () => {
-                      const selectedPositionsTemp = [...selectedPositions];
-                      const txns: Transaction[] = await getClosePositionTx(selectedPositionsTemp, closePositionRange)
-                      setSelectedPositions(new Set());
+                      try {
+                        const selectedPositionsTemp = [...selectedPositions];
+                        const txns: Transaction[] = await getClosePositionTx(selectedPositionsTemp, closePositionRange)
+                        setSelectedPositions(new Set());
 
-                      if (txns.length > 0)
-                        await sendMultiTxn(txns.map(x => {
-                          return {
-                            tx: x,
-                          }
-                        }), {
-                          onSuccess: async () => {
-                            await refreshPositions();
-                          }
-                        })
+                        if (txns.length > 0)
+                          await sendMultiTxn(txns.map(x => {
+                            return {
+                              tx: x,
+                            }
+                          }), {
+                            onSuccess: async () => {
+                              await refreshPositions();
+                            }
+                          })
+                      } catch (e) {
+                        console.error(e);
+                      }
                     }}
                   >
                     {closePositionRange < 100 ? "Remove Liquidity" : "Close Position"} ({selectedPositions.size})
