@@ -48,8 +48,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
     const [sortBy, setSortBy] = useState<PoolSortType>(PoolSortType.PoolActivationTime);
     const [sortAscending, setSortAscending] = useState<boolean | undefined>(true);
 
-    const [popoverVisible, setPopoverVisible] = useState(false);
-    const [position, setPosition] = useState({ x: 0, y: 0 });
+    const [popoverIndex, setPopoverIndex] = useState<number | undefined>(undefined);
     const [depositPool, setDepositPool] = useState<PoolDetailedInfo | null>(null);
 
     const [target, setTarget] = useState<DisplayTarget>({ target: "", type: TargetType.None });
@@ -62,69 +61,11 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
         sortPools(pools, sortType, ascending)
     };
 
-    const handleDepositClick = async (e: React.MouseEvent) => {
-        refreshTokenAccounts();
-        refreshPositions();
-        const rect = (e.target as HTMLElement).getBoundingClientRect();
-
-        // Calculate smart position that stays within viewport
-        const calculatePosition = (buttonRect: DOMRect) => {
-            const popoverWidth = 300; // Adjust based on your actual popover width
-            const popoverHeight = 90; // Adjust based on your actual popover height
-            const padding = 16; // Minimum distance from viewport edges
-
-            const viewport = {
-                width: window.innerWidth,
-                height: window.innerHeight,
-                scrollY: window.scrollY,
-                scrollX: window.scrollX
-            };
-
-            // Initial position below the button
-            let x = buttonRect.left + window.scrollX;
-            let y = buttonRect.bottom + window.scrollY;
-
-            // Adjust horizontal position if popover would extend beyond right edge
-            if (x + popoverWidth > viewport.scrollX + viewport.width - padding) {
-                x = viewport.scrollX + viewport.width - popoverWidth - padding;
-            }
-
-            // Adjust horizontal position if popover would extend beyond left edge
-            if (x < viewport.scrollX + padding) {
-                x = viewport.scrollX + padding;
-            }
-
-            // Check if popover would extend beyond bottom edge
-            if (y + popoverHeight > viewport.scrollY + viewport.height - padding) {
-                // Try positioning above the button instead
-                const yAbove = buttonRect.top + window.scrollY - popoverHeight;
-
-                if (yAbove >= viewport.scrollY + padding) {
-                    // Position above if there's enough space
-                    y = yAbove;
-                } else {
-                    // If no space above or below, position at the bottom of viewport
-                    y = Math.max(
-                        viewport.scrollY + padding,
-                        Math.min(y, viewport.scrollY + viewport.height - popoverHeight - padding)
-                    );
-                }
-            }
-
-            return { x: Math.round(x), y: Math.round(y) };
-        };
-
-        const position = calculatePosition(rect);
-        setPosition(position);
-        setPopoverVisible(true);
-    };
-
-
 
     const poolColumns: Column<PoolDetailedInfo>[] = [
         {
             header: 'Links',
-            render: (pool) => (
+            render: (pool, index) => (
                 <div className="flex w-full justify-center gap-1">
                     <div className="grid gap-1">
                         <button
@@ -224,9 +165,9 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                         <button
                             disabled={!connected}
                             className={`${userPoolPositionInfoMap[pool.poolInfo.publicKey.toBase58()] ? "bg-indigo-600 hover:bg-indigo-500" : "bg-blue-600 hover:bg-blue-500"} text-white text-xs py-0.5 px-1 rounded flex items-center justify-start gap-1`}
-                            onClick={(e) => {
+                            onClick={() => {
                                 setDepositPool(pool);
-                                handleDepositClick(e);
+                                setPopoverIndex(index)
                             }}
                         >
                             <div className="flex gap-1 items-center justify-center">
@@ -239,6 +180,15 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                 </span>
                             )}
                         </button>
+                        {popoverIndex === index && (
+                            <DepositPopover
+                                className={"absolute flex flex-col z-50 w-80 bg-[#0d111c] text-gray-100 border border-gray-700 rounded-sm p-1 gap-1 text-sm justify-center"}
+                                owner={publicKey!}
+                                positionInfo={positions.find(x => x.poolInfo.publicKey.toBase58() === depositPool?.poolInfo.publicKey.toBase58()) || null}
+                                poolInfo={depositPool!.poolInfo}
+                                onClose={() => setPopoverIndex(undefined)}
+                            />
+                        )}
                     </div>
                 </div>
             )
@@ -568,7 +518,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
             )}
 
             {pools.length > 0 && target.type === TargetType.None && (
-                <div className="flex-grow overflow-y-auto bg-gray-900 border border-gray-700 rounded-2xl p-3 md:p-3 space-y-2">
+                <div className="flex-grow overflow-y-auto relative bg-gray-900 border border-gray-700 rounded-2xl p-3 md:p-3 space-y-2">
                     {target.type === TargetType.None &&
                         (<DynamicTable tableClassName="hidden lg:table sticky" data={pools} columns={poolColumns} />
                         )}
@@ -597,18 +547,10 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                         </div>
                     </div>
 
-                    {popoverVisible && (
-                        <DepositPopover
-                            owner={publicKey!}
-                            positionInfo={positions.find(x => x.poolAddress.toBase58() === depositPool?.poolInfo.publicKey.toBase58()) || null}
-                            poolInfo={depositPool}
-                            onClose={() => setPopoverVisible(false)}
-                            position={position}
-                        />
-                    )}
+
 
                     <div className="flex-grow space-y-2 divide-y-2 overflow-y-auto">
-                        {pools.slice(0, Math.min(60, pools.length)).map((pool, index) => (
+                        {pools.slice(0, Math.min(100, pools.length)).map((pool, index) => (
                             <div key={index} className="lg:hidden space-y-1">
                                 {/* Token Info */}
                                 <div className="flex justify-between items-start">
@@ -755,15 +697,24 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                         <button
                                             disabled={!connected}
                                             className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white text-xs py-1 px-1 rounded flex items-center justify-center gap-1"
-                                            onClick={(e) => {
+                                            onClick={() => {
                                                 setDepositPool(pool);
-                                                handleDepositClick(e);
+                                                setPopoverIndex(index);
                                             }}
                                         >
                                             Deposit
                                             <PanelsTopLeft size={12} />
                                         </button>
                                     </div>
+                                    {popoverIndex === index && (
+                                        <DepositPopover
+                                            className={"absolute flex flex-col z-50 w-80 bg-[#0d111c] text-gray-100 border border-gray-700 rounded-sm p-1 gap-1 text-sm justify-center"}
+                                            owner={publicKey!}
+                                            positionInfo={positions.find(x => x.poolInfo.publicKey.toBase58() === depositPool?.poolInfo.publicKey.toBase58()) || null}
+                                            poolInfo={depositPool!.poolInfo}
+                                            onClose={() => setPopoverIndex(undefined)}
+                                        />
+                                    )}
                                 </div>
 
                                 {/* Balance/Position Info */}

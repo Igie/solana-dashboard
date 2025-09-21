@@ -20,10 +20,9 @@ export interface PoolPositionTokenInfo extends TokenMetadata {
 }
 
 export interface PoolPositionInfo {
-    poolAddress: PublicKey
+    poolInfo:PoolInfo
     positionAddress: PublicKey
     positionNftAccount: PublicKey
-    poolState: PoolState
     positionState: PositionState
     tokenA: PoolPositionTokenInfo
     tokenB: PoolPositionTokenInfo
@@ -235,10 +234,9 @@ export const getAllPoolPositions = async (cpAmm: CpAmm, pool: PoolDetailedInfo, 
 
 
             positionsTemp.push({
-                poolAddress: pool.poolInfo.publicKey,
+                poolInfo: pool.poolInfo,
                 positionAddress: userPosition.publicKey,
                 positionNftAccount: userPosition.account.nftMint,
-                poolState: pool.poolInfo.account,
                 positionState: userPosition.account,
                 tokenA:
                 {
@@ -282,13 +280,13 @@ export const getAllPoolPositions = async (cpAmm: CpAmm, pool: PoolDetailedInfo, 
                 position.positionState.unlockedLiquidity).add(
                     position.positionState.vestedLiquidity)
 
-            const poolLP = position.poolState.liquidity;
+            const poolLP = position.poolInfo.account.liquidity;
 
             const withdrawPoolQuote = cpAmm!.getWithdrawQuote({
                 liquidityDelta: poolLP,
-                sqrtPrice: position.poolState.sqrtPrice,
-                minSqrtPrice: position.poolState.sqrtMinPrice,
-                maxSqrtPrice: position.poolState.sqrtMaxPrice,
+                sqrtPrice: position.poolInfo.account.sqrtPrice,
+                minSqrtPrice: position.poolInfo.account.sqrtMinPrice,
+                maxSqrtPrice: position.poolInfo.account.sqrtMaxPrice,
             });
 
             const poolTokenAAmount = new Decimal(withdrawPoolQuote.outAmountA.toString()).div(Decimal.pow(10, tokenAMetadata.decimals)).toNumber();
@@ -296,22 +294,22 @@ export const getAllPoolPositions = async (cpAmm: CpAmm, pool: PoolDetailedInfo, 
 
             const withdrawPositionQuote = cpAmm!.getWithdrawQuote({
                 liquidityDelta: positionLP,
-                sqrtPrice: position.poolState.sqrtPrice,
-                minSqrtPrice: position.poolState.sqrtMinPrice,
-                maxSqrtPrice: position.poolState.sqrtMaxPrice,
+                sqrtPrice: position.poolInfo.account.sqrtPrice,
+                minSqrtPrice: position.poolInfo.account.sqrtMinPrice,
+                maxSqrtPrice: position.poolInfo.account.sqrtMaxPrice,
             });
 
             const positionTokenAAmount = new Decimal(withdrawPositionQuote.outAmountA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
             const positionTokenBAmount = new Decimal(withdrawPositionQuote.outAmountB.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
 
-            const unclaimedRewards = getUnClaimReward(position.poolState, position.positionState);
+            const unclaimedRewards = getUnClaimReward(position.poolInfo.account, position.positionState);
 
             const tokenAUnclaimedFees = new Decimal(unclaimedRewards.feeTokenA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
             const tokenBUnclaimedFees = new Decimal(unclaimedRewards.feeTokenB.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
             const tokenAClaimedFees = new Decimal(position.positionState.metrics.totalClaimedAFee.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
             const tokenBClaimedFees = new Decimal(position.positionState.metrics.totalClaimedBFee.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
 
-            const poolPrice = getPriceFromSqrtPrice(position.poolState.sqrtPrice, tokenAMetadata!.decimals, tokenBMetadata!.decimals).toNumber();
+            const poolPrice = getPriceFromSqrtPrice(position.poolInfo.account.sqrtPrice, tokenAMetadata!.decimals, tokenBMetadata!.decimals).toNumber();
 
             const shareOfPool = positionLP.muln(10000).div(poolLP).toNumber() / 100;
 
@@ -353,21 +351,21 @@ export const getAllPoolPositions = async (cpAmm: CpAmm, pool: PoolDetailedInfo, 
 
 
             position.poolBaseFeeBPS = feeNumeratorToBps(getBaseFeeNumerator(
-                position.poolState.poolFees.baseFee.feeSchedulerMode,
-                position.poolState.poolFees.baseFee.cliffFeeNumerator,
-                new BN(position.poolState.poolFees.baseFee.numberOfPeriod),
-                position.poolState.poolFees.baseFee.reductionFactor));
+                position.poolInfo.account.poolFees.baseFee.feeSchedulerMode,
+                position.poolInfo.account.poolFees.baseFee.cliffFeeNumerator,
+                new BN(position.poolInfo.account.poolFees.baseFee.numberOfPeriod),
+                position.poolInfo.account.poolFees.baseFee.reductionFactor));
 
             position.poolCurrentFeeBPS = feeNumeratorToBps(getFeeNumerator(
-                position.poolState.activationType === 0 ? currentSlot :
-                    position.poolState.activationType === 1 ? currentTime : 0,
-                position.poolState.activationPoint,
-                position.poolState.poolFees.baseFee.numberOfPeriod,
-                position.poolState.poolFees.baseFee.periodFrequency,
-                position.poolState.poolFees.baseFee.feeSchedulerMode,
-                position.poolState.poolFees.baseFee.cliffFeeNumerator,
-                position.poolState.poolFees.baseFee.reductionFactor,
-                position.poolState.poolFees.dynamicFee
+                position.poolInfo.account.activationType === 0 ? currentSlot :
+                    position.poolInfo.account.activationType === 1 ? currentTime : 0,
+                position.poolInfo.account.activationPoint,
+                position.poolInfo.account.poolFees.baseFee.numberOfPeriod,
+                position.poolInfo.account.poolFees.baseFee.periodFrequency,
+                position.poolInfo.account.poolFees.baseFee.feeSchedulerMode,
+                position.poolInfo.account.poolFees.baseFee.cliffFeeNumerator,
+                position.poolInfo.account.poolFees.baseFee.reductionFactor,
+                position.poolInfo.account.poolFees.dynamicFee
             ));
             positionsParsed.push(position)
         };
@@ -447,7 +445,7 @@ export const getSchedulerType = (mode: number) => {
 };
 
 export const renderFeeTokenImages = (position: PoolPositionInfo) => {
-    if (position.poolState.collectFeeMode === 0) {
+    if (position.poolInfo.account.collectFeeMode === 0) {
         // Both tokens
         return (
             <div className="flex -space-x-1">

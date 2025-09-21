@@ -14,6 +14,7 @@ import { unwrapSOLInstruction } from '@meteora-ag/cp-amm-sdk'
 import { txToast } from './Simple/TxToast'
 import { launchpads } from './launchpads/Launchpads'
 import { fetchTokenMetadataJup } from '../tokenUtils'
+import { DepositPopover } from './Simple/Dammv2DepositPopover'
 
 interface PnlInfo {
   transactionPnl:
@@ -62,15 +63,15 @@ const DammPositions: React.FC = () => {
       receiver: publicKey!,
       owner: publicKey!,
       feePayer: publicKey!,
-      pool: position.poolAddress,
+      pool: position.poolInfo.publicKey,
       position: position.positionAddress,
       positionNftAccount: position.positionNftAccount,
-      tokenAMint: position.poolState.tokenAMint,
-      tokenBMint: position.poolState.tokenBMint,
+      tokenAMint: position.poolInfo.account.tokenAMint,
+      tokenBMint: position.poolInfo.account.tokenBMint,
       tokenAProgram: new PublicKey(position.tokenA.tokenProgram),
       tokenBProgram: new PublicKey(position.tokenB.tokenProgram),
-      tokenAVault: position.poolState.tokenAVault,
-      tokenBVault: position.poolState.tokenBVault,
+      tokenAVault: position.poolInfo.account.tokenAVault,
+      tokenBVault: position.poolInfo.account.tokenBVault,
     })
     const t = new Transaction();
     t.add(...txn.instructions);
@@ -122,18 +123,18 @@ const DammPositions: React.FC = () => {
           receiver: publicKey!,
           owner: publicKey!,
           feePayer: publicKey!,
-          pool: pos.poolAddress,
+          pool: pos.poolInfo.publicKey,
           position: pos.positionAddress,
           positionNftAccount: pos.positionNftAccount,
-          tokenAMint: pos.poolState.tokenAMint,
-          tokenBMint: pos.poolState.tokenBMint,
+          tokenAMint: pos.poolInfo.account.tokenAMint,
+          tokenBMint: pos.poolInfo.account.tokenBMint,
           tokenAProgram: tokenAProgram,
           tokenBProgram: tokenBProgram,
-          tokenAVault: pos.poolState.tokenAVault,
-          tokenBVault: pos.poolState.tokenBVault,
+          tokenAVault: pos.poolInfo.account.tokenAVault,
+          tokenBVault: pos.poolInfo.account.tokenBVault,
         })
 
-        if (pos.poolState.tokenAMint.equals(NATIVE_MINT) || pos.poolState.tokenBMint.equals(NATIVE_MINT)) {
+        if (pos.poolInfo.account.tokenAMint.equals(NATIVE_MINT) || pos.poolInfo.account.tokenBMint.equals(NATIVE_MINT)) {
           unwrapSol = true;
           txn.instructions.pop();
         }
@@ -173,7 +174,7 @@ const DammPositions: React.FC = () => {
       position: position.positionAddress,
       positionNftAccount: position.positionNftAccount,
       positionState: position.positionState,
-      poolState: position.poolState,
+      poolState: position.poolInfo.account,
       tokenAAmountThreshold: new BN(0),
       tokenBAmountThreshold: new BN(0),
       vestings: [],
@@ -231,7 +232,7 @@ const DammPositions: React.FC = () => {
           position: pos.positionAddress,
           positionNftAccount: pos.positionNftAccount,
           positionState: pos.positionState,
-          poolState: pos.poolState,
+          poolState: pos.poolInfo.account,
           tokenAAmountThreshold: new BN(0),
           tokenBAmountThreshold: new BN(0),
           vestings: [],
@@ -291,9 +292,9 @@ const DammPositions: React.FC = () => {
 
         const withdrawQuote = cpAmm.getWithdrawQuote({
           liquidityDelta: pos.positionState.unlockedLiquidity.muln(amount).divn(100),
-          sqrtPrice: pos.poolState.sqrtPrice,
-          maxSqrtPrice: pos.poolState.sqrtMaxPrice,
-          minSqrtPrice: pos.poolState.sqrtMinPrice,
+          sqrtPrice: pos.poolInfo.account.sqrtPrice,
+          maxSqrtPrice: pos.poolInfo.account.sqrtMaxPrice,
+          minSqrtPrice: pos.poolInfo.account.sqrtMinPrice,
 
           tokenATokenInfo: tokenInfoA,
           tokenBTokenInfo: tokenInfoB,
@@ -301,14 +302,14 @@ const DammPositions: React.FC = () => {
 
         const txn = await cpAmm.removeLiquidity({
           owner: publicKey!,
-          pool: pos.poolAddress,
+          pool: pos.poolInfo.publicKey,
           position: pos.positionAddress,
           positionNftAccount: pos.positionNftAccount,
           liquidityDelta: withdrawQuote.liquidityDelta,
-          tokenAMint: pos.poolState.tokenAMint,
-          tokenBMint: pos.poolState.tokenBMint,
-          tokenAVault: pos.poolState.tokenAVault,
-          tokenBVault: pos.poolState.tokenBVault,
+          tokenAMint: pos.poolInfo.account.tokenAMint,
+          tokenBMint: pos.poolInfo.account.tokenBMint,
+          tokenAVault: pos.poolInfo.account.tokenAVault,
+          tokenBVault: pos.poolInfo.account.tokenBVault,
           tokenAProgram,
           tokenBProgram,
           tokenAAmountThreshold: new BN(0),
@@ -526,7 +527,7 @@ const DammPositions: React.FC = () => {
       />
       <div className="flex flex-row items-start justify-between gap-1">
         <div className="flex items-stretch justify-start md:gap-1 gap-0.5">
-          <div className="flex flex-col justify-end  gap-1">
+          <div className="flex flex-col justify-end gap-1">
             <button
               onClick={() => {
                 refreshPositions()
@@ -1018,7 +1019,7 @@ const DammPositions: React.FC = () => {
                   {/* Scheduler */}
                   <div className="col-span-2">
                     <div className="text-white text-sm">
-                      {getSchedulerType(position.poolState.poolFees.baseFee.feeSchedulerMode)}
+                      {getSchedulerType(position.poolInfo.account.poolFees.baseFee.feeSchedulerMode)}
                     </div>
                   </div>
 
@@ -1145,7 +1146,7 @@ const DammPositions: React.FC = () => {
                       <div>
                         <div className="text-xs text-gray-400 mb-1">Scheduler</div>
                         <div className="text-white text-sm">
-                          {getSchedulerType(position.poolState.poolFees.baseFee.feeSchedulerMode)}
+                          {getSchedulerType(position.poolInfo.account.poolFees.baseFee.feeSchedulerMode)}
                         </div>
                       </div>
                     </div>
@@ -1159,81 +1160,83 @@ const DammPositions: React.FC = () => {
                     <div className="space-y-6">
                       {/* Pool Links */}
                       <div className='md:flex grid gap-2'>
-                        <div className='flex gap-2'>
-                          <div className='grid'>
-                            <div className="space-y-1">
-                              <h4 className="text-white font-medium mb-2 text-sm">Pool Analytics</h4>
-                              <a
-                                href={`https://edge.meteora.ag/dammv2/${position.poolAddress}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 text-purple-400 hover:text-purple-300 text-sm"
-                              >
-                                Meteora Pool <ExternalLink className="w-3 h-3" />
-                              </a>
-                              <a
-                                href={`https://dexscreener.com/solana/${position.poolAddress}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 text-purple-400 hover:text-purple-300 text-sm"
-                              >
-                                DexScreener <ExternalLink className="w-3 h-3" />
-                              </a>
-                              <a
-                                href={`https://axiom.trade/meme/${position.poolAddress}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 text-purple-400 hover:text-purple-300 text-sm"
-                              >
-                                Axiom Chart <ExternalLink className="w-3 h-3" />
-                              </a>
-                              <a
-                                href={`https://www.dextools.io/app/en/solana/pair-explorer/${position.poolAddress}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 text-purple-400 hover:text-purple-300 text-sm"
-                              >
-                                DEXTools Chart <ExternalLink className="w-3 h-3" />
-                              </a>
-                            </div>
-                            <div className="space-y-1">
-                              <h4 className="text-white font-medium mb-2 text-sm">Token Analytics</h4>
-                              <a
-                                href={`https://gmgn.ai/sol/token/NQhHUcmQ_${position.tokenA.mint}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm"
-                              >
-                                {position.tokenA.symbol} on GMGN <ExternalLink className="w-3 h-3" />
-                              </a>
-                              <a
-                                href={`https://gmgn.ai/sol/token/NQhHUcmQ_${position.tokenB.mint}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm"
-                              >
-                                {position.tokenB.symbol} on GMGN <ExternalLink className="w-3 h-3" />
-                              </a>
-                              <div className="y-1" />
-                              <a
-                                href={`https://axiom.trade/t/${position.tokenA.mint}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm"
-                              >
-                                {position.tokenA.symbol} on AXIOM <ExternalLink className="w-3 h-3" />
-                              </a>
-                              <a
-                                href={`https://axiom.trade/t/${position.tokenB.mint}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm"
-                              >
-                                {position.tokenB.symbol} on AXIOM <ExternalLink className="w-3 h-3" />
-                              </a>
+                        <div className='flex col-span-2 gap-2'>
+                          <div className='flex flex-col'>
+                            <div className='flex shrink'>
+                              <div className="space-y-0.5">
+                                <h4 className="text-white font-medium mb-2 text-sm">Pool Analytics</h4>
+                                <a
+                                  href={`https://edge.meteora.ag/dammv2/${position.poolInfo.publicKey}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 text-purple-400 hover:text-purple-300 text-sm"
+                                >
+                                  Meteora Pool <ExternalLink className="w-3 h-3" />
+                                </a>
+                                <a
+                                  href={`https://dexscreener.com/solana/${position.poolInfo.publicKey}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 text-purple-400 hover:text-purple-300 text-sm"
+                                >
+                                  DexScreener <ExternalLink className="w-3 h-3" />
+                                </a>
+                                <a
+                                  href={`https://axiom.trade/meme/${position.poolInfo.publicKey}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 text-purple-400 hover:text-purple-300 text-sm"
+                                >
+                                  Axiom Chart <ExternalLink className="w-3 h-3" />
+                                </a>
+                                <a
+                                  href={`https://www.dextools.io/app/en/solana/pair-explorer/${position.poolInfo.publicKey}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 text-purple-400 hover:text-purple-300 text-sm"
+                                >
+                                  DEXTools Chart <ExternalLink className="w-3 h-3" />
+                                </a>
+                              </div>
+                              <div className="space-y-0.5">
+                                <h4 className="text-white font-medium mb-2 text-sm">Token Analytics</h4>
+                                <a
+                                  href={`https://gmgn.ai/sol/token/NQhHUcmQ_${position.tokenA.mint}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm"
+                                >
+                                  {position.tokenA.symbol} on GMGN <ExternalLink className="w-3 h-3" />
+                                </a>
+                                <a
+                                  href={`https://gmgn.ai/sol/token/NQhHUcmQ_${position.tokenB.mint}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm"
+                                >
+                                  {position.tokenB.symbol} on GMGN <ExternalLink className="w-3 h-3" />
+                                </a>
+                                <div className="y-1" />
+                                <a
+                                  href={`https://axiom.trade/t/${position.tokenA.mint}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm"
+                                >
+                                  {position.tokenA.symbol} on AXIOM <ExternalLink className="w-3 h-3" />
+                                </a>
+                                <a
+                                  href={`https://axiom.trade/t/${position.tokenB.mint}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm"
+                                >
+                                  {position.tokenB.symbol} on AXIOM <ExternalLink className="w-3 h-3" />
+                                </a>
+                              </div>
                             </div>
                             {/* Actions */}
-                            <div>
+                            <div className="relative">
                               <h4 className="text-white font-medium mb-2 text-sm">Actions</h4>
                               <div className="space-y-2">
                                 {position.positionUnclaimedFee > 0 && (
@@ -1256,20 +1259,27 @@ const DammPositions: React.FC = () => {
                                 >
                                   Close and Swap Position
                                 </button>
+                                <DepositPopover
+                                  className={"flex flex-col grow bg-[#0d111c] text-gray-100 border border-gray-700 rounded-sm p-1 gap-1 text-sm justify-center"}
+                                  owner={publicKey!}
+                                  onClose={() => { }}
+                                  poolInfo={position.poolInfo}
+                                  positionInfo={position}
+                                >
+                                </DepositPopover>
                               </div>
                             </div>
                           </div>
-                          {/* Scheduler (expands in width) */}
                         </div>
                         <div className='flex md:grid w-full grid-cols-3'>
-                          <div className='col-span-2 min-h-60'>
+                          <div className='col-span-2 min-h-120'>
                             <iframe
                               src={`https://www.gmgn.cc/kline/sol/${position.tokenA.mint}`}
                               className="w-full h-full rounded border border-gray-700"
                             />
                           </div>
                           <div className="w-full min-h-[110px] flex-1">
-                            <FeeSchedulerGraph poolState={position.poolState} />
+                            <FeeSchedulerGraph poolState={position.poolInfo.account} />
                           </div>
                         </div>
 

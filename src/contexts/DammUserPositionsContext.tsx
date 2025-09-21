@@ -20,7 +20,7 @@ import { useGetSlot } from './GetSlotContext'
 export const getPoolPositionMap = (poolPositions: PoolPositionInfo[]): PoolPositionInfoMap => {
     const poolPositionMap: PoolPositionInfoMap = {}
     poolPositions.map((x) => {
-        poolPositionMap[x.poolAddress.toBase58()] = x;
+        poolPositionMap[x.poolInfo.publicKey.toBase58()] = x;
     });
     return poolPositionMap;
 }
@@ -117,10 +117,13 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                 if (pool !== undefined) {
 
                     positionsTemp.push({
-                        poolAddress: userPosition.positionState.pool,
+                        poolInfo: {
+                            publicKey: userPosition.positionState.pool,
+                            account: pool,
+                        },
+
                         positionAddress: userPosition.position,
                         positionNftAccount: userPosition.positionNftAccount,
-                        poolState: pool,
                         positionState: userPosition.positionState,
                         tokenA: {
                             mint: pool.tokenAMint.toString(),
@@ -188,13 +191,13 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                     position.positionState.unlockedLiquidity).add(
                         position.positionState.vestedLiquidity)
 
-                const poolLP = position.poolState.liquidity;
+                const poolLP = position.poolInfo.account.liquidity;
 
                 const withdrawPoolQuote = cpAmm!.getWithdrawQuote({
                     liquidityDelta: poolLP,
-                    sqrtPrice: position.poolState.sqrtPrice,
-                    minSqrtPrice: position.poolState.sqrtMinPrice,
-                    maxSqrtPrice: position.poolState.sqrtMaxPrice,
+                    sqrtPrice: position.poolInfo.account.sqrtPrice,
+                    minSqrtPrice: position.poolInfo.account.sqrtMinPrice,
+                    maxSqrtPrice: position.poolInfo.account.sqrtMaxPrice,
                 });
 
                 const poolTokenAAmount = new Decimal(withdrawPoolQuote.outAmountA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
@@ -202,15 +205,15 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
 
                 const withdrawPositionQuote = cpAmm!.getWithdrawQuote({
                     liquidityDelta: positionLP,
-                    sqrtPrice: position.poolState.sqrtPrice,
-                    minSqrtPrice: position.poolState.sqrtMinPrice,
-                    maxSqrtPrice: position.poolState.sqrtMaxPrice,
+                    sqrtPrice: position.poolInfo.account.sqrtPrice,
+                    minSqrtPrice: position.poolInfo.account.sqrtMinPrice,
+                    maxSqrtPrice: position.poolInfo.account.sqrtMaxPrice,
                 });
 
                 const positionTokenAAmount = new Decimal(withdrawPositionQuote.outAmountA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
                 const positionTokenBAmount = new Decimal(withdrawPositionQuote.outAmountB.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
 
-                const unclaimedRewards = getUnClaimReward(position.poolState, position.positionState);
+                const unclaimedRewards = getUnClaimReward(position.poolInfo.account, position.positionState);
 
                 const tokenAUnclaimedFees = new Decimal(unclaimedRewards.feeTokenA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
                 const tokenBUnclaimedFees = new Decimal(unclaimedRewards.feeTokenB.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
@@ -218,7 +221,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                 const tokenBClaimedFees = new Decimal(position.positionState.metrics.totalClaimedBFee.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
 
 
-                const poolPrice = getPriceFromSqrtPrice(position.poolState.sqrtPrice, tokenAMetadata!.decimals, tokenBMetadata!.decimals).toNumber();
+                const poolPrice = getPriceFromSqrtPrice(position.poolInfo.account.sqrtPrice, tokenAMetadata!.decimals, tokenBMetadata!.decimals).toNumber();
 
                 const shareOfPool = positionLP.muln(10000).div(poolLP).toNumber() / 100;
 
@@ -255,21 +258,21 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
 
 
                 position.poolBaseFeeBPS = feeNumeratorToBps(getBaseFeeNumerator(
-                    position.poolState.poolFees.baseFee.feeSchedulerMode,
-                    position.poolState.poolFees.baseFee.cliffFeeNumerator,
-                    new BN(position.poolState.poolFees.baseFee.numberOfPeriod),
-                    position.poolState.poolFees.baseFee.reductionFactor));
+                    position.poolInfo.account.poolFees.baseFee.feeSchedulerMode,
+                    position.poolInfo.account.poolFees.baseFee.cliffFeeNumerator,
+                    new BN(position.poolInfo.account.poolFees.baseFee.numberOfPeriod),
+                    position.poolInfo.account.poolFees.baseFee.reductionFactor));
 
                 position.poolCurrentFeeBPS = feeNumeratorToBps(getFeeNumerator(
-                    position.poolState.activationType === 0 ? getSlot() :
-                        position.poolState.activationType === 1 ? currentTime : 0,
-                    position.poolState.activationPoint,
-                    position.poolState.poolFees.baseFee.numberOfPeriod,
-                    position.poolState.poolFees.baseFee.periodFrequency,
-                    position.poolState.poolFees.baseFee.feeSchedulerMode,
-                    position.poolState.poolFees.baseFee.cliffFeeNumerator,
-                    position.poolState.poolFees.baseFee.reductionFactor,
-                    position.poolState.poolFees.dynamicFee
+                    position.poolInfo.account.activationType === 0 ? getSlot() :
+                        position.poolInfo.account.activationType === 1 ? currentTime : 0,
+                    position.poolInfo.account.activationPoint,
+                    position.poolInfo.account.poolFees.baseFee.numberOfPeriod,
+                    position.poolInfo.account.poolFees.baseFee.periodFrequency,
+                    position.poolInfo.account.poolFees.baseFee.feeSchedulerMode,
+                    position.poolInfo.account.poolFees.baseFee.cliffFeeNumerator,
+                    position.poolInfo.account.poolFees.baseFee.reductionFactor,
+                    position.poolInfo.account.poolFees.dynamicFee
                 ));
                 positionsParsed.push(position)
             };
@@ -396,7 +399,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
         if (!position) return;
 
         position.positionState = await cpAmm.fetchPositionState(position.positionAddress);
-        position.poolState = await cpAmm.fetchPoolState(position.poolAddress);
+        position.poolInfo.account = await cpAmm.fetchPoolState(position.poolInfo.publicKey);
 
         const metadataMap = await fetchTokenMetadataJup([position.tokenA.mint, position.tokenB.mint]);
 
@@ -407,13 +410,13 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
             position.positionState.unlockedLiquidity).add(
                 position.positionState.vestedLiquidity)
 
-        const poolLP = position.poolState.liquidity;
+        const poolLP = position.poolInfo.account.liquidity;
 
         const withdrawPoolQuote = cpAmm!.getWithdrawQuote({
             liquidityDelta: poolLP,
-            sqrtPrice: position.poolState.sqrtPrice,
-            minSqrtPrice: position.poolState.sqrtMinPrice,
-            maxSqrtPrice: position.poolState.sqrtMaxPrice,
+            sqrtPrice: position.poolInfo.account.sqrtPrice,
+            minSqrtPrice: position.poolInfo.account.sqrtMinPrice,
+            maxSqrtPrice: position.poolInfo.account.sqrtMaxPrice,
         });
 
         const poolTokenAAmount = new Decimal(withdrawPoolQuote.outAmountA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
@@ -421,15 +424,15 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
 
         const withdrawPositionQuote = cpAmm!.getWithdrawQuote({
             liquidityDelta: positionLP,
-            sqrtPrice: position.poolState.sqrtPrice,
-            minSqrtPrice: position.poolState.sqrtMinPrice,
-            maxSqrtPrice: position.poolState.sqrtMaxPrice,
+            sqrtPrice: position.poolInfo.account.sqrtPrice,
+            minSqrtPrice: position.poolInfo.account.sqrtMinPrice,
+            maxSqrtPrice: position.poolInfo.account.sqrtMaxPrice,
         });
 
         const positionTokenAAmount = new Decimal(withdrawPositionQuote.outAmountA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
         const positionTokenBAmount = new Decimal(withdrawPositionQuote.outAmountB.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
 
-        const unclaimedRewards = getUnClaimReward(position.poolState, position.positionState);
+        const unclaimedRewards = getUnClaimReward(position.poolInfo.account, position.positionState);
 
         const tokenAUnclaimedFees = new Decimal(unclaimedRewards.feeTokenA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
         const tokenBUnclaimedFees = new Decimal(unclaimedRewards.feeTokenB.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
@@ -461,21 +464,21 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
             tokenBClaimedFees * tokenBMetadata!.price.toNumber();
 
         position.poolBaseFeeBPS = feeNumeratorToBps(getBaseFeeNumerator(
-            position.poolState.poolFees.baseFee.feeSchedulerMode,
-            position.poolState.poolFees.baseFee.cliffFeeNumerator,
-            new BN(position.poolState.poolFees.baseFee.numberOfPeriod),
-            position.poolState.poolFees.baseFee.reductionFactor));
+            position.poolInfo.account.poolFees.baseFee.feeSchedulerMode,
+            position.poolInfo.account.poolFees.baseFee.cliffFeeNumerator,
+            new BN(position.poolInfo.account.poolFees.baseFee.numberOfPeriod),
+            position.poolInfo.account.poolFees.baseFee.reductionFactor));
 
         position.poolCurrentFeeBPS = feeNumeratorToBps(getFeeNumerator(
-            position.poolState.activationType === 0 ? getSlot() :
-                position.poolState.activationType === 1 ? currentTime : 0,
-            position.poolState.activationPoint,
-            position.poolState.poolFees.baseFee.numberOfPeriod,
-            position.poolState.poolFees.baseFee.periodFrequency,
-            position.poolState.poolFees.baseFee.feeSchedulerMode,
-            position.poolState.poolFees.baseFee.cliffFeeNumerator,
-            position.poolState.poolFees.baseFee.reductionFactor,
-            position.poolState.poolFees.dynamicFee
+            position.poolInfo.account.activationType === 0 ? getSlot() :
+                position.poolInfo.account.activationType === 1 ? currentTime : 0,
+            position.poolInfo.account.activationPoint,
+            position.poolInfo.account.poolFees.baseFee.numberOfPeriod,
+            position.poolInfo.account.poolFees.baseFee.periodFrequency,
+            position.poolInfo.account.poolFees.baseFee.feeSchedulerMode,
+            position.poolInfo.account.poolFees.baseFee.cliffFeeNumerator,
+            position.poolInfo.account.poolFees.baseFee.reductionFactor,
+            position.poolInfo.account.poolFees.dynamicFee
         ));
         setPositions(newPositions);
     }
@@ -500,7 +503,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
             position: position.positionAddress,
             positionNftAccount: position.positionNftAccount,
             positionState: position.positionState,
-            poolState: position.poolState,
+            poolState: position.poolInfo.account,
             tokenAAmountThreshold: new BN(0),
             tokenBAmountThreshold: new BN(0),
             vestings: [],
@@ -583,14 +586,14 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                 const liquidityDelta =
                     position.positionState.unlockedLiquidity; // remove liquidity with too small amount
 
-                const inputMint = position.poolState.tokenAMint;
-                const outputMint = position.poolState.tokenBMint;
-                const inputTokenProgram = getTokenProgram(position.poolState.tokenAFlag);
-                const outputTokenProgram = getTokenProgram(position.poolState.tokenBFlag);
+                const inputMint = position.poolInfo.account.tokenAMint;
+                const outputMint = position.poolInfo.account.tokenBMint;
+                const inputTokenProgram = getTokenProgram(position.poolInfo.account.tokenAFlag);
+                const outputTokenProgram = getTokenProgram(position.poolInfo.account.tokenBFlag);
                 const amountARemoved = getAmountAFromLiquidityDelta(
                     liquidityDelta,
-                    position.poolState.sqrtPrice,
-                    position.poolState.sqrtMaxPrice,
+                    position.poolInfo.account.sqrtPrice,
+                    position.poolInfo.account.sqrtMaxPrice,
                     Rounding.Down
                 );
 
@@ -602,7 +605,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                     position: position.positionAddress,
                     positionNftAccount: position.positionNftAccount,
                     positionState: position.positionState,
-                    poolState: position.poolState,
+                    poolState: position.poolInfo.account,
                     tokenAAmountThreshold: new BN(0),
                     tokenBAmountThreshold: new BN(0),
                     vestings: [],
@@ -618,7 +621,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                         inAmount: amountARemoved,
                         inputTokenMint: inputMint,
                         slippage: 0.5,
-                        poolState: position.poolState,
+                        poolState: position.poolInfo.account,
                         currentTime: currentTime ?? 0,
                         currentSlot: getSlot(),
                         tokenADecimal: position.tokenA.decimals,
@@ -682,7 +685,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                 if (bestProtocol === "dammV2") {
                     zapOutTx = await zap.zapOutThroughDammV2({
                         user: publicKey!,
-                        poolAddress: position.poolAddress,
+                        poolAddress: position.poolInfo.publicKey,
                         inputMint,
                         outputMint,
                         inputTokenProgram: inputTokenProgram,

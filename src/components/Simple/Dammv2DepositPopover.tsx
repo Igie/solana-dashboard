@@ -6,7 +6,7 @@ import { type TokenAccount } from '../../tokenUtils';
 import { DecimalInput } from './DecimalInput';
 import { BN } from '@coral-xyz/anchor';
 import { useTokenAccounts } from '../../contexts/TokenAccountsContext';
-import type { PoolDetailedInfo, PoolPositionInfo } from '../../constants';
+import type { PoolInfo, PoolPositionInfo } from '../../constants';
 import { useDammUserPositions } from '../../contexts/DammUserPositionsContext';
 import { getQuote, getSwapTransactionVersioned } from '../../JupSwapApi';
 import { getMint, NATIVE_MINT, TOKEN_2022_PROGRAM_ID, type Mint } from '@solana/spl-token';
@@ -15,14 +15,15 @@ import { txToast } from './TxToast';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useConnection, useWallet } from '@jup-ag/wallet-adapter';
 import { useCpAmm } from '../../contexts/CpAmmContext';
+import { RefreshCw } from 'lucide-react';
 
 
 interface DepositPopoverProps {
   owner: PublicKey,
-  poolInfo: PoolDetailedInfo | null;
+  poolInfo: PoolInfo | null;
   positionInfo: PoolPositionInfo | null;
   onClose: () => void;
-  position: { x: number; y: number };
+  className?: string;
 }
 
 export const DepositPopover: React.FC<DepositPopoverProps> = ({
@@ -31,7 +32,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
   poolInfo,
   positionInfo,
   onClose,
-  position,
+  className,
 }) => {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -40,7 +41,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
   const { connection } = useConnection();
   const { cpAmm } = useCpAmm();
   const { sendTxn, sendLegacyTxn } = useTransactionManager();
-  const { refreshTokenAccounts } = useTokenAccounts();
+  const { refreshTokenAccounts, loading } = useTokenAccounts();
   const { refreshPositions } = useDammUserPositions();
 
   const [amountA, setAmountA] = useState(new Decimal(0));
@@ -63,8 +64,8 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
   const setTokensAB = async () => {
     if (!poolInfo) return;
     const ta = await refreshTokenAccounts();
-    const mintA = poolInfo.poolInfo.account.tokenAMint.toBase58();
-    const mintB = poolInfo.poolInfo.account.tokenBMint.toBase58();
+    const mintA = poolInfo.account.tokenAMint.toBase58();
+    const mintB = poolInfo.account.tokenBMint.toBase58();
 
     const tokenAATA = ta.tokenAccounts.find(x => x.mint == mintA);
     const tokenBATA = ta.tokenAccounts.find(x => x.mint == mintB)
@@ -78,7 +79,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
     if (tokenAATA?.tokenProgram == TOKEN_2022_PROGRAM_ID.toBase58())
       tokenAInfo.current = {
         mint: await getMint(connection,
-          poolInfo.poolInfo.account.tokenAMint,
+          poolInfo.account.tokenAMint,
           connection.commitment,
           new PublicKey(tokenAATA?.tokenProgram)
         ),
@@ -90,7 +91,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
     if (tokenBATA?.tokenProgram == TOKEN_2022_PROGRAM_ID.toBase58())
       tokenBInfo.current = {
         mint: await getMint(connection,
-          poolInfo.poolInfo.account.tokenBMint,
+          poolInfo.account.tokenBMint,
           connection.commitment,
           new PublicKey(tokenBATA?.tokenProgram)
         ),
@@ -105,7 +106,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
 
   const refreshPool = async () => {
     if (!poolInfo) return;
-    poolInfo.poolInfo.account = await cpAmm.fetchPoolState(poolInfo.poolInfo.publicKey);
+    poolInfo.account = await cpAmm.fetchPoolState(poolInfo.publicKey);
   }
 
   const getDepositAmountB = async (input: Decimal) => {
@@ -114,9 +115,9 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
     if (!tokenA || !tokenB) return;
 
     const depositQuote = cpAmm.getDepositQuote({
-      sqrtPrice: poolInfo.poolInfo.account.sqrtPrice,
-      minSqrtPrice: poolInfo.poolInfo.account.sqrtMinPrice,
-      maxSqrtPrice: poolInfo.poolInfo.account.sqrtMaxPrice,
+      sqrtPrice: poolInfo.account.sqrtPrice,
+      minSqrtPrice: poolInfo.account.sqrtMinPrice,
+      maxSqrtPrice: poolInfo.account.sqrtMaxPrice,
       isTokenA: true,
       inputTokenInfo: tokenAInfo.current,
       outputTokenInfo: tokenBInfo.current,
@@ -134,9 +135,9 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
     if (!tokenA || !tokenB) return;
 
     const depositQuote = cpAmm.getDepositQuote({
-      sqrtPrice: poolInfo.poolInfo.account.sqrtPrice,
-      minSqrtPrice: poolInfo.poolInfo.account.sqrtMinPrice,
-      maxSqrtPrice: poolInfo.poolInfo.account.sqrtMaxPrice,
+      sqrtPrice: poolInfo.account.sqrtPrice,
+      minSqrtPrice: poolInfo.account.sqrtMinPrice,
+      maxSqrtPrice: poolInfo.account.sqrtMaxPrice,
       isTokenA: false,
       inputTokenInfo: tokenBInfo.current,
       outputTokenInfo: tokenAInfo.current,
@@ -153,27 +154,31 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
     if (swapSolAmount.lessThanOrEqualTo(0)) return;
 
     console.log(jupSlippage, includeDammv2Route);
+    try {
+      const quote = await getQuote({
+        inputMint: NATIVE_MINT.toBase58(),
+        outputMint: poolInfo.account.tokenAMint.toBase58(),
+        amount: swapSolAmount.mul(LAMPORTS_PER_SOL),
+        slippageBps: jupSlippage ? jupSlippage * 100 : 200,
+        excludeDexes: includeDammv2Route ? [] : ['Meteora DAMM v2'],
+      });
 
-    const quote = await getQuote({
-      inputMint: NATIVE_MINT.toBase58(),
-      outputMint: poolInfo.poolInfo.account.tokenAMint.toBase58(),
-      amount: swapSolAmount.mul(LAMPORTS_PER_SOL),
-      slippageBps: jupSlippage ? jupSlippage * 100 : 200,
-      excludeDexes: includeDammv2Route ? [] : ['Meteora DAMM v2'],
-    });
+      const transaction = await getSwapTransactionVersioned(quote, owner);
 
-    const transaction = await getSwapTransactionVersioned(quote, owner);
-
-    await sendTxn(transaction, undefined, {
-      notify: true,
-      onError: () => {
-        txToast.error("Swap failed");
-      },
-      onSuccess: async (x) => {
-        txToast.success("Swap successful", x);
-        await setTokensAB();
-      }
-    });
+      await sendTxn(transaction, undefined, {
+        notify: true,
+        onError: () => {
+          txToast.error("Swap failed");
+        },
+        onSuccess: async (x) => {
+          txToast.success("Swap successful", x);
+          await setTokensAB();
+        }
+      });
+    } catch (e) {
+      txToast.error("Failed to get swap quote!");
+      console.error(e);
+    }
   }
 
   const getClosePositionTx = async (positions: PoolPositionInfo[], amount: number) => {
@@ -193,7 +198,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
           position: pos.positionAddress,
           positionNftAccount: pos.positionNftAccount,
           positionState: pos.positionState,
-          poolState: pos.poolState,
+          poolState: pos.poolInfo.account,
           tokenAAmountThreshold: new BN(0),
           tokenBAmountThreshold: new BN(0),
           vestings: [],
@@ -253,9 +258,9 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
 
         const withdrawQuote = cpAmm.getWithdrawQuote({
           liquidityDelta: pos.positionState.unlockedLiquidity.muln(amount).divn(100),
-          sqrtPrice: pos.poolState.sqrtPrice,
-          maxSqrtPrice: pos.poolState.sqrtMaxPrice,
-          minSqrtPrice: pos.poolState.sqrtMinPrice,
+          sqrtPrice: pos.poolInfo.account.sqrtPrice,
+          maxSqrtPrice: pos.poolInfo.account.sqrtMaxPrice,
+          minSqrtPrice: pos.poolInfo.account.sqrtMinPrice,
 
           tokenATokenInfo: tokenInfoA,
           tokenBTokenInfo: tokenInfoB,
@@ -263,14 +268,14 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
 
         const txn = await cpAmm.removeLiquidity({
           owner: publicKey!,
-          pool: pos.poolAddress,
+          pool: pos.poolInfo.publicKey,
           position: pos.positionAddress,
           positionNftAccount: pos.positionNftAccount,
           liquidityDelta: withdrawQuote.liquidityDelta,
-          tokenAMint: pos.poolState.tokenAMint,
-          tokenBMint: pos.poolState.tokenBMint,
-          tokenAVault: pos.poolState.tokenAVault,
-          tokenBVault: pos.poolState.tokenBVault,
+          tokenAMint: pos.poolInfo.account.tokenAMint,
+          tokenBMint: pos.poolInfo.account.tokenBMint,
+          tokenAVault: pos.poolInfo.account.tokenAVault,
+          tokenBVault: pos.poolInfo.account.tokenBVault,
           tokenAProgram,
           tokenBProgram,
           tokenAAmountThreshold: new BN(0),
@@ -326,26 +331,28 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
       const tx = await cpAmm.addLiquidity({
         owner: owner,
         positionNftAccount: positionInfo.positionNftAccount,
-        pool: positionInfo.poolAddress,
+        pool: positionInfo.poolInfo.publicKey,
         position: positionInfo.positionAddress,
         liquidityDelta: depositQuote.liquidityDelta,
         maxAmountTokenA: inputA,
         maxAmountTokenB: inputB,
         tokenAAmountThreshold: inputA.muln(1.50),
         tokenBAmountThreshold: inputB.muln(1.50),
-        tokenAMint: positionInfo.poolState.tokenAMint,
-        tokenBMint: positionInfo.poolState.tokenBMint,
-        tokenAVault: positionInfo.poolState.tokenAVault,
-        tokenBVault: positionInfo.poolState.tokenBVault,
-        tokenAProgram: getTokenProgram(positionInfo.poolState.tokenAFlag),
-        tokenBProgram: getTokenProgram(positionInfo.poolState.tokenBFlag),
+        tokenAMint: positionInfo.poolInfo.account.tokenAMint,
+        tokenBMint: positionInfo.poolInfo.account.tokenBMint,
+        tokenAVault: positionInfo.poolInfo.account.tokenAVault,
+        tokenBVault: positionInfo.poolInfo.account.tokenBVault,
+        tokenAProgram: getTokenProgram(positionInfo.poolInfo.account.tokenAFlag),
+        tokenBProgram: getTokenProgram(positionInfo.poolInfo.account.tokenBFlag),
       })
       t.add(...tx.instructions);
       t.feePayer = publicKey!;
 
       const sim = await connection.simulateTransaction(t)
       if (sim.value.err) {
+
         txToast.error("Failed to simulate addLiquidity transaction!");
+        console.log(sim);
         return;
       }
 
@@ -371,17 +378,17 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
       const t = new Transaction();
       const tx = await cpAmm.createPositionAndAddLiquidity({
         owner: owner,
-        pool: poolInfo.poolInfo.publicKey,
+        pool: poolInfo.publicKey,
         positionNft: positionNft.publicKey,
         liquidityDelta: depositQuote.liquidityDelta,
         maxAmountTokenA: inputA,
         maxAmountTokenB: inputB,
         tokenAAmountThreshold: inputA.muln(1.50),
         tokenBAmountThreshold: inputB.muln(1.50),
-        tokenAMint: poolInfo.poolInfo.account.tokenAMint,
-        tokenBMint: poolInfo.poolInfo.account.tokenBMint,
-        tokenAProgram: getTokenProgram(poolInfo.poolInfo.account.tokenAFlag),
-        tokenBProgram: getTokenProgram(poolInfo.poolInfo.account.tokenBFlag),
+        tokenAMint: poolInfo.account.tokenAMint,
+        tokenBMint: poolInfo.account.tokenBMint,
+        tokenAProgram: getTokenProgram(poolInfo.account.tokenAFlag),
+        tokenBProgram: getTokenProgram(poolInfo.account.tokenBFlag),
 
       });
       t.add(...tx.instructions);
@@ -415,8 +422,8 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
     return (
       <div
         ref={ref}
-        className="absolute flex flex-col z-50 w-80 bg-[#0d111c] text-gray-100 border border-gray-700 rounded-xs p-2 text-sm"
-        style={{ top: position.y, left: position.x }}
+        className={className}
+      //style={{ top: position.y, left: position.x }}
       >
         <div className="mb-3 text-sm text-gray-700">Pool does not exist</div>
       </div>
@@ -426,15 +433,33 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
   return (
     <div
       ref={ref}
-      className="absolute flex flex-col z-50 bg-[#0d111c] text-gray-100 border border-gray-700 rounded-md p-1 gap-1 text-sm justify-center"
-      style={{ top: position.y, left: position.x }}
+      className={className}
     >
       <div className="grid gap-1 text-sm font-semibold text-gray-100">
-        <div className='flex gap-1 items-center'>
-          <input type='checkbox' checked={includeDammv2Route}
-            onChange={v => setIncludeDammv2Route(v.target.checked)}
-          ></input>
-          <label>Include DAMMv2 route</label>
+        <div className='flex flex-col gap-1 items-start'>
+          <div className="flex flex-col justify-end gap-1">
+            <button
+              onClick={() => {
+                refreshTokenAccounts()
+              }}
+              disabled={loading}
+              className="flex items-center gap-1 px-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 rounded text-md transition-colors w-auto justify-center"
+            >
+              {loading ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4" />
+              )}
+              Refresh
+            </button>
+          </div>
+          <div>
+            <input type='checkbox' checked={includeDammv2Route}
+              onChange={v => setIncludeDammv2Route(v.target.checked)}
+            ></input>
+            <label>Include DAMMv2 route</label>
+          </div>
+
         </div>
         <div className='flex gap-1 items-center'>
           <DecimalInput
