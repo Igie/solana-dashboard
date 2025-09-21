@@ -7,7 +7,7 @@ import { BN } from '@coral-xyz/anchor'
 import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-adapter'
 import { ComputeBudgetProgram, LAMPORTS_PER_SOL, PublicKey, Transaction, TransactionInstruction, TransactionMessage } from '@solana/web3.js'
 import { copyToClipboard, getSchedulerType, renderFeeTokenImages, type PoolPositionInfo } from '../constants'
-import { FeeSchedulerGraph } from './Simple/FeeSchedulerGraph'
+//import { FeeSchedulerGraph } from './Simple/FeeSchedulerGraph'
 import { useCpAmm } from '../contexts/CpAmmContext'
 import { AuthorityType, createSetAuthorityInstruction, getMint, NATIVE_MINT, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token'
 import { unwrapSOLInstruction } from '@meteora-ag/cp-amm-sdk'
@@ -1159,11 +1159,11 @@ const DammPositions: React.FC = () => {
                     {/* Pool + Token Links */}
                     <div className="space-y-6">
                       {/* Pool Links */}
-                      <div className='md:flex grid gap-2'>
-                        <div className='flex col-span-2 gap-2'>
+                      <div className='md:flex md:flex-row gap-2'>
+                        <div className='flex gap-2'>
                           <div className='flex flex-col'>
-                            <div className='flex shrink'>
-                              <div className="space-y-0.5">
+                            <div className='flex grow justify-between items-stretch text-nowrap gap-2'>
+                              <div className="flex flex-col grow space-y-0.5">
                                 <h4 className="text-white font-medium mb-2 text-sm">Pool Analytics</h4>
                                 <a
                                   href={`https://edge.meteora.ag/dammv2/${position.poolInfo.publicKey}`}
@@ -1198,7 +1198,7 @@ const DammPositions: React.FC = () => {
                                   DEXTools Chart <ExternalLink className="w-3 h-3" />
                                 </a>
                               </div>
-                              <div className="space-y-0.5">
+                              <div className="flex flex-col grow space-y-0.5">
                                 <h4 className="text-white font-medium mb-2 text-sm">Token Analytics</h4>
                                 <a
                                   href={`https://gmgn.ai/sol/token/NQhHUcmQ_${position.tokenA.mint}`}
@@ -1271,19 +1271,14 @@ const DammPositions: React.FC = () => {
                             </div>
                           </div>
                         </div>
-                        <div className='flex md:grid w-full grid-cols-3'>
-                          <div className='col-span-2 min-h-120'>
-                            <iframe
-                              src={`https://www.gmgn.cc/kline/sol/${position.tokenA.mint}`}
-                              className="w-full h-full rounded border border-gray-700"
-                            />
-                          </div>
-                          <div className="w-full min-h-[110px] flex-1">
-                            <FeeSchedulerGraph poolState={position.poolInfo.account} />
-                          </div>
+                        <div className='flex w-full min-h-120 items-stretch justify-stretch'>
+
+                          <iframe
+                            src={`https://www.gmgn.cc/kline/sol/${position.tokenA.mint}`}
+                            className="w-full h-full rounded border border-gray-700"
+                          />
+
                         </div>
-
-
                       </div>
                     </div>
                     {/* GMGN Pool Chart */}
