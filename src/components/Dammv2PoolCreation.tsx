@@ -197,7 +197,7 @@ const Dammv2PoolCreation: React.FC = () => {
     }, []);
 
     return (
-        <div className="flex flex-col h-[calc(100vh-140px)] lg:h-[calc(100vh-75px)] space-y-2 px-2 md:px-0">
+        <div className="flex flex-col h-[calc(100vh-110px)] lg:h-[calc(100vh-55px)] space-y-2 px-2 md:px-0">
             <div className="bg-gray-900 border border-gray-700 rounded-2xl p-2 space-y-1">
 
                 <div>

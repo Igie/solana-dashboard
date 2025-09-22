@@ -182,7 +182,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                         </button>
                         {popoverIndex === index && (
                             <DepositPopover
-                                className={"absolute flex flex-col z-50 w-80 bg-[#0d111c] text-gray-100 border border-gray-700 rounded-sm p-1 gap-1 text-sm justify-center"}
+                                className={"absolute flex flex-col z-50 bg-[#0d111c] text-gray-100 border border-gray-700 rounded-sm p-1 gap-1 text-sm justify-center"}
                                 owner={publicKey!}
                                 positionInfo={positions.find(x => x.poolInfo.publicKey.toBase58() === depositPool?.poolInfo.publicKey.toBase58()) || null}
                                 poolInfo={depositPool!.poolInfo}
@@ -464,7 +464,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
     }, [sortBy, sortAscending]);
 
     return (
-        <div className="flex flex-col overflow-hidden">
+        <div className="flex flex-col h-full overflow-hidden">
             {target.type !== TargetType.None && (
                 <div className="flex gap-1 py-1">
                     <button
@@ -714,7 +714,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                 </div>
                                 {popoverIndex === index && (
                                     <DepositPopover
-                                        className={"absolute flex flex-col z-50 w-80 bg-[#0d111c] text-gray-100 border border-gray-700 rounded-sm p-1 gap-1 text-sm justify-center"}
+                                        className={"absolute flex flex-col z-50 bg-[#0d111c] text-gray-100 border border-gray-700 rounded-sm p-1 gap-1 text-sm justify-center"}
                                         owner={publicKey!}
                                         positionInfo={positions.find(x => x.poolInfo.publicKey.toBase58() === depositPool?.poolInfo.publicKey.toBase58()) || null}
                                         poolInfo={depositPool!.poolInfo}

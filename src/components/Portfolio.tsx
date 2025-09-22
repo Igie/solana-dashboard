@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 
-import { LAMPORTS_PER_SOL, VersionedTransaction } from '@solana/web3.js'
+import { VersionedTransaction } from '@solana/web3.js'
 
 import { Coins, RefreshCw, Wallet, ExternalLink, CheckCircle, XCircle } from 'lucide-react'
 import { type TokenAccount } from '../tokenUtils'
@@ -20,8 +20,6 @@ const Portfolio: React.FC = () => {
   const { connection } = useConnection()
   const { publicKey, connected } = useWallet()
   const { sendTxn, sendMultiTxn } = useTransactionManager();
-
-  const [solBalance, setSolBalance] = useState<number | null>(null)
   const { tokenAccounts, refreshTokenAccounts } = useTokenAccounts()
   const [loading, setLoading] = useState(false)
   const [popupIndex, setPopupIndex] = useState<number | null>(null)
@@ -34,10 +32,6 @@ const Portfolio: React.FC = () => {
   const fetchPortfolioData = async () => {
     setLoading(true)
     try {
-      const balance = await connection.getBalance(publicKey!)
-
-      setSolBalance(balance / LAMPORTS_PER_SOL)
-
       await refreshTokenAccounts();
     } catch (err) {
       console.error('Error fetching SOL balance:', err)
@@ -241,24 +235,15 @@ const Portfolio: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-140px)] lg:h-[calc(100vh-75px)] space-y-2 px-2 md:px-0">
+    <div className="flex flex-col h-[calc(100vh-110px)] lg:h-[calc(100vh-55px)] space-y-1 px-2 md:px-0">
       {/* Portfolio Overview */}
-      <div className="grid grid-cols-2 gap-1">
-        <div className="bg-gradient-to-br from-green-900/30 to-green-800/20 border border-green-700/50 rounded-2xl p-2">
-          <div className="flex items-center justify-between mb-1">
-            <h3 className="font-semibold text-green-300">SOL Balance</h3>
-            <Coins className="w-5 h-5 text-green-400" />
-          </div>
-          <div className="sm:text-3xl font-bold text-white">
-            {solBalance ? solBalance.toFixed(4) : '0.0000'}
-          </div>
-        </div>
-        <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-700/50 rounded-2xl p-2">
-          <div className="flex items-center justify-between mb-1">
-            <h3 className="font-semibold text-blue-300">Token Types</h3>
+      <div className="grid grid-cols-1 gap-0.5">
+        <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-700/50 rounded-2xl px-3">
+          <div className="flex items-center justify-between">
+            <h4 className="font-semibold text-blue-300">Token Types</h4>
             <Coins className="w-5 h-5 text-blue-400" />
           </div>
-          <div className="sm:text-3xl font-bold text-white">
+          <div className="font-bold text-white">
             {tokenAccounts.length}
           </div>
         </div>
@@ -270,7 +255,7 @@ const Portfolio: React.FC = () => {
             setSelectedAccounts(new Set());
           }}
           disabled={loading}
-          className="flex items-center gap-1 px-2 py-1 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded-lg font-medium transition-colors"
+          className="flex items-center gap-1 px-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded text-md transition-colors w-auto justify-center"
         >
           {loading ? (
             <RefreshCw className="w-4 h-4 animate-spin" />

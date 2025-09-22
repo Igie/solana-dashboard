@@ -41,21 +41,21 @@ const AppInner: React.FC<AppInnerProps> = ({
   return (
     <div className="flex flex-col h-full bg-black text-white">
       <header className="bg-gray-900 border-b border-gray-700">
-        <div className="max-w-screen-xl mx-auto px-4 flex items-center justify-between h-16">
-          <h1 className="text-xl font-bold">DAMMv2 Dashboard</h1>
-          <h3 className="font-medium text-green-500">
+        <div className="max-w-screen-xl mx-auto px-2 flex items-center justify-between h-10">
+          <div className="font-bold md:text-lg text-xs">DAMMv2 Dashboard</div>
+          <div className="font-medium md:text-lg text-xs text-green-500">
             SOL: {(solBalance).toFixed(4)}
-          </h3>
+          </div>
           <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
             <button
               onClick={async () => {
                 window.Jupiter.init({
                   displayMode: 'modal',
                 })
               }}
-              className="flex items-center px-2 py-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-md font-medium"
+              className="flex items-center md:text-md text-xs px-2 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-md"
             >
               <ArrowLeftRight className="w-4 h-4 mr-2" />
               Swap
@@ -66,7 +66,7 @@ const AppInner: React.FC<AppInnerProps> = ({
                   network === 'mainnet-beta' ? 'devnet' : 'mainnet-beta'
                 )
               }
-              className="px-2 py-2 border border-gray-600 text-sm rounded-md hover:bg-gray-700"
+              className="px-1 py-1 flex items-center md:text-md text-xs border border-gray-600 rounded hover:bg-gray-700"
             >
               {network === 'mainnet-beta' ? 'Mainnet 🔒' : 'Devnet 🧪'}
             </button>
@@ -74,7 +74,7 @@ const AppInner: React.FC<AppInnerProps> = ({
         </div>
       </header>
 
-      <main className="flex flex-col h-[calc(100vh-65px)] pb-[calc(4rem+var(10px))] w-full px-4 py-2">
+      <main className="flex flex-col h-[calc(100vh-42px)] pb-[calc(4rem+var(10px))] w-full px-4 py-2">
         <div className="w-full max-w-screen-2xl mx-auto">
           <ActiveComponent />
         </div>

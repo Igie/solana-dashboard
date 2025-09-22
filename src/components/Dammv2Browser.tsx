@@ -27,7 +27,7 @@ const Dammv2Browser: React.FC = () => {
     const [showlaunchpadSelector, setShowLaunchpadSelector] = useState(false);
 
     return (
-        <div className="flex flex-col h-[calc(100vh-140px)] lg:h-[calc(100vh-75px)] space-y-1 px-2 md:px-0">
+        <div className="flex flex-col h-[calc(100vh-110px)] lg:h-[calc(100vh-55px)] space-y-1 px-2 md:px-0">
             {/* Header */}
             <div className="flex md:grid justify-start items-stretch gap-1">
                 <button

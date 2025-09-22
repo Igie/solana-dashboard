@@ -492,25 +492,25 @@ const DammPositions: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-140px)] lg:h-[calc(100vh-75px)] space-y-1 px-2 md:px-0">
+    <div className="flex flex-col h-[calc(100vh-110px)] lg:h-[calc(100vh-55px)] space-y-1 px-2 md:px-0">
       {/* Pool Overview Stats */}
-      <div className="grid grid-cols-2 gap-1">
-        <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-700/50 rounded-2xl p-2">
-          <div className="flex items-center justify-between mb-1">
-            <h3 className="font-semibold text-blue-300">Liquidity</h3>
+      <div className="grid grid-cols-2 gap-0.5">
+        <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-700/50 rounded-2xl px-3">
+          <div className="flex items-center justify-between">
+            <h4 className="font-semibold text-blue-300">Liquidity</h4>
             <Droplets className="w-5 h-5 text-blue-400" />
           </div>
-          <div className="sm:text-3xl font-bold text-white">
+          <div className="font-bold text-white">
             ${totalLiquidityValue.toFixed(2)}
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-900/30 to-purple-800/20 border border-purple-700/50 rounded-2xl p-2">
-          <div className="flex items-center justify-between mb-1">
-            <h3 className="font-semibold text-purple-300">Pools</h3>
+        <div className="bg-gradient-to-br from-purple-900/30 to-purple-800/20 border border-purple-700/50 rounded-2xl px-3">
+          <div className="flex items-center justify-between">
+            <h4 className="font-semibold text-purple-300">Pools</h4>
             <TrendingUp className="w-5 h-5 text-purple-400" />
           </div>
-          <div className="sm:text-3xl font-bold text-white">
+          <div className="font-bold text-white">
             {positions.length}
           </div>
         </div>
@@ -519,7 +519,7 @@ const DammPositions: React.FC = () => {
       {/* Search Bar */}
 
       <input
-        className="w-full bg-gray-800 border border-gray-600 px-2 py-1 rounded-lg text-white placeholder-gray-400 text-base"
+        className="w-full bg-gray-800 border border-gray-600 px-2 py-0.5 text-xs rounded-lg text-white placeholder-gray-400"
         type="text"
         value={searchString}
         onChange={(e) => setSearchString(e.target.value)}
@@ -576,7 +576,7 @@ const DammPositions: React.FC = () => {
             {showSortMenu ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
           </button>
           {showSortMenu && (
-            <div className="absolute right-0 top-12 bg-gray-800 border border-gray-600 rounded-lg p-2 z-10 min-w-56 shadow-lg">
+            <div className="absolute right-0 top-6 bg-gray-800 border border-gray-600 rounded-lg p-2 z-10 min-w-56 shadow-lg">
               <div className="text-xs text-gray-400 px-3 py-1 font-medium mt-2">Pool TVL</div>
               <button
                 onClick={() => handleSort(SortType.PoolValue, false)}
@@ -769,7 +769,7 @@ const DammPositions: React.FC = () => {
               <div className='flex md:flex-row flex-col gap-0.5'>
                 <div className="flex flex-col">
                   <button
-                    className="bg-purple-600 hover:bg-purple-500 px-2 md:py-1 rounded text-white flex-1 sm:flex-none"
+                    className="bg-purple-600 hover:bg-purple-500 px-2 md:py-0.5 rounded text-white flex-1 sm:flex-none"
                     onClick={async () => {
                       try {
                         const selectedPositionsTemp = [...selectedPositions];
@@ -825,7 +825,7 @@ const DammPositions: React.FC = () => {
         <div className="flex flex-col bg-gray-900 border border-gray-700 rounded-xl overflow-hidden">
           {/* Desktop Table Header - Sticky */}
           <div className="hidden md:block bg-gray-800 border-b border-gray-600 sticky top-0 pr-4">
-            <div className="grid grid-cols-12 gap-2 px-4 py-3 text-xs font-medium text-gray-300 uppercase tracking-wider">
+            <div className="grid grid-cols-12 gap-2 px-4 py-1 text-xs font-medium text-gray-300 uppercase tracking-wider">
               <div className="col-span-1"></div>
               <div className="col-span-2">Pair</div>
               <div className="col-span-2">Your Liquidity</div>
@@ -1160,7 +1160,7 @@ const DammPositions: React.FC = () => {
                     <div className="space-y-6">
                       {/* Pool Links */}
                       <div className='md:flex md:flex-row gap-2'>
-                        <div className='flex gap-2'>
+                        <div className='flex items-start gap-2'>
                           <div className='flex flex-col'>
                             <div className='flex grow justify-between items-stretch text-nowrap gap-2'>
                               <div className="flex flex-col grow space-y-0.5">
