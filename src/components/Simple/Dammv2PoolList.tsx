@@ -48,7 +48,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
     const [sortBy, setSortBy] = useState<PoolSortType>(PoolSortType.PoolActivationTime);
     const [sortAscending, setSortAscending] = useState<boolean | undefined>(true);
 
-    const [popoverIndex, setPopoverIndex] = useState<number | undefined>(undefined);
+    const [popoverIndex, setPopoverIndex] = useState<number | null>(null);
     const [depositPool, setDepositPool] = useState<PoolDetailedInfo | null>(null);
 
     const [target, setTarget] = useState<DisplayTarget>({ target: "", type: TargetType.None });
@@ -186,7 +186,11 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                 owner={publicKey!}
                                 positionInfo={positions.find(x => x.poolInfo.publicKey.toBase58() === depositPool?.poolInfo.publicKey.toBase58()) || null}
                                 poolInfo={depositPool!.poolInfo}
-                                onClose={() => setPopoverIndex(undefined)}
+                                onClose={() => {
+                                    if (window.innerWidth < 1024) return;
+                                    console.log("desktop close")
+                                    setPopoverIndex(null)
+                                }}
                             />
                         )}
                     </div>
@@ -706,16 +710,21 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                             <PanelsTopLeft size={12} />
                                         </button>
                                     </div>
-                                    {popoverIndex === index && (
-                                        <DepositPopover
-                                            className={"absolute flex flex-col z-50 w-80 bg-[#0d111c] text-gray-100 border border-gray-700 rounded-sm p-1 gap-1 text-sm justify-center"}
-                                            owner={publicKey!}
-                                            positionInfo={positions.find(x => x.poolInfo.publicKey.toBase58() === depositPool?.poolInfo.publicKey.toBase58()) || null}
-                                            poolInfo={depositPool!.poolInfo}
-                                            onClose={() => setPopoverIndex(undefined)}
-                                        />
-                                    )}
+
                                 </div>
+                                {popoverIndex === index && (
+                                    <DepositPopover
+                                        className={"absolute flex flex-col z-50 w-80 bg-[#0d111c] text-gray-100 border border-gray-700 rounded-sm p-1 gap-1 text-sm justify-center"}
+                                        owner={publicKey!}
+                                        positionInfo={positions.find(x => x.poolInfo.publicKey.toBase58() === depositPool?.poolInfo.publicKey.toBase58()) || null}
+                                        poolInfo={depositPool!.poolInfo}
+                                        onClose={() => {
+                                            if (window.innerWidth >= 1024) return;
+                                            console.log("mobile close")
+                                            setPopoverIndex(null)
+                                        }}
+                                    />
+                                )}
 
                                 {/* Balance/Position Info */}
                                 {(tokenAccountMap[pool.tokenA.mint] || userPoolPositionInfoMap[pool.poolInfo.publicKey.toBase58()]) && (

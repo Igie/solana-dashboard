@@ -34,7 +34,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
   onClose,
   className,
 }) => {
-  const ref = useRef<HTMLDivElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
 
   const { jupSlippage, includeDammv2Route, setIncludeDammv2Route } = useSettings();
   const { publicKey } = useWallet();
@@ -312,7 +312,8 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
 
   useEffect(() => {
     const listener = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
+      if (popupRef.current && 
+        !popupRef.current.contains(e.target as Node)) {
         onClose();
       }
     };
@@ -421,7 +422,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
   if (!poolInfo) {
     return (
       <div
-        ref={ref}
+        ref={popupRef}
         className={className}
       //style={{ top: position.y, left: position.x }}
       >
@@ -432,7 +433,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
 
   return (
     <div
-      ref={ref}
+      ref={popupRef}
       className={className}
     >
       <div className="grid gap-1 text-sm font-semibold text-gray-100">

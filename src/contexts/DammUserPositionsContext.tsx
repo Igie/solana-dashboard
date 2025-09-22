@@ -353,8 +353,6 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
     const sortPositionsByInternal = (pools: PoolPositionInfo[], sortType: SortType, ascending?: boolean) => {
         setSortBy(sortType);
         setSortAscending(ascending);
-        if (sortType === SortType.PositionClaimedFee)
-            console.log(pools.map(x => x.positionClaimedFee))
         const p = pools.sort((x, y) => {
             let r = 0;
             if (ascending === null) {
