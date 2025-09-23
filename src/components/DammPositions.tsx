@@ -3,9 +3,9 @@ import { RefreshCw, Wallet, ExternalLink, Droplets, TrendingUp, ChevronDown, Che
 import { SortType, useDammUserPositions } from '../contexts/DammUserPositionsContext'
 import { useTransactionManager } from '../contexts/TransactionManagerContext'
 import { toast } from 'sonner'
-import { BN } from '@coral-xyz/anchor'
+import { BN, } from '@coral-xyz/anchor'
 import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-adapter'
-import { ComputeBudgetProgram, LAMPORTS_PER_SOL, PublicKey, Transaction, TransactionInstruction, TransactionMessage } from '@solana/web3.js'
+import { ComputeBudgetProgram, PublicKey, Transaction, TransactionInstruction, TransactionMessage, type AccountMeta } from '@solana/web3.js'
 import { copyToClipboard, getSchedulerType, renderFeeTokenImages, type PoolPositionInfo } from '../constants'
 //import { FeeSchedulerGraph } from './Simple/FeeSchedulerGraph'
 import { useCpAmm } from '../contexts/CpAmmContext'
@@ -13,19 +13,31 @@ import { AuthorityType, createSetAuthorityInstruction, getMint, NATIVE_MINT, TOK
 import { unwrapSOLInstruction } from '@meteora-ag/cp-amm-sdk'
 import { txToast } from './Simple/TxToast'
 import { launchpads } from './launchpads/Launchpads'
-import { fetchTokenMetadataJup } from '../tokenUtils'
 import { DepositPopover } from './Simple/Dammv2DepositPopover'
+import * as splToken from "@solana/spl-token"
+import * as bs58 from "bs58";
+import Decimal from "decimal.js"
 
 interface PnlInfo {
-  transactionPnl:
+  instructionChange:
   {
-    instructions: string[],
-    solPnl: number,
+    instruction: string,
+    tokenAChange: number,
+    tokenBChange: number,
   }[],
-  positionValue: number,
-  unclaimedFees: number,
-  dollarTotalPnl: number,
-  solTotalPnl: number,
+
+  tokenAAdded: number,
+  tokenBAdded: number,
+  tokenARemoved: number,
+  tokenBRemoved: number,
+
+  positionValueA: number,
+  positionValueB: number,
+
+  claimedFeesA: number,
+  claimedFeesB: number,
+  pnlA: number,
+  pnlB: number,
 }
 
 const DammPositions: React.FC = () => {
@@ -383,8 +395,8 @@ const DammPositions: React.FC = () => {
   //   return txns;
   // };
 
-  const calculatePnl = async (pos: PoolPositionInfo) => {
-    let signatures = await connection.getSignaturesForAddress(pos.positionNftAccount);
+  const calculatePnl = async (position: PoolPositionInfo) => {
+    let signatures = await connection.getSignaturesForAddress(position.positionNftAccount);
     signatures = signatures.filter(x => x.err === null);
     console.log(signatures.length);
     if (signatures.length === 0) {
@@ -399,44 +411,251 @@ const DammPositions: React.FC = () => {
     transactions = transactions.filter(x => x !== null);
     transactions.reverse();
 
-    let profit = 0;
     const pnlInfo: PnlInfo = {
-      positionValue: pos.positionValue,
-      unclaimedFees: pos.positionUnclaimedFee,
-      transactionPnl: [],
-      dollarTotalPnl: 0,
-      solTotalPnl: 0,
+      instructionChange: [],
+
+      tokenAAdded: 0,
+      tokenBAdded: 0,
+      tokenARemoved: 0,
+      tokenBRemoved: 0,
+
+      positionValueA: position.tokenA.positionAmount,
+      positionValueB: position.tokenB.positionAmount,
+      claimedFeesA: 0,
+      claimedFeesB: 0,
+      pnlA: 0,
+      pnlB: 0,
     }
 
     for (const tx of transactions) {
       if (!tx) continue;
 
-      //const selfIndex = tx.transaction.message.staticAccountKeys.map(x => x.toString()).indexOf(publicKey!.toBase58()) || 0
-      const selfIndex = 0;
-      const preBalance = tx.meta!.preBalances[selfIndex];
-      const postBalance = tx.meta!.postBalances[selfIndex];
-
-      const instructionsPnl: { instructions: string[], solPnl: number } = {
-        instructions: [],
-        solPnl: (postBalance - preBalance) / LAMPORTS_PER_SOL,
-      };
       const message = TransactionMessage.decompile(tx.transaction.message)
 
-      for (const ix of message.instructions)
-        if (ix.programId.equals(cpAmm._program.programId))
-          instructionsPnl.instructions.push(coder!.instruction.decode(ix.data, "base58")?.name!)
+      let i = -1;
+      for (const ix of message.instructions) {
+        i++;
+        if (ix.programId.equals(cpAmm._program.programId)) {
+          //console.log(ix)
 
-      pnlInfo.transactionPnl.push(instructionsPnl);
-      profit += (postBalance - preBalance) / LAMPORTS_PER_SOL;
+          const decoded = coder!.instruction.decode(ix.data, "base58")
+          const formatted = coder!.instruction.format(decoded!, ix.keys);
+
+
+          const posNftAccount = formatted?.accounts.find(x => x.name === "Position Nft Account")
+          //console.log(formatted)
+          if (!posNftAccount || !posNftAccount.pubkey.equals(position.positionNftAccount)) {
+            console.log("wrong position nft", posNftAccount);
+            console.log("required", position.positionNftAccount.toBase58());
+            continue;
+          }
+          if (decoded && formatted) {
+            console.log("===")
+            console.log(decoded.name)
+
+            if (decoded.name === "initializeCustomizablePool") {
+              const inner = tx.meta?.innerInstructions!.find(x => x.index === i)
+
+              const keysA: AccountMeta[] = inner?.instructions[inner!.instructions.length - 3].accounts.map(x => {
+                return {
+                  pubkey: tx.transaction.message.staticAccountKeys[x],
+                  isSigner: tx.transaction.message.isAccountSigner(x),
+                  isWritable: tx.transaction.message.isAccountWritable(x),
+                }
+              })!;
+
+              const keysB: AccountMeta[] = inner?.instructions[inner!.instructions.length - 2].accounts.map(x => {
+                return {
+                  pubkey: tx.transaction.message.staticAccountKeys[x],
+                  isSigner: tx.transaction.message.isAccountSigner(x),
+                  isWritable: tx.transaction.message.isAccountWritable(x),
+                }
+              })!;
+
+              const transactionA = new TransactionInstruction({
+                keys: keysA,
+                data: bs58.decode(inner!.instructions[inner!.instructions.length - 3].data),
+                programId: tx.transaction.message.staticAccountKeys[inner!.instructions[inner!.instructions.length - 3].programIdIndex],
+              })
+
+              const transactionB = new TransactionInstruction({
+                keys: keysB,
+                data: bs58.decode(inner!.instructions[inner!.instructions.length - 2].data),
+                programId: tx.transaction.message.staticAccountKeys[inner!.instructions[inner!.instructions.length - 2].programIdIndex],
+              })
+
+              const tokenAIx = splToken.decodeTransferCheckedInstruction(transactionA);
+              const tokenBIx = splToken.decodeTransferCheckedInstruction(transactionB);
+
+              const tokenAChange = -new Decimal(tokenAIx.data.amount.toString()).div(Decimal.pow(10, tokenAIx.data.decimals)).toNumber();
+              const tokenBChange = -new Decimal(tokenBIx.data.amount.toString()).div(Decimal.pow(10, tokenBIx.data.decimals)).toNumber();
+
+              pnlInfo.instructionChange.push({
+                instruction: decoded.name,
+                tokenAChange: tokenAChange,
+                tokenBChange: tokenBChange,
+              })
+
+              pnlInfo.tokenAAdded += -tokenAChange;
+              pnlInfo.tokenBAdded += -tokenBChange;
+            }
+
+            //console.log("formatted", formatted)
+            if (decoded.name === "addLiquidity") {
+              const inner = tx.meta?.innerInstructions!.find(x => x.index === i)
+
+              const keysA: AccountMeta[] = inner?.instructions[0].accounts.map(x => {
+                return {
+                  pubkey: tx.transaction.message.staticAccountKeys[x],
+                  isSigner: tx.transaction.message.isAccountSigner(x),
+                  isWritable: tx.transaction.message.isAccountWritable(x),
+                }
+              })!;
+
+              const keysB: AccountMeta[] = inner?.instructions[1].accounts.map(x => {
+                return {
+                  pubkey: tx.transaction.message.staticAccountKeys[x],
+                  isSigner: tx.transaction.message.isAccountSigner(x),
+                  isWritable: tx.transaction.message.isAccountWritable(x),
+                }
+              })!;
+
+              const transactionA = new TransactionInstruction({
+                keys: keysA,
+                data: bs58.decode(inner!.instructions[0].data),
+                programId: tx.transaction.message.staticAccountKeys[inner!.instructions[0].programIdIndex],
+              })
+
+              const transactionB = new TransactionInstruction({
+                keys: keysB,
+                data: bs58.decode(inner!.instructions[1].data),
+                programId: tx.transaction.message.staticAccountKeys[inner!.instructions[1].programIdIndex],
+              })
+
+              const tokenAIx = splToken.decodeTransferCheckedInstruction(transactionA);
+              const tokenBIx = splToken.decodeTransferCheckedInstruction(transactionB);
+
+              const tokenAChange = -new Decimal(tokenAIx.data.amount.toString()).div(Decimal.pow(10, tokenAIx.data.decimals)).toNumber();
+              const tokenBChange = -new Decimal(tokenBIx.data.amount.toString()).div(Decimal.pow(10, tokenBIx.data.decimals)).toNumber();
+
+              pnlInfo.instructionChange.push({
+                instruction: decoded.name,
+                tokenAChange: tokenAChange,
+                tokenBChange: tokenBChange,
+              })
+
+              pnlInfo.tokenAAdded += -tokenAChange;
+              pnlInfo.tokenBAdded += -tokenBChange;
+            }
+
+            if (decoded.name === "claimPositionFee") {
+              const inner = tx.meta?.innerInstructions!.find(x => x.index === i)
+              let tokenAFee = 0;
+              let tokenBFee = 0;
+              const keysB: AccountMeta[] = inner?.instructions[0].accounts.map(x => {
+                return {
+                  pubkey: tx.transaction.message.staticAccountKeys[x],
+                  isSigner: tx.transaction.message.isAccountSigner(x),
+                  isWritable: tx.transaction.message.isAccountWritable(x),
+                }
+              })!;
+
+              const transactionB = new TransactionInstruction({
+                keys: keysB,
+                data: bs58.decode(inner!.instructions[0].data),
+                programId: tx.transaction.message.staticAccountKeys[inner!.instructions[0].programIdIndex],
+              })
+
+              const tokenBIx = splToken.decodeTransferCheckedInstruction(transactionB);
+              tokenBFee = new Decimal(tokenBIx.data.amount.toString()).div(Decimal.pow(10, tokenBIx.data.decimals)).toNumber();
+
+              let tokenAIx = null;
+              if (inner!.instructions.length >= 3) {
+
+                const keysA: AccountMeta[] = inner?.instructions[1].accounts.map(x => {
+                  return {
+                    pubkey: tx.transaction.message.staticAccountKeys[x],
+                    isSigner: tx.transaction.message.isAccountSigner(x),
+                    isWritable: tx.transaction.message.isAccountWritable(x),
+                  }
+                })!;
+                const transactionA = new TransactionInstruction({
+                  keys: keysA,
+                  data: bs58.decode(inner!.instructions[1].data),
+                  programId: tx.transaction.message.staticAccountKeys[inner!.instructions[1].programIdIndex],
+                })
+
+                tokenAIx = splToken.decodeTransferCheckedInstruction(transactionA);
+                tokenAFee = new Decimal(tokenAIx.data.amount.toString()).div(Decimal.pow(10, tokenAIx.data.decimals)).toNumber();
+              }
+              pnlInfo.instructionChange.push({
+                instruction: decoded.name,
+                tokenAChange: tokenAFee,
+                tokenBChange: tokenBFee
+              })
+
+              pnlInfo.claimedFeesA += tokenAFee;
+              pnlInfo.claimedFeesB += tokenBFee;
+              pnlInfo.tokenARemoved += tokenAFee;
+              pnlInfo.tokenBRemoved += tokenBFee;
+
+            }
+
+            if (decoded.name === "removeLiquidity") {
+              const inner = tx.meta?.innerInstructions!.find(x => x.index === i)
+
+              const keysA: AccountMeta[] = inner?.instructions[0].accounts.map(x => {
+                return {
+                  pubkey: tx.transaction.message.staticAccountKeys[x],
+                  isSigner: tx.transaction.message.isAccountSigner(x),
+                  isWritable: tx.transaction.message.isAccountWritable(x),
+                }
+              })!;
+
+              const keysB: AccountMeta[] = inner?.instructions[1].accounts.map(x => {
+                return {
+                  pubkey: tx.transaction.message.staticAccountKeys[x],
+                  isSigner: tx.transaction.message.isAccountSigner(x),
+                  isWritable: tx.transaction.message.isAccountWritable(x),
+                }
+              })!;
+
+              const transactionA = new TransactionInstruction({
+                keys: keysA,
+                data: bs58.decode(inner!.instructions[0].data),
+                programId: tx.transaction.message.staticAccountKeys[inner!.instructions[0].programIdIndex],
+              })
+
+              const transactionB = new TransactionInstruction({
+                keys: keysB,
+                data: bs58.decode(inner!.instructions[1].data),
+                programId: tx.transaction.message.staticAccountKeys[inner!.instructions[1].programIdIndex],
+              })
+
+              const tokenAIx = splToken.decodeTransferCheckedInstruction(transactionA);
+              const tokenBIx = splToken.decodeTransferCheckedInstruction(transactionB);
+
+              const tokenAChange = new Decimal(tokenAIx.data.amount.toString()).div(Decimal.pow(10, tokenAIx.data.decimals)).toNumber();
+              const tokenBChange = new Decimal(tokenBIx.data.amount.toString()).div(Decimal.pow(10, tokenBIx.data.decimals)).toNumber();
+              pnlInfo.instructionChange.push({
+                instruction: decoded.name,
+                tokenAChange: tokenAChange,
+                tokenBChange: tokenBChange,
+              });
+              pnlInfo.tokenARemoved += tokenAChange;
+              pnlInfo.tokenBRemoved += tokenBChange;
+            }
+
+
+          }
+        }
+      }
+
+      pnlInfo.pnlA = (pnlInfo.tokenARemoved + position.tokenA.positionAmount + position.tokenA.unclaimedFee) / pnlInfo.tokenAAdded * 100 - 100;
+      pnlInfo.pnlB = (pnlInfo.tokenBRemoved + position.tokenB.positionAmount + position.tokenB.unclaimedFee) / pnlInfo.tokenBAdded * 100 - 100;
+      //pnlInfo.transactionPnl.push(instructionsPnl);
     }
-    const metdata = await fetchTokenMetadataJup([NATIVE_MINT.toBase58()]);
-
-    const solPrice = metdata[NATIVE_MINT.toBase58()].price;
-
-    const positionSolValue = pos.positionValue / solPrice.toNumber()
-    pnlInfo.solTotalPnl = profit + positionSolValue + pos.positionUnclaimedFee / solPrice.toNumber();
-
-    pnlInfo.dollarTotalPnl = pnlInfo.solTotalPnl * solPrice.toNumber();
+    //const metdata = await fetchTokenMetadataJup([NATIVE_MINT.toBase58()]);
 
     setPnlInfo(pnlInfo);
     console.log(pnlInfo);
@@ -985,29 +1204,52 @@ const DammPositions: React.FC = () => {
                             PnL
                           </button>
                           {pnlIndex === index && pnlInfo !== undefined && (
-                            <div ref={pnlRef}
+                            <div key={index}
+                              ref={pnlRef}
                               className="absolute flex flex-col z-50 top-6 left-0 w-80 bg-gray-900 text-gray-100 border border-gray-700 rounded-xs p-2 text-sm">
                               <div>{position.tokenA.symbol + " / " + position.tokenB.symbol}</div>
-                              <div className="flex flex-col divide-y divide-blue-700">
-                                {pnlInfo!.transactionPnl.map(x => (
+                              <div className="flex flex-col divide-y divide-gray-700">
+                                {pnlInfo!.instructionChange.map(x => (
                                   <div className="flex flex-col">
-                                    {x.instructions.map(ix =>
-                                      <div className="text-blue-500">
-                                        {ix}
-                                      </div>
-                                    )}
+                                    <div className="text-blue-500">
+                                      {x.instruction}
+                                    </div>
+                                    <div className={`text-xs ${x.tokenBChange > 0 ? "text-green-500" : "text-red-500"}`}>
+                                      {(x.tokenAChange === 0 ? "" : x.tokenAChange.toFixed(4) + ' ' + position.tokenA.symbol + " and ") + x.tokenBChange.toFixed(4) + ' ' + position.tokenB.symbol}
+                                    </div>
+
                                     <div>
-                                      {`SOL: ${x.solPnl > 0 ? "+" : ""}${x.solPnl}`}
+                                      {/* {`SOL: ${x.solPnl > 0 ? "+" : ""}${x.solPnl}`} */}
                                     </div>
                                   </div>
 
                                 ))}
                               </div>
-                              <div className="text-green-700">
-                                {"Position Value: $" + pnlInfo.positionValue.toFixed(2)}
-                              </div>
-                              <div className="text-green-700">
-                                {"Total PnL: " + pnlInfo.solTotalPnl.toFixed(4) + " SOL ($" + pnlInfo.dollarTotalPnl.toFixed(2) + ")"}
+                              <div className=''>
+                                <div className="text-red-600 border-t border-t-gray-700">
+                                  {"Sent " + position.tokenA.symbol + ": " + pnlInfo.tokenAAdded.toFixed(4)}
+                                </div>
+                                <div className="text-red-600 border-b border-b-gray-700 ">
+                                  {"Sent " + position.tokenB.symbol + ": " + pnlInfo.tokenBAdded.toFixed(4)}
+                                </div>
+                                <div className="text-green-600">
+                                  {"Received " + position.tokenA.symbol + ": " + pnlInfo.tokenARemoved.toFixed(4)}
+                                </div>
+                                <div className="text-green-600 border-b border-b-gray-700">
+                                  {"Received " + position.tokenB.symbol + ": " + pnlInfo.tokenBRemoved.toFixed(4)}
+                                </div>
+                                <div className="text-blue-600">
+                                  {"Position " + position.tokenA.symbol + ": " + pnlInfo.positionValueA.toFixed(4)}
+                                </div>
+                                <div className="text-blue-600 border-b border-b-gray-700">
+                                  {"Position " + position.tokenB.symbol + ": " + pnlInfo.positionValueB.toFixed(4)}
+                                </div>
+                                <div className="text-green-700">
+                                  {position.tokenA.symbol + " PNL: " + pnlInfo.pnlA.toFixed(2) + '%'}
+                                </div>
+                                <div className="text-green-700">
+                                  {position.tokenB.symbol + " PNL: " + pnlInfo.pnlB.toFixed(2) + '%'}
+                                </div>
                               </div>
                             </div>
                           )}
