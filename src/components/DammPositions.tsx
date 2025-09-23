@@ -15,8 +15,8 @@ import { txToast } from './Simple/TxToast'
 import { launchpads } from './launchpads/Launchpads'
 import { DepositPopover } from './Simple/Dammv2DepositPopover'
 import * as splToken from "@solana/spl-token"
-import * as bs58 from "bs58";
 import Decimal from "decimal.js"
+import { decode } from '@coral-xyz/anchor/dist/cjs/utils/bytes/bs58'
 
 interface PnlInfo {
   instructionChange:
@@ -429,7 +429,8 @@ const DammPositions: React.FC = () => {
 
     for (const tx of transactions) {
       if (!tx) continue;
-
+      console.log("new transaction");
+      console.log(tx);
       const message = TransactionMessage.decompile(tx.transaction.message)
 
       let i = -1;
@@ -474,13 +475,13 @@ const DammPositions: React.FC = () => {
 
               const transactionA = new TransactionInstruction({
                 keys: keysA,
-                data: bs58.decode(inner!.instructions[inner!.instructions.length - 3].data),
+                data: decode(inner!.instructions[inner!.instructions.length - 3].data),
                 programId: tx.transaction.message.staticAccountKeys[inner!.instructions[inner!.instructions.length - 3].programIdIndex],
               })
 
               const transactionB = new TransactionInstruction({
                 keys: keysB,
-                data: bs58.decode(inner!.instructions[inner!.instructions.length - 2].data),
+                data: decode(inner!.instructions[inner!.instructions.length - 2].data),
                 programId: tx.transaction.message.staticAccountKeys[inner!.instructions[inner!.instructions.length - 2].programIdIndex],
               })
 
@@ -522,13 +523,13 @@ const DammPositions: React.FC = () => {
 
               const transactionA = new TransactionInstruction({
                 keys: keysA,
-                data: bs58.decode(inner!.instructions[0].data),
+                data: decode(inner!.instructions[0].data),
                 programId: tx.transaction.message.staticAccountKeys[inner!.instructions[0].programIdIndex],
               })
 
               const transactionB = new TransactionInstruction({
                 keys: keysB,
-                data: bs58.decode(inner!.instructions[1].data),
+                data: decode(inner!.instructions[1].data),
                 programId: tx.transaction.message.staticAccountKeys[inner!.instructions[1].programIdIndex],
               })
 
@@ -552,23 +553,24 @@ const DammPositions: React.FC = () => {
               const inner = tx.meta?.innerInstructions!.find(x => x.index === i)
               let tokenAFee = 0;
               let tokenBFee = 0;
-              const keysB: AccountMeta[] = inner?.instructions[0].accounts.map(x => {
-                return {
-                  pubkey: tx.transaction.message.staticAccountKeys[x],
-                  isSigner: tx.transaction.message.isAccountSigner(x),
-                  isWritable: tx.transaction.message.isAccountWritable(x),
-                }
-              })!;
+              if (inner!.instructions.length >= 2) {
+                const keysB: AccountMeta[] = inner!.instructions[0].accounts.map(x => {
+                  return {
+                    pubkey: tx.transaction.message.staticAccountKeys[x],
+                    isSigner: tx.transaction.message.isAccountSigner(x),
+                    isWritable: tx.transaction.message.isAccountWritable(x),
+                  }
+                })!;
 
-              const transactionB = new TransactionInstruction({
-                keys: keysB,
-                data: bs58.decode(inner!.instructions[0].data),
-                programId: tx.transaction.message.staticAccountKeys[inner!.instructions[0].programIdIndex],
-              })
+                const transactionB = new TransactionInstruction({
+                  keys: keysB,
+                  data: decode(inner!.instructions[0].data),
+                  programId: tx.transaction.message.staticAccountKeys[inner!.instructions[0].programIdIndex],
+                })
 
-              const tokenBIx = splToken.decodeTransferCheckedInstruction(transactionB);
-              tokenBFee = new Decimal(tokenBIx.data.amount.toString()).div(Decimal.pow(10, tokenBIx.data.decimals)).toNumber();
-
+                const tokenBIx = splToken.decodeTransferCheckedInstruction(transactionB);
+                tokenBFee = new Decimal(tokenBIx.data.amount.toString()).div(Decimal.pow(10, tokenBIx.data.decimals)).toNumber();
+              }
               let tokenAIx = null;
               if (inner!.instructions.length >= 3) {
 
@@ -581,7 +583,7 @@ const DammPositions: React.FC = () => {
                 })!;
                 const transactionA = new TransactionInstruction({
                   keys: keysA,
-                  data: bs58.decode(inner!.instructions[1].data),
+                  data: decode(inner!.instructions[1].data),
                   programId: tx.transaction.message.staticAccountKeys[inner!.instructions[1].programIdIndex],
                 })
 
@@ -622,13 +624,13 @@ const DammPositions: React.FC = () => {
 
               const transactionA = new TransactionInstruction({
                 keys: keysA,
-                data: bs58.decode(inner!.instructions[0].data),
+                data: decode(inner!.instructions[0].data),
                 programId: tx.transaction.message.staticAccountKeys[inner!.instructions[0].programIdIndex],
               })
 
               const transactionB = new TransactionInstruction({
                 keys: keysB,
-                data: bs58.decode(inner!.instructions[1].data),
+                data: decode(inner!.instructions[1].data),
                 programId: tx.transaction.message.staticAccountKeys[inner!.instructions[1].programIdIndex],
               })
 
@@ -645,8 +647,6 @@ const DammPositions: React.FC = () => {
               pnlInfo.tokenARemoved += tokenAChange;
               pnlInfo.tokenBRemoved += tokenBChange;
             }
-
-
           }
         }
       }
