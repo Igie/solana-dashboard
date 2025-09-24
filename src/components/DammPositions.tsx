@@ -7,7 +7,6 @@ import { BN, } from '@coral-xyz/anchor'
 import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-adapter'
 import { ComputeBudgetProgram, PublicKey, Transaction, TransactionInstruction, TransactionMessage, type AccountMeta } from '@solana/web3.js'
 import { copyToClipboard, getSchedulerType, renderFeeTokenImages, type PoolPositionInfo } from '../constants'
-//import { FeeSchedulerGraph } from './Simple/FeeSchedulerGraph'
 import { useCpAmm } from '../contexts/CpAmmContext'
 import { AuthorityType, createSetAuthorityInstruction, getMint, NATIVE_MINT, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token'
 import { unwrapSOLInstruction } from '@meteora-ag/cp-amm-sdk'
@@ -478,15 +477,17 @@ const DammPositions: React.FC = () => {
                 data: decode(inner!.instructions[inner!.instructions.length - 3].data),
                 programId: tx.transaction.message.staticAccountKeys[inner!.instructions[inner!.instructions.length - 3].programIdIndex],
               })
+              console.log("token A program:", transactionA.programId.toBase58())
 
               const transactionB = new TransactionInstruction({
                 keys: keysB,
                 data: decode(inner!.instructions[inner!.instructions.length - 2].data),
                 programId: tx.transaction.message.staticAccountKeys[inner!.instructions[inner!.instructions.length - 2].programIdIndex],
               })
+              console.log("token B program:", transactionB.programId.toBase58())
 
-              const tokenAIx = splToken.decodeTransferCheckedInstruction(transactionA);
-              const tokenBIx = splToken.decodeTransferCheckedInstruction(transactionB);
+              const tokenAIx = splToken.decodeTransferCheckedInstruction(transactionA, transactionA.programId);
+              const tokenBIx = splToken.decodeTransferCheckedInstruction(transactionB, transactionB.programId);
 
               const tokenAChange = -new Decimal(tokenAIx.data.amount.toString()).div(Decimal.pow(10, tokenAIx.data.decimals)).toNumber();
               const tokenBChange = -new Decimal(tokenBIx.data.amount.toString()).div(Decimal.pow(10, tokenBIx.data.decimals)).toNumber();
@@ -526,15 +527,17 @@ const DammPositions: React.FC = () => {
                 data: decode(inner!.instructions[0].data),
                 programId: tx.transaction.message.staticAccountKeys[inner!.instructions[0].programIdIndex],
               })
-
+              console.log("token A program:", transactionA.programId.toBase58())
               const transactionB = new TransactionInstruction({
                 keys: keysB,
                 data: decode(inner!.instructions[1].data),
                 programId: tx.transaction.message.staticAccountKeys[inner!.instructions[1].programIdIndex],
               })
-
-              const tokenAIx = splToken.decodeTransferCheckedInstruction(transactionA);
-              const tokenBIx = splToken.decodeTransferCheckedInstruction(transactionB);
+              console.log("token B program:", transactionB.programId.toBase58())
+              const test = splToken.decodeInstruction(transactionA, transactionA.programId);
+              console.log("test", test);
+              const tokenAIx = splToken.decodeTransferCheckedInstruction(transactionA, transactionA.programId);
+              const tokenBIx = splToken.decodeTransferCheckedInstruction(transactionB, transactionB.programId);
 
               const tokenAChange = -new Decimal(tokenAIx.data.amount.toString()).div(Decimal.pow(10, tokenAIx.data.decimals)).toNumber();
               const tokenBChange = -new Decimal(tokenBIx.data.amount.toString()).div(Decimal.pow(10, tokenBIx.data.decimals)).toNumber();
@@ -567,8 +570,9 @@ const DammPositions: React.FC = () => {
                   data: decode(inner!.instructions[0].data),
                   programId: tx.transaction.message.staticAccountKeys[inner!.instructions[0].programIdIndex],
                 })
+                console.log("token B program:", transactionB.programId.toBase58())
 
-                const tokenBIx = splToken.decodeTransferCheckedInstruction(transactionB);
+                const tokenBIx = splToken.decodeTransferCheckedInstruction(transactionB, transactionB.programId);
                 tokenBFee = new Decimal(tokenBIx.data.amount.toString()).div(Decimal.pow(10, tokenBIx.data.decimals)).toNumber();
               }
               let tokenAIx = null;
@@ -586,8 +590,9 @@ const DammPositions: React.FC = () => {
                   data: decode(inner!.instructions[1].data),
                   programId: tx.transaction.message.staticAccountKeys[inner!.instructions[1].programIdIndex],
                 })
+                console.log("token A program:", transactionA.programId.toBase58())
 
-                tokenAIx = splToken.decodeTransferCheckedInstruction(transactionA);
+                tokenAIx = splToken.decodeTransferCheckedInstruction(transactionA, transactionA.programId);
                 tokenAFee = new Decimal(tokenAIx.data.amount.toString()).div(Decimal.pow(10, tokenAIx.data.decimals)).toNumber();
               }
               pnlInfo.instructionChange.push({
@@ -634,8 +639,8 @@ const DammPositions: React.FC = () => {
                 programId: tx.transaction.message.staticAccountKeys[inner!.instructions[1].programIdIndex],
               })
 
-              const tokenAIx = splToken.decodeTransferCheckedInstruction(transactionA);
-              const tokenBIx = splToken.decodeTransferCheckedInstruction(transactionB);
+              const tokenAIx = splToken.decodeTransferCheckedInstruction(transactionA, transactionA.programId);
+              const tokenBIx = splToken.decodeTransferCheckedInstruction(transactionB, transactionB.programId);
 
               const tokenAChange = new Decimal(tokenAIx.data.amount.toString()).div(Decimal.pow(10, tokenAIx.data.decimals)).toNumber();
               const tokenBChange = new Decimal(tokenBIx.data.amount.toString()).div(Decimal.pow(10, tokenBIx.data.decimals)).toNumber();
