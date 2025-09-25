@@ -502,6 +502,55 @@ const DammPositions: React.FC = () => {
               pnlInfo.tokenBAdded += -tokenBChange;
             }
 
+            if (decoded.name === "initializePool") {
+              const inner = tx.meta?.innerInstructions!.find(x => x.index === i)
+
+              const keysA: AccountMeta[] = inner?.instructions[inner!.instructions.length - 3].accounts.map(x => {
+                return {
+                  pubkey: tx.transaction.message.staticAccountKeys[x],
+                  isSigner: tx.transaction.message.isAccountSigner(x),
+                  isWritable: tx.transaction.message.isAccountWritable(x),
+                }
+              })!;
+
+              const keysB: AccountMeta[] = inner?.instructions[inner!.instructions.length - 2].accounts.map(x => {
+                return {
+                  pubkey: tx.transaction.message.staticAccountKeys[x],
+                  isSigner: tx.transaction.message.isAccountSigner(x),
+                  isWritable: tx.transaction.message.isAccountWritable(x),
+                }
+              })!;
+
+              const transactionA = new TransactionInstruction({
+                keys: keysA,
+                data: decode(inner!.instructions[inner!.instructions.length - 3].data),
+                programId: tx.transaction.message.staticAccountKeys[inner!.instructions[inner!.instructions.length - 3].programIdIndex],
+              })
+              console.log("token A program:", transactionA.programId.toBase58())
+
+              const transactionB = new TransactionInstruction({
+                keys: keysB,
+                data: decode(inner!.instructions[inner!.instructions.length - 2].data),
+                programId: tx.transaction.message.staticAccountKeys[inner!.instructions[inner!.instructions.length - 2].programIdIndex],
+              })
+              console.log("token B program:", transactionB.programId.toBase58())
+
+              const tokenAIx = splToken.decodeTransferCheckedInstruction(transactionA, transactionA.programId);
+              const tokenBIx = splToken.decodeTransferCheckedInstruction(transactionB, transactionB.programId);
+
+              const tokenAChange = -new Decimal(tokenAIx.data.amount.toString()).div(Decimal.pow(10, tokenAIx.data.decimals)).toNumber();
+              const tokenBChange = -new Decimal(tokenBIx.data.amount.toString()).div(Decimal.pow(10, tokenBIx.data.decimals)).toNumber();
+
+              pnlInfo.instructionChange.push({
+                instruction: decoded.name,
+                tokenAChange: tokenAChange,
+                tokenBChange: tokenBChange,
+              })
+
+              pnlInfo.tokenAAdded += -tokenAChange;
+              pnlInfo.tokenBAdded += -tokenBChange;
+            }
+
             //console.log("formatted", formatted)
             if (decoded.name === "addLiquidity") {
               const inner = tx.meta?.innerInstructions!.find(x => x.index === i)
@@ -1211,7 +1260,7 @@ const DammPositions: React.FC = () => {
                           {pnlIndex === index && pnlInfo !== undefined && (
                             <div key={index}
                               ref={pnlRef}
-                              className="absolute flex flex-col z-50 top-6 left-0 w-80 bg-gray-900 text-gray-100 border border-gray-700 rounded-xs p-2 text-sm">
+                              className="absolute flex flex-col z-50 top-6 left-0 w-80 bg-gray-900 text-gray-100 border border-gray-700 rounded-xs p-2 text-xs">
                               <div>{position.tokenA.symbol + " / " + position.tokenB.symbol}</div>
                               <div className="flex flex-col divide-y divide-gray-700">
                                 {pnlInfo!.instructionChange.map(x => (
@@ -1219,7 +1268,7 @@ const DammPositions: React.FC = () => {
                                     <div className="text-blue-500">
                                       {x.instruction}
                                     </div>
-                                    <div className={`text-xs ${x.tokenBChange > 0 ? "text-green-500" : "text-red-500"}`}>
+                                    <div className={`${x.tokenBChange > 0 ? "text-green-500" : "text-red-500"}`}>
                                       {(x.tokenAChange === 0 ? "" : x.tokenAChange.toFixed(4) + ' ' + position.tokenA.symbol + " and ") + x.tokenBChange.toFixed(4) + ' ' + position.tokenB.symbol}
                                     </div>
 
@@ -1242,6 +1291,12 @@ const DammPositions: React.FC = () => {
                                 </div>
                                 <div className="text-green-600 border-b border-b-gray-700">
                                   {"Received " + position.tokenB.symbol + ": " + pnlInfo.tokenBRemoved.toFixed(4)}
+                                </div>
+                                  <div className="text-green-600">
+                                  {"Claimable " + position.tokenA.symbol + ": " + position.tokenA.unclaimedFee.toFixed(4)}
+                                </div>
+                                <div className="text-green-600 border-b border-b-gray-700">
+                                  {"Claimable " + position.tokenB.symbol + ": " + position.tokenB.unclaimedFee.toFixed(4)}
                                 </div>
                                 <div className="text-blue-600">
                                   {"Position " + position.tokenA.symbol + ": " + pnlInfo.positionValueA.toFixed(4)}
