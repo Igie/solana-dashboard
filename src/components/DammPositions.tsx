@@ -1046,7 +1046,7 @@ const DammPositions: React.FC = () => {
           </p>
         </div>
       ) : (
-        <div className="flex flex-col bg-gray-900 border border-gray-700 rounded-xl overflow-hidden">
+        <div className="flex flex-col h-full bg-gray-900 border border-gray-700 rounded-xl overflow-hidden">
           {/* Desktop Table Header - Sticky */}
           <div className="hidden md:block bg-gray-800 border-b border-gray-600 sticky top-0 pr-4">
             <div className="grid grid-cols-12 gap-2 px-4 py-1 text-xs font-medium text-gray-300 uppercase tracking-wider">
