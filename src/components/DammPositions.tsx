@@ -37,6 +37,8 @@ interface PnlInfo {
   claimedFeesB: number,
   pnlA: number,
   pnlB: number,
+  pnlAPercent: number,
+  pnlBPercent: number,
 }
 
 const DammPositions: React.FC = () => {
@@ -424,6 +426,8 @@ const DammPositions: React.FC = () => {
       claimedFeesB: 0,
       pnlA: 0,
       pnlB: 0,
+      pnlAPercent: 0,
+      pnlBPercent: 0,
     }
 
     for (const tx of transactions) {
@@ -705,8 +709,10 @@ const DammPositions: React.FC = () => {
         }
       }
 
-      pnlInfo.pnlA = (pnlInfo.tokenARemoved + position.tokenA.positionAmount + position.tokenA.unclaimedFee) / pnlInfo.tokenAAdded * 100 - 100;
-      pnlInfo.pnlB = (pnlInfo.tokenBRemoved + position.tokenB.positionAmount + position.tokenB.unclaimedFee) / pnlInfo.tokenBAdded * 100 - 100;
+      pnlInfo.pnlAPercent = (pnlInfo.tokenARemoved + position.tokenA.positionAmount + position.tokenA.unclaimedFee) / pnlInfo.tokenAAdded * 100 - 100;
+      pnlInfo.pnlBPercent = (pnlInfo.tokenBRemoved + position.tokenB.positionAmount + position.tokenB.unclaimedFee) / pnlInfo.tokenBAdded * 100 - 100;
+      pnlInfo.pnlA = (pnlInfo.tokenARemoved + position.tokenA.positionAmount + position.tokenA.unclaimedFee) - pnlInfo.tokenAAdded
+      pnlInfo.pnlB = (pnlInfo.tokenBRemoved + position.tokenB.positionAmount + position.tokenB.unclaimedFee) - pnlInfo.tokenBAdded
       //pnlInfo.transactionPnl.push(instructionsPnl);
     }
     //const metdata = await fetchTokenMetadataJup([NATIVE_MINT.toBase58()]);
@@ -1292,7 +1298,7 @@ const DammPositions: React.FC = () => {
                                 <div className="text-green-600 border-b border-b-gray-700">
                                   {"Received " + position.tokenB.symbol + ": " + pnlInfo.tokenBRemoved.toFixed(4)}
                                 </div>
-                                  <div className="text-green-600">
+                                <div className="text-green-600">
                                   {"Claimable " + position.tokenA.symbol + ": " + position.tokenA.unclaimedFee.toFixed(4)}
                                 </div>
                                 <div className="text-green-600 border-b border-b-gray-700">
@@ -1304,11 +1310,13 @@ const DammPositions: React.FC = () => {
                                 <div className="text-blue-600 border-b border-b-gray-700">
                                   {"Position " + position.tokenB.symbol + ": " + pnlInfo.positionValueB.toFixed(4)}
                                 </div>
-                                <div className="text-green-700">
-                                  {position.tokenA.symbol + " PNL: " + pnlInfo.pnlA.toFixed(2) + '%'}
+                                <div className="flex flex-col text-green-700">
+                                  <div>{`${position.tokenA.symbol} PNL: ${pnlInfo.pnlAPercent.toFixed(2)} %`}</div>
+                                  <div>{`${pnlInfo.pnlA >= 0 ? '+' : ''}${pnlInfo.pnlA.toFixed(4)} ${position.tokenA.symbol}`}</div>
                                 </div>
-                                <div className="text-green-700">
-                                  {position.tokenB.symbol + " PNL: " + pnlInfo.pnlB.toFixed(2) + '%'}
+                                <div className="flex flex-col text-green-700">
+                                  <div>{`${position.tokenB.symbol} PNL: ${pnlInfo.pnlBPercent.toFixed(2)} %`}</div>
+                                  <div>{`${pnlInfo.pnlB >= 0 ? '+' : ''}${pnlInfo.pnlB.toFixed(4)} ${position.tokenB.symbol}`}</div>
                                 </div>
                               </div>
                             </div>
