@@ -13,6 +13,7 @@ import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token"
 import { txToast } from "../Simple/TxToast"
 import { useTransactionManager } from "../../contexts/TransactionManagerContext"
 import { toast } from "sonner"
+import { useDammUserPositions } from "../../contexts/DammUserPositionsContext"
 
 interface CustomPoolCreationProps {
 
@@ -82,6 +83,7 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
     const { cpAmm } = useCpAmm();
     const { connected, publicKey } = useWallet();
     const { sendLegacyTxn } = useTransactionManager();
+    const { refreshPositions } = useDammUserPositions();
 
     const [newPoolAddress, setNewPoolAddress] = useState<PublicKey | null>(null)
     const [newPoolAddressExists, setNewPoolAddressExists] = useState(false)
@@ -116,11 +118,9 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
         if (!tokenAMint || !tokenBMint) {
             return
         }
-
         if (newPoolAddressExists) {
             return;
         }
-
         try {
             const tokenA = new PublicKey(tokenAMint)
             const tokenB = new PublicKey(tokenBMint)
@@ -183,9 +183,11 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
                         notify: true,
                         onSuccess: async () => {
                             txToast.showPool(pool.toBase58());
+                            await refreshPositions();
                             await updateCommonTokens();
                             setTokenAAmount(new Decimal(0));
                             setNewPoolAddressExists(true);
+
                         },
                     }
                 );
@@ -197,8 +199,6 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
         } catch (err) {
             console.error("Failed to create pool:", err)
         }
-
-
     }
 
     const handleFetchPrice = async () => {

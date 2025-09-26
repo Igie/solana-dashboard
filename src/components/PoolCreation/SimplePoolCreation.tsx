@@ -12,6 +12,7 @@ import { txToast } from "../Simple/TxToast"
 import { useTransactionManager } from "../../contexts/TransactionManagerContext"
 import { toast } from "sonner"
 import { SYSTEM_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/native/system"
+import { useDammUserPositions } from "../../contexts/DammUserPositionsContext"
 
 interface PoolConfig {
     publicKey: PublicKey;
@@ -91,6 +92,7 @@ const SimplePoolCreation: React.FC<SimplePoolCreationProps> = (
     const { cpAmm } = useCpAmm();
     const { connected, publicKey } = useWallet();
     const { sendLegacyTxn } = useTransactionManager();
+    const { refreshPositions } = useDammUserPositions();
 
     const [poolConfigs, setPoolConfigs] = useState<DetailedPoolConfig[]>([])
     const [selectedPoolConfig, setSelectedPoolConfig] = useState<DetailedPoolConfig | undefined>(undefined)
@@ -157,7 +159,6 @@ const SimplePoolCreation: React.FC<SimplePoolCreationProps> = (
                 getPriceFromSqrtPrice(poolConfig.account.sqrtMinPrice, 9, 9),
             dynamicFee: poolConfig.account.poolFees.dynamicFee.initialized == 1,
             feeCollectionToken: poolConfig.account.collectFeeMode
-
         }
         return detailedPolConfig
     }
@@ -218,6 +219,7 @@ const SimplePoolCreation: React.FC<SimplePoolCreationProps> = (
                         notify: true,
                         onSuccess: async () => {
                             txToast.showPool(pool.toBase58());
+                            await refreshPositions();
                             await updateCommonTokens();
                             setTokenAAmount(new Decimal(0));
                             setNewPoolAddressExists(true);
