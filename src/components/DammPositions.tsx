@@ -1104,7 +1104,7 @@ const DammPositions: React.FC = () => {
         <div className="flex flex-col h-full bg-gray-900 border border-gray-700 rounded-xl overflow-hidden">
           {/* Desktop Table Header - Sticky */}
           <div className="hidden md:block bg-gray-800 border-b border-gray-600 sticky top-0 pr-4">
-            <div className="grid grid-cols-12 gap-2 px-4 py-1 text-xs font-medium text-gray-300 uppercase tracking-wider">
+            <div className="grid grid-cols-12 divide-x divide-gray-700 gap-2 px-4 py-1 text-xs font-medium text-gray-300 uppercase tracking-wider">
               <div className="col-span-1"></div>
               <div className="col-span-2">Pair</div>
               <div className="col-span-2">Your Liquidity</div>
@@ -1118,7 +1118,7 @@ const DammPositions: React.FC = () => {
             {positions.filter((x) => poolContainsString(x, searchString)).map((position, index) => (
               <div key={index}>
                 {/* Desktop Table Row */}
-                <div className="hidden md:grid grid-cols-12 gap-2 px-4 py-1 border-b border-gray-700 hover:bg-gray-800/50 items-center">
+                <div className="hidden md:grid grid-cols-12 divide-x divide-gray-700 gap-2 px-4 py-1 border-b border-gray-700 hover:bg-gray-800/50 items-center">
                   {/* Checkbox */}
                   <div className="flex flex-cols gap-2 justify-center col-span-1">
                     <input
