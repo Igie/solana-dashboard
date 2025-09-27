@@ -22,6 +22,8 @@ interface DammV2PoolContextType {
     fetchingPools: boolean;
 
     filteredDetailedPools: PoolDetailedInfo[];
+    updatedPools: PoolInfo[];
+
     tokenMetadataMap: TokenMetadataMap;
 
     creatorAddressFilter: string;
@@ -45,6 +47,7 @@ const DammV2PoolContext = createContext<DammV2PoolContextType>({
     fetchingPools: false,
 
     filteredDetailedPools: [],
+    updatedPools: [],
     tokenMetadataMap: {},
 
     creatorAddressFilter: "",
@@ -58,7 +61,6 @@ const DammV2PoolContext = createContext<DammV2PoolContextType>({
 
     poolSorting: { type: PoolSortType.PoolActivationTime, ascending: true },
     setPoolSorting: (_s: PoolSorting) => { },
-
 });
 
 const UPDATE_INTERVAL = 2000;
@@ -69,11 +71,12 @@ export const useDammV2PoolsWebsocket = () => useContext(DammV2PoolContext)
 export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { connection } = useConnection();
     const { cpAmm } = useCpAmm();
-    const {getSlot} = useGetSlot();
+    const { getSlot } = useGetSlot();
 
     const updateTimeout = useRef<NodeJS.Timeout | undefined>(undefined);
 
     const [fetchingPools, setFetchingPools] = useState(false);
+
 
     const simpleMainPoolsMap = useRef<PoolInfoMap>({});
     const simpleNonMainPoolsMap = useRef<PoolInfoMap>({});
@@ -86,6 +89,9 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const localFilteredDetailedPools = useRef<PoolDetailedInfo[]>([]);
     const [filteredDetailedPools, setFilteredDetailedPools] = useState(localFilteredDetailedPools.current)
 
+    const updatedPoolMap = useRef<PoolInfoMap>({});
+
+    const [updatedPools, setUpdatedPools] = useState<PoolInfo[]>([])
     const tokenMetadataMap = useRef<TokenMetadataMap>({});
 
 
@@ -161,7 +167,11 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         const maxSlotBnNow = new BN(slotNow).addn(10);
         const maxTimeBnNow = new BN(startTime).addn(5);
 
-        setFetchingPools(true)
+        setFetchingPools(true);
+
+        setUpdatedPools(Object.entries(updatedPoolMap.current).map(x => x[1]));
+        updatedPoolMap.current = {};
+
         let currentSimplePools: PoolInfo[] = []
         if (additionlSimplePools.current && additionlSimplePools.current.length > 0)
             currentSimplePools = additionlSimplePools.current
@@ -205,7 +215,6 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         filteredSimplePools.current = [...currentSimplePools];
         if (additionlSimplePools.current.length == 0) {
             filterByCreatorAddress();
-            //filterByMainPool()
             filterByPoolAddressOrMint();
         }
         filteredSimplePools.current = filteredSimplePools.current.slice(0, MAX_SIMPLE_POOLS)
@@ -369,27 +378,6 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             let pools: PoolInfo[] = [];
             pools = await cpAmm._program.account.pool.all();
 
-            // if (mainPoolFilterRef.current !== "Include")
-            //     pools = pools.filter(x => {
-            //         const currentFee = feeNumeratorToBps(getFeeNumerator(
-            //             x.account.activationType === 0 ? slotNow :
-            //                 x.account.activationType === 1 ? startTime : 0,
-            //             x.account.activationPoint,
-            //             x.account.poolFees.baseFee.numberOfPeriod,
-            //             x.account.poolFees.baseFee.periodFrequency,
-            //             x.account.poolFees.baseFee.feeSchedulerMode,
-            //             x.account.poolFees.baseFee.cliffFeeNumerator,
-            //             x.account.poolFees.baseFee.reductionFactor,
-            //             x.account.poolFees.dynamicFee
-            //         ));
-
-            //         if (mainPoolFilterRef.current === "Exclude")
-            //             return currentFee > 1000;
-            //         if (mainPoolFilterRef.current === "Only")
-            //             return currentFee <= 1000;
-            //         return true;
-            //     })
-
             pools = pools.filter(x => {
                 if (x.account.activationType === 0)
                     if (x.account.activationPoint < maxSlotBnNow)
@@ -459,36 +447,6 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         //console.log(`Filter result: ${Date.now() - startTime}ms, filtered out ${filteredSimplePools.current.length - startPoolsCount} pools.`)
     }
 
-    // const filterByMainPool = () => {
-    //     const filter = mainPoolFilterRef.current;
-    //     console.log("Filtering by main pool: " + filter)
-    //     const currentTime = Date.now() / 1000;
-    //     //const startTime = Date.now();
-    //     //const startPoolsCount = filteredSimplePools.current.length;
-
-    //     filteredSimplePools.current = filteredSimplePools.current.filter(x => {
-    //         const currentFee = feeNumeratorToBps(getFeeNumerator(
-    //             x.account.activationType === 0 ? currentSlot.current :
-    //                 x.account.activationType === 1 ? currentTime : 0,
-    //             x.account.activationPoint,
-    //             x.account.poolFees.baseFee.numberOfPeriod,
-    //             x.account.poolFees.baseFee.periodFrequency,
-    //             x.account.poolFees.baseFee.feeSchedulerMode,
-    //             x.account.poolFees.baseFee.cliffFeeNumerator,
-    //             x.account.poolFees.baseFee.reductionFactor,
-    //             x.account.poolFees.dynamicFee
-    //         ));
-
-    //         if (filter === "Exclude")
-    //             return currentFee > 1000;
-    //         if (filter === "Only")
-    //             return currentFee <= 1000;
-    //         return true;
-    //     })
-
-    //     //console.log(`Filter result: ${Date.now() - startTime}ms, filtered out ${filteredSimplePools.current.length - startPoolsCount} pools.`)
-    // }
-
     const filterByPoolAddressOrMint = () => {
         if (!poolAddressOrMintFilterRef.current || poolAddressOrMintFilterRef.current === "") return;
         //const startTime = Date.now();
@@ -540,9 +498,15 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                 }
             }
             if (!found || name !== 'pool') return;
+            const accountInfo = { publicKey: e.accountId, account: decoded };
+            //console.log(positions.map(x => x.poolInfo.publicKey.toBase58()))
+            //if (positions.find(x => x.poolInfo.publicKey.toBase58() === e.accountId.toBase58())) {
+            updatedPoolMap.current[accountInfo.publicKey.toBase58()] = accountInfo;
+            //console.log("added pool ", e.accountId.toBase58());
+            //}
 
             if (updateRef.current === true) {
-                const accountInfo = { publicKey: e.accountId, account: decoded };
+
                 const currentFee = feeNumeratorToBps(getFeeNumerator(
                     decoded.activationType === 0 ? getSlot() :
                         decoded.activationType === 1 ? Date.now() / 1000 : 0,
@@ -576,7 +540,8 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return (
         <DammV2PoolContext.Provider value={{
             update, setUpdate, fetchAllPools, fetchingPools,
-            filteredDetailedPools, tokenMetadataMap: tokenMetadataMap.current,
+            filteredDetailedPools, updatedPools,
+            tokenMetadataMap: tokenMetadataMap.current,
             creatorAddressFilter, setCreatorAddressFilter,
             mainPoolFilter, setMainPoolFilter,
             poolAddressOrMintFilter, setPoolAddressOrMintFilter,

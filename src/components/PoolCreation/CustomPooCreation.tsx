@@ -156,7 +156,6 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
             };
 
             const positionNft = Keypair.generate();
-
             const { tx, pool } = await cpAmm.createCustomPool({
                 payer: publicKey!,
                 creator: publicKey!,
@@ -187,7 +186,6 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
                             await updateCommonTokens();
                             setTokenAAmount(new Decimal(0));
                             setNewPoolAddressExists(true);
-
                         },
                     }
                 );
