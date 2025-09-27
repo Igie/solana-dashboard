@@ -4,7 +4,6 @@ import { PublicKey } from "@solana/web3.js";
 import Decimal from 'decimal.js'
 import type { TokenMetadata, TokenMetadataMap } from "./tokenUtils";
 import { BN } from "@coral-xyz/anchor";
-import { getPoolPositionMap } from "./contexts/DammUserPositionsContext";
 
 export const MAINNET_HELIUS_RPC: string = `https://mainnet.helius-rpc.com/?api-key=${import.meta.env.VITE_HELIUS_API_KEY}`;
 export const DEVNET_HELIUS_RPC: string = `https://devnet.helius-rpc.com?api-key=${import.meta.env.VITE_HELIUS_API_KEY}`;
@@ -461,7 +460,7 @@ export const renderFeeTokenImages = (position: PoolPositionInfo) => {
     if (position.poolInfo.account.collectFeeMode === 0) {
         // Both tokens
         return (
-            <div className="flex -space-x-1">
+            <div className="flex -space-x-1 w-8">
                 {position.tokenA.image ? (
                     <img src={position.tokenA.image} alt="Token A" className="w-4 h-4 rounded-full border border-gray-600" />
                 ) : (
@@ -476,10 +475,14 @@ export const renderFeeTokenImages = (position: PoolPositionInfo) => {
         );
     } else {
         // Quote token only (tokenB)
-        return position.tokenB.image ? (
-            <img src={position.tokenB.image} alt="Quote Token" className="w-4 h-4 rounded-full" />
-        ) : (
-            <div className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500" />
+        return (
+            <div className="flex -space-x-1 w-8">
+                {position.tokenB.image ? (
+                    <img src={position.tokenB.image} alt="Token B" className="w-4 h-4 rounded-full border border-gray-600" />
+                ) : (
+                    <div className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 border border-gray-600" />
+                )}
+            </div>
         );
     }
 };

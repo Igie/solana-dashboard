@@ -1118,7 +1118,7 @@ const DammPositions: React.FC = () => {
             {positions.filter((x) => poolContainsString(x, searchString)).map((position, index) => (
               <div key={index}>
                 {/* Desktop Table Row */}
-                <div className="hidden md:grid grid-cols-11 gap-2 px-4 py-1 border-b border-gray-700 hover:bg-gray-800/50 items-center">
+                <div className="hidden md:grid grid-cols-12 gap-2 px-4 py-1 border-b border-gray-700 hover:bg-gray-800/50 items-center">
                   {/* Checkbox */}
                   <div className="flex flex-cols gap-2 justify-center col-span-1">
                     <input
@@ -1228,7 +1228,7 @@ const DammPositions: React.FC = () => {
                   </div>
 
                   {/* Claimable/Claimed Fees */}
-                  <div className="col-span-2">
+                  <div className="grid col-span-3">
                     <div className="flex items-center gap-2">
                       {/* Token Images */}
                       {renderFeeTokenImages(position)}
