@@ -4,6 +4,7 @@ import { PublicKey } from "@solana/web3.js";
 import Decimal from 'decimal.js'
 import type { TokenMetadata, TokenMetadataMap } from "./tokenUtils";
 import { BN } from "@coral-xyz/anchor";
+import { getPoolPositionMap } from "./contexts/DammUserPositionsContext";
 
 export const MAINNET_HELIUS_RPC: string = `https://mainnet.helius-rpc.com/?api-key=${import.meta.env.VITE_HELIUS_API_KEY}`;
 export const DEVNET_HELIUS_RPC: string = `https://devnet.helius-rpc.com?api-key=${import.meta.env.VITE_HELIUS_API_KEY}`;
@@ -20,7 +21,7 @@ export interface PoolPositionTokenInfo extends TokenMetadata {
 }
 
 export interface PoolPositionInfo {
-    poolInfo:PoolInfo
+    poolInfo: PoolInfo
     positionAddress: PublicKey
     positionNftAccount: PublicKey
     positionState: PositionState
@@ -377,7 +378,19 @@ export const getAllPoolPositions = async (cpAmm: CpAmm, pool: PoolDetailedInfo, 
         console.log(e);
         return [];
     }
+}
 
+export const getPoolPositionFromPublicKeys = (poolPositions: PoolPositionInfo[], publicKeys: string[]) => {
+
+    const map: {
+        [key: string]: PoolPositionInfo
+    } = {}
+    for (const pos of poolPositions)
+        map[pos.positionAddress.toBase58()] = pos;
+    console.log(map)
+    const filtered = publicKeys.map(x => map[x]).filter(x => x !== undefined);
+    console.log(filtered)
+    return filtered;
 }
 
 export const getShortMint = (mint: PublicKey) => {

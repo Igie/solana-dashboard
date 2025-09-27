@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 import { BN, } from '@coral-xyz/anchor'
 import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-adapter'
 import { ComputeBudgetProgram, PublicKey, Transaction, TransactionInstruction, TransactionMessage, type AccountMeta } from '@solana/web3.js'
-import { copyToClipboard, getSchedulerType, renderFeeTokenImages, type PoolPositionInfo } from '../constants'
+import { copyToClipboard, getPoolPositionFromPublicKeys, getSchedulerType, renderFeeTokenImages, type PoolPositionInfo } from '../constants'
 import { useCpAmm } from '../contexts/CpAmmContext'
 import { AuthorityType, createSetAuthorityInstruction, getMint, NATIVE_MINT, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token'
 import { unwrapSOLInstruction } from '@meteora-ag/cp-amm-sdk'
@@ -47,7 +47,7 @@ const DammPositions: React.FC = () => {
   const { sendLegacyTxn, sendMultiTxn } = useTransactionManager()
   const { cpAmm, coder } = useCpAmm();
   const { positions, totalLiquidityValue, loading, refreshPositions, updatePosition, removePosition, sortPositionsBy, removeLiquidityAndSwapToQuote, sortedBy, sortedAscending } = useDammUserPositions();
-  const [selectedPositions, setSelectedPositions] = useState<Set<PoolPositionInfo>>(new Set());
+  const [selectedPositions, setSelectedPositions] = useState<Set<string>>(new Set());
   const [lastSelectedPosition, setLastSelectedPosition] = useState<PoolPositionInfo | null>(null);
 
   const [pnlIndex, setPnlIndex] = useState<number | undefined>(undefined);
@@ -55,7 +55,7 @@ const DammPositions: React.FC = () => {
 
   const [searchString, setSearchString] = useState<string>("");
 
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+  const [expandedIndex, setExpandedIndex] = useState<string | null>(null);
   const [showSortMenu, setShowSortMenu] = useState(false);
 
   const [closePositionRange, setClosePositionRange] = useState(100);
@@ -65,7 +65,7 @@ const DammPositions: React.FC = () => {
   const popupRef = useRef<HTMLDivElement | null>(null)
   const pnlRef = useRef<HTMLDivElement | null>(null)
 
-  const toggleRowExpand = (index: number) => {
+  const toggleRowExpand = (index: string) => {
     setExpandedIndex(expandedIndex === index ? null : index);
   };
 
@@ -824,7 +824,7 @@ const DammPositions: React.FC = () => {
             </button>
             <button
               onClick={() => {
-                setSelectedPositions(new Set([...positions]))
+                setSelectedPositions(new Set([...positions.map(x => x.positionAddress.toBase58())]))
               }}
               disabled={loading}
               className="flex items-center gap-1 px-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded text-md transition-colors w-auto justify-center"
@@ -972,7 +972,7 @@ const DammPositions: React.FC = () => {
                   onClick={async () => {
                     const selectedPositionsTemp = [...selectedPositions];
 
-                    const txns: Transaction[] = await getClaimFeesTx(selectedPositionsTemp)
+                    const txns: Transaction[] = await getClaimFeesTx(getPoolPositionFromPublicKeys(positions, selectedPositionsTemp));
 
                     setSelectedPositions(new Set());
 
@@ -1024,7 +1024,7 @@ const DammPositions: React.FC = () => {
                             txToast.error("Failed to find recipient!");
                             return;
                           }
-                          const txns: Transaction[] = await getSendPositionTx(selectedPositionsTemp, recipient)
+                          const txns: Transaction[] = await getSendPositionTx(getPoolPositionFromPublicKeys(positions, selectedPositionsTemp), recipient)
                           setSelectedPositions(new Set());
                           setSendPositionsDropdownOpen(false);
                           if (txns.length > 0)
@@ -1052,7 +1052,7 @@ const DammPositions: React.FC = () => {
                     onClick={async () => {
                       try {
                         const selectedPositionsTemp = [...selectedPositions];
-                        const txns: Transaction[] = await getClosePositionTx(selectedPositionsTemp, closePositionRange)
+                        const txns: Transaction[] = await getClosePositionTx(getPoolPositionFromPublicKeys(positions, selectedPositionsTemp), closePositionRange)
                         setSelectedPositions(new Set());
 
                         if (txns.length > 0)
@@ -1124,30 +1124,30 @@ const DammPositions: React.FC = () => {
                     <input
                       type="checkbox"
                       className="scale-125 accent-purple-600"
-                      checked={selectedPositions.has(position)}
+                      checked={selectedPositions.has(position.positionAddress.toBase58())}
                       onChange={(e) => {
                         if (lastSelectedPosition !== null && (e.nativeEvent as MouseEvent).shiftKey) {
                           const index1 = positions.indexOf(position);
                           const index2 = positions.indexOf(lastSelectedPosition);
                           const addedRange = positions.slice(Math.min(index1, index2), Math.max(index1, index2) + 1);
-                          setSelectedPositions(new Set([...selectedPositions, ...addedRange]));
+                          setSelectedPositions(new Set([...selectedPositions, ...addedRange.map(x => x.positionAddress.toBase58())]));
                           setLastSelectedPosition(position);
                           return;
                         }
                         setLastSelectedPosition(position);
                         if (e.target.checked) {
-                          setSelectedPositions(new Set(selectedPositions.add(position)));
+                          setSelectedPositions(new Set(selectedPositions.add(position.positionAddress.toBase58())));
                         }
                         if (!e.target.checked) {
-                          setSelectedPositions(new Set<PoolPositionInfo>(Array.from(selectedPositions).filter(x => x !== position)));
+                          setSelectedPositions(new Set<string>(Array.from(selectedPositions).filter(x => x !== position.positionAddress.toBase58())));
                         }
                       }}
                     />
                     <button
-                      onClick={() => toggleRowExpand(index)}
+                      onClick={() => toggleRowExpand(position.positionAddress.toBase58())}
                       className="p-1 rounded hover:bg-gray-700 transition-colors"
                     >
-                      {expandedIndex == index ? (
+                      {expandedIndex === position.positionAddress.toBase58() ? (
                         <ChevronUp className="w-4 h-4 text-gray-400" />
                       ) : (
                         <ChevronDown className="w-4 h-4 text-gray-400" />
@@ -1353,22 +1353,22 @@ const DammPositions: React.FC = () => {
                         <input
                           type="checkbox"
                           className="scale-125 accent-purple-600"
-                          checked={selectedPositions.has(position)}
+                          checked={selectedPositions.has(position.positionAddress.toBase58())}
                           onChange={(e) => {
                             if (lastSelectedPosition !== null && (e.nativeEvent as MouseEvent).shiftKey) {
                               const index1 = positions.indexOf(position);
                               const index2 = positions.indexOf(lastSelectedPosition);
                               const addedRange = positions.slice(Math.min(index1, index2), Math.max(index1, index2) + 1);
-                              setSelectedPositions(new Set([...selectedPositions, ...addedRange]));
+                              setSelectedPositions(new Set([...selectedPositions, ...addedRange.map(x => x.positionAddress.toBase58())]));
                               setLastSelectedPosition(position);
                               return;
                             }
                             setLastSelectedPosition(position);
                             if (e.target.checked) {
-                              setSelectedPositions(new Set(selectedPositions.add(position)));
+                              setSelectedPositions(new Set(selectedPositions.add(position.positionAddress.toBase58())));
                             }
                             if (!e.target.checked) {
-                              setSelectedPositions(new Set<PoolPositionInfo>(Array.from(selectedPositions).filter(x => x !== position)));
+                              setSelectedPositions(new Set<string>(Array.from(selectedPositions).filter(x => x !== position.positionAddress.toBase58())));
                             }
                           }}
                         />
@@ -1414,10 +1414,10 @@ const DammPositions: React.FC = () => {
                       </div>
 
                       <button
-                        onClick={() => toggleRowExpand(index)}
+                        onClick={() => toggleRowExpand(position.positionAddress.toBase58())}
                         className="p-2 rounded hover:bg-gray-700 transition-colors"
                       >
-                        {expandedIndex == index ? (
+                        {expandedIndex == position.positionAddress.toBase58() ? (
                           <ChevronUp className="w-4 h-4 text-gray-400" />
                         ) : (
                           <ChevronDown className="w-4 h-4 text-gray-400" />
@@ -1464,7 +1464,7 @@ const DammPositions: React.FC = () => {
                 </div>
 
                 {/* Expanded Panel (Same for both desktop and mobile) */}
-                {expandedIndex == index && (
+                {expandedIndex == position.positionAddress.toBase58() && (
                   <div className="px-4 py-3 bg-gray-800 border-b border-gray-700">
                     {/* Pool + Token Links */}
                     <div className="space-y-6">

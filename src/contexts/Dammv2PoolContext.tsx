@@ -35,7 +35,7 @@ interface DammV2PoolContextType {
     launchpadFilter: Set<string>;
     setLaunchpadFilter: (s: Set<string>) => void;
 
-    poolSorting: PoolSorting;
+    poolSorting: PoolSorting | undefined;
     setPoolSorting: (s: PoolSorting) => void;
 }
 
@@ -59,7 +59,7 @@ const DammV2PoolContext = createContext<DammV2PoolContextType>({
     launchpadFilter: new Set<string>(),
     setLaunchpadFilter: (_s: Set<string>) => { },
 
-    poolSorting: { type: PoolSortType.PoolActivationTime, ascending: true },
+    poolSorting: undefined,
     setPoolSorting: (_s: PoolSorting) => { },
 });
 
@@ -132,7 +132,12 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
     const launchpadFilterRef = useRef(launchpadFilter)
 
-    const [poolSorting, _setPoolSorting] = useState<PoolSorting>({ type: PoolSortType.PoolActivationTime, ascending: true })
+    const [poolSorting, _setPoolSorting] = useState<PoolSorting>(
+        {
+            type: PoolSortType.PoolActivationTime,
+            ascending: true
+        }
+    )
     const setPoolSorting = (s: PoolSorting) => {
         _setPoolSorting(s)
         poolSortingRef.current = s;
