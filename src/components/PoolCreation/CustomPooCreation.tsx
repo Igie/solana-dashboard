@@ -321,7 +321,7 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
             <button
                 type="button"
                 onClick={() => setPresetsDropdownOpen(!presetsDropdownOpen!)}
-                className=" bg-emerald-800 border border-emerald-700 rounded-md px-2 text-white text-xs text-left flex justify-between items-center"
+                className=" bg-emerald-800 border border-emerald-700 rounded-xs px-2 text-white text-xs text-left flex justify-between items-center"
             >
                 {"Select Preset"}
                 <svg className="w-4 h-4 text-gray-400 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -329,7 +329,7 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
                 </svg>
             </button>
             {presetsDropdownOpen && (
-                <div className="absolute z-50 mt-1 max-h-200 overflow-y-auto divide-y bg-gray-800 border border-gray-700 rounded-md shadow-lg">
+                <div className="absolute z-50 -mt-2 max-h-200 gap-y-0.5 overflow-y-auto divide-y divide-gray-700 bg-gray-800 border border-gray-700 rounded-xs shadow-lg">
                     {Presets
                         .map((x, i) => (
                             <div
