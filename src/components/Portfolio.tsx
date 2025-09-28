@@ -27,6 +27,7 @@ const Portfolio: React.FC = () => {
 
   const [selectedAccounts, setSelectedAccounts] = useState<Set<TokenAccount>>(new Set());
   const [lastSelectedAccount, setLastSelectedAccount] = useState<TokenAccount | null>(null);
+  
 
   // Fetch all portfolio data
   const fetchPortfolioData = async () => {

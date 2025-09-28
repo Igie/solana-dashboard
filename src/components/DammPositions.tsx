@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 import { BN, } from '@coral-xyz/anchor'
 import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-adapter'
 import { ComputeBudgetProgram, PublicKey, Transaction, TransactionInstruction, TransactionMessage, type AccountMeta } from '@solana/web3.js'
-import { copyToClipboard, getPoolPositionFromPublicKeys, getSchedulerType, renderFeeTokenImages, type PoolPositionInfo } from '../constants'
+import { copyToClipboard, getPoolPositionFromPublicKeys, getSchedulerType, getShortMint, getShortMintS, renderFeeTokenImages, type PoolPositionInfo } from '../constants'
 import { useCpAmm } from '../contexts/CpAmmContext'
 import { AuthorityType, createSetAuthorityInstruction, getMint, NATIVE_MINT, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token'
 import { unwrapSOLInstruction } from '@meteora-ag/cp-amm-sdk'
@@ -1268,6 +1268,29 @@ const DammPositions: React.FC = () => {
                               ref={pnlRef}
                               className="absolute flex flex-col z-50 top-6 left-0 w-80 bg-gray-900 text-gray-100 border border-gray-700 rounded-xs p-2 text-xs">
                               <div>{position.tokenA.symbol + " / " + position.tokenB.symbol}</div>
+                              <div className="flex gap-1 w-max">
+                                <button
+                                  className="bg-blue-600 hover:bg-blue-500 text-white text-xs py-0.5 px-1 rounded-xs flex items-center gap-1"
+                                  onClick={async () => {
+                                    await navigator.clipboard.writeText(position.tokenA.mint);
+                                  }}
+                                >
+                                  <div className="flex gap-1 items-center justify-center">
+                                    <span>{getShortMintS(position.tokenA.mint)}</span>
+                                  </div>
+                                </button>
+                                <button
+                                  disabled={!connected}
+                                  className="bg-blue-600 hover:bg-blue-500 text-white text-xs py-0.5 px-1 rounded-xs flex items-center gap-1"
+                                  onClick={async () => {
+                                    await navigator.clipboard.writeText(position.tokenB.mint);
+                                  }}
+                                >
+                                  <div className="flex gap-1 items-center justify-center">
+                                    <span>{getShortMintS(position.tokenB.mint)}</span>
+                                  </div>
+                                </button>
+                              </div>
                               <div className="flex flex-col divide-y divide-gray-700">
                                 {pnlInfo!.instructionChange.map(x => (
                                   <div className="flex flex-col">
