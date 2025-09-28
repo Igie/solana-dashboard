@@ -350,7 +350,7 @@ const Portfolio: React.FC = () => {
               {tokenAccounts.map((tokenAccount, index) => (
                 <div
                   key={index}
-                  className="p-1 hover:bg-gray-800/50 transition-colors"
+                  className="py-0.5 px-1 hover:bg-gray-800/50 transition-colors"
                 >
                   <div className="flex items-center">
                     {/* Left Side */}
@@ -377,9 +377,9 @@ const Portfolio: React.FC = () => {
                           }
                         }}
                       />
-                      <div className="relative w-10 h-10">
+                      <div className="relative w-8 h-8">
                         <div
-                          className="relative w-10 h-10 rounded-full bg-gray-700 cursor-pointer"
+                          className="relative w-8 h-8 rounded-full bg-gray-700 cursor-pointer"
                           onClick={() => togglePopup(index)}
                         >
                           {/* Token image */}
@@ -446,23 +446,24 @@ const Portfolio: React.FC = () => {
                         )}
                       </div>
                       <div className="min-w-0 flex-1 truncate">
-                        <div className="text-white truncate">{tokenAccount.name}</div>
+                        <div className="text-sm text-white truncate">{tokenAccount.name}</div>
                         <div className="text-sm text-gray-400 flex items-center gap-2">
                           <span>{tokenAccount.symbol}</span>
                           <button
                             onClick={() => window.open(`https://solscan.io/token/${tokenAccount.mint}`, '_blank')}
-                            className="text-purple-400 hover:text-purple-300 transition-colors"
+                            className="text-sm text-purple-400 hover:text-purple-300 transition-colors"
                           >
                             <ExternalLink className="w-3 h-3" />
                           </button>
-                          <span>{tokenAccount.tokenProgram == TOKEN_PROGRAM_ID.toBase58() ? "TOKEN" : "2022"}</span>
+                          <span className="text-sm">{tokenAccount.tokenProgram == TOKEN_PROGRAM_ID.toBase58() ? "TOKEN" : "2022"}</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Right Side */}
-                    <div className="ml-auto text-right min-w-[6rem]">
-                      <div className="font-semibold  text-white">
+                    <div className="flex flex-col items-end justify-center ml-auto min-w-[6rem]">
+                    <div className="flex items-center justify-stretch gap-x-1">
+                      <div className="text-sm font-semibold text-white">
                         {tokenAccount.amount.lessThan(1)
                           ? tokenAccount.amount.toFixed(Math.min(6, tokenAccount.decimals))
                           : tokenAccount.amount.toNumber().toLocaleString(undefined, {
@@ -471,15 +472,15 @@ const Portfolio: React.FC = () => {
                           })
                         }
                       </div>
-                      <div className="text-sm text-gray-400 flex flex-col items-end">
-                        <span>${tokenAccount.value.toFixed(2)}</span>
+                      <div className="text-sm text-gray-400 text-right">${tokenAccount.value.toFixed(2)}</div>
+                      </div>
 
                         {tokenAccount.price && tokenAccount.price.greaterThan(0) && (
-                          <span className="text-xs">
+                          <div className="text-xs text-gray-400 text-right">
                             ${tokenAccount.price.lessThan(0.01) ? tokenAccount.price.toFixed(6) : tokenAccount.price.toFixed(4)} each
-                          </span>
+                          </div>
                         )}
-                      </div>
+
                     </div>
                   </div>
                 </div>
