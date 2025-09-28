@@ -3,14 +3,16 @@ import React from "react";
 export type Column<T> = {
     header: React.ReactNode;
     render: (row: T, rowIndex: number) => React.ReactNode;
-    className?: string; // Optional: column-specific styles
+    className?: string;
+    hideHeaders?: boolean;
 };
 
 type TableProps<T> = {
     data: T[];
     columns: Column<T>[];
-    tableClassName?: string; // Applies to <table>
-    rowClassName?: (row: T, index: number) => string; // Row-level styling
+    tableClassName?: string;
+    rowClassName?: (row: T, index: number) => string;
+    hideHeaders: boolean;
 };
 
 export function DynamicTable<T>({
@@ -18,21 +20,22 @@ export function DynamicTable<T>({
     columns,
     tableClassName = "",
     rowClassName,
+    hideHeaders,
 }: TableProps<T>) {
     return (
         <table className={`w-full border-collapse ${tableClassName}`}>
-            <thead>
+            {(hideHeaders === false || hideHeaders === undefined) && (<thead>
                 <tr>
                     {columns.map((col, colIndex) => (
                         <th
                             key={colIndex}
-                            className={`px-2 py-1 border-b border-gray-700 text-center font-semibold ${col.className ?? ""}`}
+                            className={`px-1 py-0.5 border-b flex-nowrap border-gray-700 text-center font-semibold ${col.className ?? ""}`}
                         >
                             {col.header}
                         </th>
                     ))}
                 </tr>
-            </thead>
+            </thead>)}
             <tbody>
                 {data.map((row, rowIndex) => (
                     <tr

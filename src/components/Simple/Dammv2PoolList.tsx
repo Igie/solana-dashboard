@@ -516,15 +516,15 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
             {target.type === TargetType.PoolInfo && (
                 <div className="flex-grow overflow-y-auto bg-gray-900 border border-gray-700 rounded-2xl p-3 md:p-3 space-y-2">
 
-                    <DynamicTable tableClassName="hidden lg:table sticky" data={poolPositions} columns={positionColumns} />
+                    <DynamicTable tableClassName="hidden lg:table sticky" data={poolPositions} columns={positionColumns} hideHeaders={false} />
                 </div>
 
             )}
 
             {pools.length > 0 && target.type === TargetType.None && (
-                <div className="flex-grow overflow-y-auto relative bg-gray-900 border border-gray-700 rounded-2xl p-3 md:p-3 space-y-2">
+                <div className="flex-grow overflow-y-auto relative bg-gray-900 border border-gray-700 rounded-2xl p-1 md:p-1 space-y-1">
                     {target.type === TargetType.None &&
-                        (<DynamicTable tableClassName="hidden lg:table sticky" data={pools} columns={poolColumns} />
+                        (<DynamicTable tableClassName="hidden lg:table sticky" data={pools} columns={poolColumns} hideHeaders={false} />
                         )}
                     {/* Mobile Sort Controls */}
                     <div className="lg:hidden mb-4">

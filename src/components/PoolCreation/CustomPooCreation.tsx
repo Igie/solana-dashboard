@@ -62,6 +62,17 @@ const Presets: Preset[] = [
         feeSchedulerMode: FeeSchedulerMode.Linear,
         collectFeeMode: CollectFeeMode.OnlyB,
     },
+
+    {
+        name: "Endless 30%",
+        useDynamicFee: true,
+        baseFee: 0.01,
+        maxFee: 30,
+        totalSchedulerDuration: 48000000,
+        schedulerReductionPeriod: 48000000,
+        feeSchedulerMode: FeeSchedulerMode.Linear,
+        collectFeeMode: CollectFeeMode.OnlyB,
+    },
 ]
 
 const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
