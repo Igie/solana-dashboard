@@ -12,9 +12,10 @@ export default defineConfig({
     host: '0.0.0.0',
   },
   plugins: [
-    nodePolyfills({}),
+    //nodePolyfills({}),
     react(),
-    tailwindcss()],
+    tailwindcss()
+  ],
   define: {
     global: 'globalThis',
     'process.env': {},
