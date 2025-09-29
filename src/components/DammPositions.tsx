@@ -1154,12 +1154,19 @@ const DammPositions: React.FC = () => {
                       )}
                     </button>
 
-                    <button
-                      onClick={() => setSearchString(position.tokenA.mint)}
-                      className="rounded bg-red-950 hover:bg-red-800 items-center justify-center transition-colors"
-                    >
-                      <div className="w-4 h-4 text-white font-medium text-xs">{positions.filter(x => x.tokenA.mint === position.tokenA.mint).length}</div>
-                    </button>
+                    {positions.filter(x => x.tokenA.mint === position.tokenA.mint).length >= 2 ?
+                      (<button
+                        onClick={() => {
+                          if (searchString === position.tokenA.mint)
+                            setSearchString("")
+                          else
+                            setSearchString(position.tokenA.mint);
+                        }}
+                        className="rounded bg-red-950 hover:bg-red-800 items-center justify-center transition-colors"
+                      >
+                        <div className="w-4 h-4 text-white font-medium text-xs">{positions.filter(x => x.tokenA.mint === position.tokenA.mint).length}</div>
+                      </button>)
+                      : <div className="w-4 h-4" />}
 
                   </div>
                   {/* Token Pair */}
