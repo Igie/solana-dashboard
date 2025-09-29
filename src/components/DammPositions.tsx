@@ -1120,7 +1120,7 @@ const DammPositions: React.FC = () => {
                 {/* Desktop Table Row */}
                 <div className="hidden md:grid grid-cols-12 divide-x divide-gray-700 gap-2 px-4 py-1 border-b border-gray-700 hover:bg-gray-800/50 items-center">
                   {/* Checkbox */}
-                  <div className="flex flex-cols gap-2 justify-center col-span-1">
+                  <div className="flex gap-2 justify-center col-span-1">
                     <input
                       type="checkbox"
                       className="scale-125 accent-purple-600"
@@ -1153,14 +1153,19 @@ const DammPositions: React.FC = () => {
                         <ChevronDown className="w-4 h-4 text-gray-400" />
                       )}
                     </button>
+
+                    <button
+                      onClick={() => setSearchString(position.tokenA.mint)}
+                      className="rounded bg-red-950 hover:bg-red-800 items-center justify-center transition-colors"
+                    >
+                      <div className="w-4 h-4 text-white font-medium text-xs">{positions.filter(x => x.tokenA.mint === position.tokenA.mint).length}</div>
+                    </button>
+
                   </div>
                   {/* Token Pair */}
                   <div className="col-span-2">
                     <div className="flex items-center gap-2">
                       <div className="flex -space-x-1">
-
-
-
                         <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-700 border border-gray-600">
                           {position.tokenA.image ? (
                             <img src={position.tokenA.image} alt={position.tokenA.symbol} className="w-full h-full object-cover" />
