@@ -31,7 +31,7 @@ const Dammv2Browser: React.FC = () => {
             {/* Header */}
             <div className="flex md:grid justify-start items-stretch gap-1">
                 <button
-                    onClick={fetchAllPools}
+                    onClick={() => fetchAllPools(undefined)}
                     disabled={fetchingPools}
                     className="flex items-center gap-1 px-2 w-full lg:max-w-40 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded-md md:text-sm transition-colors"
                 >

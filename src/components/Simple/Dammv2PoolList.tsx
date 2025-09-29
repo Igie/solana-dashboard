@@ -40,7 +40,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
     const { cpAmm } = useCpAmm();
     const { publicKey, connected } = useWallet();
     const { tokenAccounts, refreshTokenAccounts } = useTokenAccounts();
-    const { positions, refreshPositions } = useDammUserPositions();
+    const { positions } = useDammUserPositions();
 
     const [tokenAccountMap, setTokenAccountMap] = useState<TokenAccountMap>({});
     const [userPoolPositionInfoMap, setUserPoolPositionInfoMap] = useState<PoolPositionInfoMap>({});
@@ -446,8 +446,8 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
     ]
 
     useEffect(() => {
-        refreshTokenAccounts();
-        refreshPositions();
+        //refreshTokenAccounts();
+        //refreshPositions();
     }, []);
 
     useEffect(() => {
@@ -464,7 +464,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
     }, [sortBy, sortAscending]);
 
     return (
-        <div className="flex flex-col h-full overflow-hidden">
+        <div className="flex flex-col h-full min-h-50 overflow-hidden">
             {target.type !== TargetType.None && (
                 <div className="flex gap-1 py-1">
                     <button

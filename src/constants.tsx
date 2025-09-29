@@ -80,6 +80,14 @@ export const GetPoolDetailedInfoMap = (poolDetailedInfos: PoolDetailedInfo[]): P
     return poolDetailedInfoMap;
 }
 
+export const GetPoolInfoMap = (poolDetailedInfos: PoolInfo[]): PoolInfoMap => {
+    const poolInfoMap: PoolInfoMap = {}
+    poolDetailedInfos.map((x) => {
+        poolInfoMap[x.publicKey.toBase58()] = x;
+    });
+    return poolInfoMap;
+}
+
 export enum PoolSortType {
     PoolActivationTime,
     PoolBaseFee,

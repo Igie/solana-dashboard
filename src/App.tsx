@@ -25,15 +25,21 @@ interface GlobalProvidersProps {
 const GlobalProviders: React.FC<GlobalProvidersProps> = ({ children }) => (
   <SettingsProvider>
     <GetSlotProvider>
+
       <TransactionManagerProvider>
-        <TokenAccountsProvider>
-          <CpAmmProvider>
-            <DammV2PoolProvider>
+        <CpAmmProvider>
+          <DammV2PoolProvider>
+            <TokenAccountsProvider>
+
+
               <DammUserPositionsProvider>{children}</DammUserPositionsProvider>
-            </DammV2PoolProvider>
-          </CpAmmProvider>
-        </TokenAccountsProvider>
+
+
+            </TokenAccountsProvider>
+          </DammV2PoolProvider>
+        </CpAmmProvider>
       </TransactionManagerProvider>
+
     </GetSlotProvider>
   </SettingsProvider>
 )

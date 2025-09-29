@@ -570,7 +570,6 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
         if (updatedPools && updatedPools.length > 0) {
             for (const updated of updatedPools)
                 if (positions.find(x => x.poolInfo.publicKey.toBase58() === updated.publicKey.toBase58())) {
-                    console.log("updating positions")
                     refreshPositions();
                     break;
                 }

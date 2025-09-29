@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { VersionedTransaction } from '@solana/web3.js'
 
 import { Coins, RefreshCw, Wallet, ExternalLink, CheckCircle, XCircle } from 'lucide-react'
-import { type TokenAccount } from '../tokenUtils'
+import { GetTokenMetadataMap, type TokenAccount } from '../tokenUtils'
 import { useTokenAccounts } from '../contexts/TokenAccountsContext'
 import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-adapter'
 import { toast } from 'sonner'
@@ -14,20 +14,26 @@ import { TOKEN_PROGRAM_ID } from '@solana/spl-token'
 import Decimal from "decimal.js"
 import { useSettings } from '../contexts/SettingsContext'
 
+import Dammv2PoolList from './Simple/Dammv2PoolList'
+import { useDammV2PoolsWebsocket } from '../contexts/Dammv2PoolContext'
+
 
 const Portfolio: React.FC = () => {
   const { jupSlippage, includeDammv2Route } = useSettings();
   const { connection } = useConnection()
   const { publicKey, connected } = useWallet()
   const { sendTxn, sendMultiTxn } = useTransactionManager();
-  const { tokenAccounts, refreshTokenAccounts } = useTokenAccounts()
+  const { setPoolSorting }
+    = useDammV2PoolsWebsocket();
+  const { tokenAccounts, existingPools, refreshTokenAccounts, fetchPools } = useTokenAccounts()
   const [loading, setLoading] = useState(false)
   const [popupIndex, setPopupIndex] = useState<number | null>(null)
   const popupRef = useRef<HTMLDivElement | null>(null)
 
   const [selectedAccounts, setSelectedAccounts] = useState<Set<TokenAccount>>(new Set());
   const [lastSelectedAccount, setLastSelectedAccount] = useState<TokenAccount | null>(null);
-  
+
+  const [showPools, setShowPools] = useState(false);
 
   // Fetch all portfolio data
   const fetchPortfolioData = async () => {
@@ -43,6 +49,9 @@ const Portfolio: React.FC = () => {
   const togglePopup = (index: number) => {
     setPopupIndex(popupIndex === index ? null : index)
   }
+
+
+
 
   const handleSwap = (ta: TokenAccount) => {
     setPopupIndex(null);
@@ -68,7 +77,7 @@ const Portfolio: React.FC = () => {
         outputMint: 'So11111111111111111111111111111111111111112',
         amount: ta.amount.mul(Decimal.pow(10, ta.decimals)),
         slippageBps: jupSlippage ? jupSlippage * 100 : 200,
-      excludeDexes: includeDammv2Route ? [] : ['Meteora DAMM v2'],
+        excludeDexes: includeDammv2Route ? [] : ['Meteora DAMM v2'],
       }, false)
 
       const txn = await getSwapTransactionVersioned(quote, publicKey!);
@@ -101,99 +110,6 @@ const Portfolio: React.FC = () => {
       }
     });
   }
-
-  // const getMultiBurnAndCloseTokenAccountTx = async (tas: TokenAccount[]) => {
-  //   const txns = [];
-  //   let tx = new Transaction();
-  //   tx.feePayer = publicKey!
-  //   let count = 0;
-
-  //   for (const ta of tas) {
-  //     try {
-  //       const mintPubKey = new PublicKey(ta.mint);
-  //       let tokenProgram = null;
-  //       try {
-  //       tokenProgram = new PublicKey(ta.tokenProgram);
-  //       } catch(e){
-  //         console.log(ta);
-  //         continue;
-  //       }
-
-  //       if (!tokenProgram) continue;
-
-  //       const ataPubKey = getAssociatedTokenAddressSync(mintPubKey, publicKey!, false, tokenProgram);
-  //       if (ta.amount.greaterThan(0)) {
-  //         const burnIx = createBurnCheckedInstruction(
-  //           ataPubKey,
-  //           mintPubKey,
-  //           publicKey!,
-  //           BigInt(ta.amount.mul(Decimal.pow(10, ta.decimals)).toString()),
-  //           ta.decimals,
-  //           [],
-  //           tokenProgram
-  //         );
-  //         tx.add(burnIx);
-  //         tx.signatures.length
-  //       }
-
-  //       const closeAccountIx = createCloseAccountInstruction(
-  //         ataPubKey,
-  //         publicKey!,
-  //         publicKey!,
-  //         [],
-  //         tokenProgram
-  //       )
-  //       tx.add(closeAccountIx);
-  //       count++;
-
-  //       if (count > 10) {
-  //         count = 0;
-
-  //         try {
-  //           const simulated = await connection.simulateTransaction(tx);
-  //           if (!simulated.value.err) {
-  //             console.log(simulated);
-  //             const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
-  //               units: simulated.value.unitsConsumed! * 1.2,
-  //             });
-
-  //             const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
-  //               microLamports: 1000000,
-  //             });
-  //             const txFinal = new Transaction();
-  //             txFinal.add(modifyComputeUnits, addPriorityFee, ...tx.instructions);
-  //             txns.push(txFinal);
-  //           }
-  //         } catch (e) {
-  //           console.log(ta);
-  //           console.log(e);
-  //         };
-
-  //         tx.instructions.splice(0);
-
-  //       }
-  //     } catch (e) { console.log(e) };
-  //   }
-
-  //   try {
-  //     const simulated = await connection.simulateTransaction(tx);
-  //     if (!simulated.value.err) {
-  //       console.log(simulated);
-  //       const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
-  //         units: simulated.value.unitsConsumed! * 1.2,
-  //       });
-
-  //       const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
-  //         microLamports: 1000000,
-  //       });
-  //       const txFinal = new Transaction();
-  //       txFinal.add(modifyComputeUnits, addPriorityFee, ...tx.instructions);
-  //       txns.push(txFinal);
-  //     }
-  //   } catch (e) { console.log(e) };
-
-  //   return txns;
-  // }
 
   const handleCopyMint = async (mint: string) => {
     await navigator.clipboard.writeText(mint)
@@ -267,11 +183,11 @@ const Portfolio: React.FC = () => {
         </button>
       </div>
       <div className="bg-green-900/20 border border-green-700/50 rounded-xl p-1">
-        <div className="sm:flex-row items-start sm:items-center justify-between gap-1">
+        <div className="sm:flex-row items-center sm:items-center justify-start gap-1">
 
-          <div className="flex justify-between px-2 w-full sm:w-auto">
+          <div className="flex items-start justify-start px-1 gap-x-1 w-full sm:w-auto">
             <button
-              className="bg-blue-600 hover:bg-blue-500 px-4 py-1 rounded text-white flex-1 sm:flex-none"
+              className="bg-blue-600 hover:bg-blue-500 px-1 py-0.5 rounded text-white flex items-center sm:flex-none"
               onClick={async () => {
                 const selectedAccountsTemp = [...selectedAccounts];
 
@@ -304,39 +220,19 @@ const Portfolio: React.FC = () => {
             >
               Swap All to SOL ({selectedAccounts.size})
             </button>
-            {/* <button
-              className="bg-purple-600 hover:bg-purple-500 px-4 py-1 rounded text-white flex-1 sm:flex-none"
-              onClick={async () => {
-                const selectedAccountsTemp = [...selectedAccounts];
-                const txns: Transaction[] = await getMultiBurnAndCloseTokenAccountTx(selectedAccountsTemp)
-
-                if (txns.length > 0)
-                  await sendMultiTxn(txns.map(x => {
-                    return {
-                      tx: x,
-                    }
-                  }), {
-                    onSuccess: async () => {
-                      setSelectedAccounts(new Set());
-                      await refreshTokenAccounts();
-                    }
-                  })
-              }}
-            >
-              Burn All ({selectedAccounts.size})
-            </button> */}
-
+            <label className='bg-blue-600 hover:bg-blue-500 px-1 py-0.5 rounded text-white flex items-center gap-1 sm:flex-none'>
+              <input type='checkbox'
+                checked={showPools}
+                onChange={(e) => setShowPools(e.target.checked)}>
+              </input>
+              Show Pools
+            </label>
           </div>
         </div>
       </div>
       {/* Token Holdings */}
       <div className="flex flex-col bg-gray-900 border border-gray-700 rounded-2xl flex-1 min-h-0">
-        {loading ? (
-          <div className="p-8 text-center">
-            <RefreshCw className="w-8 h-8 mx-auto mb-4 text-purple-400 animate-spin" />
-            <p className="text-gray-400">Loading token accounts...</p>
-          </div>
-        ) : tokenAccounts.length === 0 ? (
+        {tokenAccounts.length === 0 ? (
           <div className="p-8 text-center">
             <Coins className="w-12 h-12 mx-auto mb-4 text-gray-400" />
             <h3 className="text-lg font-semibold text-gray-300 mb-2">No Tokens Found</h3>
@@ -351,7 +247,7 @@ const Portfolio: React.FC = () => {
               {tokenAccounts.map((tokenAccount, index) => (
                 <div
                   key={index}
-                  className="py-0.5 px-1 hover:bg-gray-800/50 transition-colors"
+                  className="flex flex-col py-0.5 px-1 hover:bg-gray-800/50 transition-colors"
                 >
                   <div className="flex items-center">
                     {/* Left Side */}
@@ -438,6 +334,15 @@ const Portfolio: React.FC = () => {
                               Swap all to SOL
                             </button>
                             <button
+                              onClick={async () => {
+                                await fetchPools(tokenAccount.mint);
+                                setPopupIndex(null);
+                              }}
+                              className="block w-full text-left px-3 py-2 text-sm text-white hover:bg-purple-700 rounded-md"
+                            >
+                              Find Pools
+                            </button>
+                            <button
                               onClick={() => handleCopyMint(tokenAccount.mint)}
                               className="block w-full text-left px-3 py-2 text-sm text-white hover:bg-gray-700 rounded-md"
                             >
@@ -463,28 +368,38 @@ const Portfolio: React.FC = () => {
 
                     {/* Right Side */}
                     <div className="flex flex-col items-end justify-center ml-auto min-w-[6rem]">
-                    <div className="flex items-center justify-stretch gap-x-1">
-                      <div className="text-sm font-semibold text-white">
-                        {tokenAccount.amount.lessThan(1)
-                          ? tokenAccount.amount.toFixed(Math.min(6, tokenAccount.decimals))
-                          : tokenAccount.amount.toNumber().toLocaleString(undefined, {
-                            minimumFractionDigits: 0,
-                            maximumFractionDigits: Math.min(4, tokenAccount.decimals)
-                          })
-                        }
-                      </div>
-                      <div className="text-sm text-gray-400 text-right">${tokenAccount.value.toFixed(2)}</div>
+                      <div className="flex items-center justify-stretch gap-x-1">
+                        <div className="text-sm font-semibold text-white">
+                          {tokenAccount.amount.lessThan(1)
+                            ? tokenAccount.amount.toFixed(Math.min(6, tokenAccount.decimals))
+                            : tokenAccount.amount.toNumber().toLocaleString(undefined, {
+                              minimumFractionDigits: 0,
+                              maximumFractionDigits: Math.min(4, tokenAccount.decimals)
+                            })
+                          }
+                        </div>
+                        <div className="text-sm text-gray-400 text-right">${tokenAccount.value.toFixed(2)}</div>
                       </div>
 
-                        {tokenAccount.price && tokenAccount.price.greaterThan(0) && (
-                          <div className="text-xs text-gray-400 text-right">
-                            ${tokenAccount.price.lessThan(0.01) ? tokenAccount.price.toFixed(6) : tokenAccount.price.toFixed(4)} each
-                          </div>
-                        )}
+                      {tokenAccount.price && tokenAccount.price.greaterThan(0) && (
+                        <div className="text-xs text-gray-400 text-right">
+                          ${tokenAccount.price.lessThan(0.01) ? tokenAccount.price.toFixed(6) : tokenAccount.price.toFixed(4)} each
+                        </div>
+                      )}
 
                     </div>
                   </div>
+
+                  {showPools && Object.entries(existingPools).find(x => x[1].tokenA.mint === tokenAccount.mint) && (
+                    <Dammv2PoolList
+                      pools={Object.entries(existingPools).map(x => x[1]).filter(x => x.tokenA.mint === tokenAccount.mint)}
+                      tokenMetadataMap={GetTokenMetadataMap(tokenAccounts)}
+                      sortParamsCallback={(sortType, ascending) => {
+                        setPoolSorting({ type: sortType, ascending })
+                      }} />
+                  )}
                 </div>
+
               ))}
             </div>
           </div>

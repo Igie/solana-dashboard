@@ -18,7 +18,7 @@ interface DammV2PoolContextType {
     update: boolean,
     setUpdate: (u: boolean) => void;
 
-    fetchAllPools: () => void;
+    fetchAllPools: (mints: string[] | undefined) => void;
     fetchingPools: boolean;
 
     filteredDetailedPools: PoolDetailedInfo[];
@@ -371,8 +371,9 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         }
     }
 
-    const fetchAllPools = async () => {
+    const fetchAllPools = async (mints: string[] | undefined) => {
         if (!connection || fetchingPools) return
+        const mintsSet = new Set(mints !== undefined ? [...mints] : []);
         setFetchingPools(true);
         const startTime = Date.now() / 1000;
         const slotNow = getSlot();
@@ -408,6 +409,8 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             let countNonMainPools = 0;
 
             for (const x of pools) {
+                if (mintsSet.size > 0 && !mintsSet.has(x.account.tokenAMint.toBase58()))
+                    continue;
                 const currentFee = feeNumeratorToBps(getFeeNumerator(
                     x.account.activationType === 0 ? slotNow :
                         x.account.activationType === 1 ? startTime : 0,
@@ -483,7 +486,6 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         sortPools(localFilteredDetailedPools.current, poolSortingRef.current.type, poolSortingRef.current.ascending)
     }
 
-    //remount websocket as connection changes
     useEffect(() => {
         console.log("Mounting Dammv2Pools websocket")
         if (!connection.rpcEndpoint) return;
