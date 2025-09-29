@@ -63,7 +63,7 @@ const DammV2PoolContext = createContext<DammV2PoolContextType>({
     setPoolSorting: (_s: PoolSorting) => { },
 });
 
-const UPDATE_INTERVAL = 2000;
+const UPDATE_INTERVAL = 4000;
 const MAX_SIMPLE_POOLS = 200;
 
 export const useDammV2PoolsWebsocket = () => useContext(DammV2PoolContext)
