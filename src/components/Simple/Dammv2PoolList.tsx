@@ -176,7 +176,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                             </div>
                             {userPoolPositionInfoMap[pool.poolInfo.publicKey.toBase58()] && (
                                 <span>
-                                    {userPoolPositionInfoMap[pool.poolInfo.publicKey.toBase58()].positionValue.toFixed(2) + "$"}
+                                    {userPoolPositionInfoMap[pool.poolInfo.publicKey.toBase58()].positionValue.toFixed(2) + "$ (" + userPoolPositionInfoMap[pool.poolInfo.publicKey.toBase58()].shareOfPoolPercentage + "%)"}
                                 </span>
                             )}
                         </button>

@@ -270,8 +270,13 @@ const Dammv2PoolCreation: React.FC<Dammv2PoolCreationProps> = ({
                                 <MintSelectorInput
                                     mint={tokenAMint}
                                     amount={tokenAAmount}
-                                    onMintChange={(e) => setTokenAMint(e)}
-                                    onAmountChange={(e) => setTokenAAmount(e)}
+                                    onMintChange={(e) => {
+                                        setTokenAMint(e);
+                                    }
+                                    }
+                                    onAmountChange={(e) => {
+                                        setTokenAAmount(e);
+                                    }}
                                     onOpenDropdown={async () => await updateCommonTokens()}
                                 />
                             </div>
