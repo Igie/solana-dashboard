@@ -10,6 +10,9 @@ interface SettingsContextType {
 
     includeDammv2Route: boolean | undefined,
     setIncludeDammv2Route: (v: boolean) => void,
+
+    swapSolDefaultAmount: number | undefined,
+    setSwapSolDefaultAmount: (s: number) => void,
 }
 
 const SettingsContext = createContext<SettingsContextType>({
@@ -19,6 +22,8 @@ const SettingsContext = createContext<SettingsContextType>({
     setJupZapOutSlippage: () => { },
     includeDammv2Route: undefined,
     setIncludeDammv2Route: () => { },
+    swapSolDefaultAmount: undefined,
+    setSwapSolDefaultAmount: () => { },
 });
 
 export const useSettings = () => useContext(SettingsContext)
@@ -28,37 +33,50 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const [jupSlippage, setJupSlippage] = useState<number | undefined>(Cookies.get("jup-slippage") ? parseFloat(Cookies.get("jup-slippage")!) : undefined);
     const [jupZapOutSlippage, setJupZapOutSlippage] = useState<number | undefined>(Cookies.get("jup-zapout-slippage") ? parseFloat(Cookies.get("jup-zapout-slippage")!) : undefined);
     const [includeDammv2Route, setIncludeDammv2Route] = useState<boolean | undefined>(Cookies.get("include-dammv2-route") ? (Cookies.get("include-dammv2-route") === "true") : undefined);
-
+    const [swapSolDefaultAmount, setSwapSolDefaultAmount] = useState<number | undefined>(Cookies.get("swap-sol-default-amount") ? parseFloat(Cookies.get("swap-sol-default-amount")!) : undefined);
     useEffect(() => {
-        if (jupSlippage && jupSlippage.toString() !== Cookies.get("jup-slippage")) {
+        if (jupSlippage !== undefined) {
             Cookies.set("jup-slippage", jupSlippage.toString());
             console.log("Set jup-slippage cookie to ", jupSlippage);
         }
     }, [jupSlippage])
 
     useEffect(() => {
-        if (jupZapOutSlippage && jupZapOutSlippage.toString() !== Cookies.get("jup-zapout-slippage")) {
+        if (jupZapOutSlippage !== undefined) {
             Cookies.set("jup-zapout-slippage", jupZapOutSlippage.toString());
             console.log("Set jup-zapout-slippage cookie to ", jupZapOutSlippage);
         }
     }, [jupZapOutSlippage])
 
     useEffect(() => {
-        if (includeDammv2Route !== undefined && includeDammv2Route !== (Cookies.get("include-dammv2-route") === "true")) {
+        if (includeDammv2Route !== undefined) {
             Cookies.set("include-dammv2-route", includeDammv2Route ? "true" : "false");
             console.log("Set include-dammv2-route cookie to ", includeDammv2Route);
         }
     }, [includeDammv2Route])
 
     useEffect(() => {
-        if (!jupSlippage) {
+        if (swapSolDefaultAmount !== undefined) {
+            Cookies.set("swap-sol-default-amount", swapSolDefaultAmount.toString());
+            console.log("Set swap-sol-default-amount cookie to ", swapSolDefaultAmount);
+        }
+    }, [swapSolDefaultAmount])
+
+
+
+    useEffect(() => {
+        if (jupSlippage === undefined) {
             setJupSlippage(2);
         }
-        if (!jupZapOutSlippage) {
+        if (jupZapOutSlippage === undefined) {
             setJupZapOutSlippage(100);
         }
         if (includeDammv2Route === undefined) {
             setIncludeDammv2Route(true);
+        }
+
+        if (jupZapOutSlippage === undefined) {
+            setSwapSolDefaultAmount(0.01);
         }
     }, [])
 
@@ -66,7 +84,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         <SettingsContext.Provider value={{
             jupSlippage, setJupSlippage,
             jupZapOutSlippage, setJupZapOutSlippage,
-            includeDammv2Route, setIncludeDammv2Route
+            includeDammv2Route, setIncludeDammv2Route,
+            swapSolDefaultAmount, setSwapSolDefaultAmount,
         }}>
             {children}
         </SettingsContext.Provider>

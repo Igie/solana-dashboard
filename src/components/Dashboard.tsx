@@ -9,6 +9,7 @@ const Dashboard: React.FC = () => {
     jupSlippage, setJupSlippage,
     jupZapOutSlippage, setJupZapOutSlippage,
     includeDammv2Route, setIncludeDammv2Route,
+    swapSolDefaultAmount, setSwapSolDefaultAmount,
   } = useSettings()
   const { connected } = useWallet()
 
@@ -83,6 +84,19 @@ const Dashboard: React.FC = () => {
                 }}
                 className="h-4 w-4 accent-purple-600"
               />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="w-28 text-white md:text-xs">SOL Swap Default Amount</label>
+              <div>
+                <DecimalInput className="w-14 bg-gray-800 border border-gray-700 rounded-md px-2 text-white md:text-xs placeholder-gray-500"
+                  value={swapSolDefaultAmount?.toString() || ""}
+                  onChange={() => { }}
+                  onBlur={
+                    (v) => {
+                      setSwapSolDefaultAmount(parseFloat(v.toFixed(6)));
+                    }}
+                />
+              </div>
             </div>
           </div>
 

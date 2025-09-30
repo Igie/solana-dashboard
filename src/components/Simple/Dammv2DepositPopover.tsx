@@ -36,7 +36,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
 }) => {
   const popupRef = useRef<HTMLDivElement>(null);
 
-  const { jupSlippage, includeDammv2Route, setIncludeDammv2Route } = useSettings();
+  const { jupSlippage, includeDammv2Route, setIncludeDammv2Route, swapSolDefaultAmount } = useSettings();
   const { publicKey } = useWallet();
   const { connection } = useConnection();
   const { cpAmm } = useCpAmm();
@@ -52,7 +52,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
 
   const [depositQuote, setDepositQuote] = useState<DepositQuote>();
 
-  const [swapSolAmount, setSwapSolAmount] = useState(new Decimal(0.01));
+  const [swapSolAmount, setSwapSolAmount] = useState(new Decimal(swapSolDefaultAmount!));
 
   const [closePositionRange, setClosePositionRange] = useState(100);
 
