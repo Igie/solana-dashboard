@@ -36,28 +36,28 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const [swapSolDefaultAmount, setSwapSolDefaultAmount] = useState<number | undefined>(Cookies.get("swap-sol-default-amount") ? parseFloat(Cookies.get("swap-sol-default-amount")!) : undefined);
     useEffect(() => {
         if (jupSlippage !== undefined) {
-            Cookies.set("jup-slippage", jupSlippage.toString());
+            Cookies.set("jup-slippage", jupSlippage.toString(), { expires: new Date(Date.now() + 31536000) });
             console.log("Set jup-slippage cookie to ", jupSlippage);
         }
     }, [jupSlippage])
 
     useEffect(() => {
         if (jupZapOutSlippage !== undefined) {
-            Cookies.set("jup-zapout-slippage", jupZapOutSlippage.toString());
+            Cookies.set("jup-zapout-slippage", jupZapOutSlippage.toString(), { expires: new Date(Date.now() + 31536000) });
             console.log("Set jup-zapout-slippage cookie to ", jupZapOutSlippage);
         }
     }, [jupZapOutSlippage])
 
     useEffect(() => {
         if (includeDammv2Route !== undefined) {
-            Cookies.set("include-dammv2-route", includeDammv2Route ? "true" : "false");
+            Cookies.set("include-dammv2-route", includeDammv2Route ? "true" : "false", { expires: new Date(Date.now() + 31536000) });
             console.log("Set include-dammv2-route cookie to ", includeDammv2Route);
         }
     }, [includeDammv2Route])
 
     useEffect(() => {
         if (swapSolDefaultAmount !== undefined) {
-            Cookies.set("swap-sol-default-amount", swapSolDefaultAmount.toString());
+            Cookies.set("swap-sol-default-amount", swapSolDefaultAmount.toString(), { expires: new Date(Date.now() + 31536000) });
             console.log("Set swap-sol-default-amount cookie to ", swapSolDefaultAmount);
         }
     }, [swapSolDefaultAmount])
@@ -65,6 +65,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
 
     useEffect(() => {
+        console.log(Cookies.get("swap-sol-default-amount"))
         if (jupSlippage === undefined) {
             setJupSlippage(2);
         }
