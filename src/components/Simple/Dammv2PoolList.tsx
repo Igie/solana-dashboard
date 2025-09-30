@@ -69,7 +69,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                 <div className="flex w-full justify-center gap-1">
                     <div className="grid gap-1">
                         <button
-                            className="bg-blue-600 hover:bg-blue-500 text-white text-xs py-0.5 px-1 rounded flex items-center justify-start gap-1"
+                            className="bg-blue-900 hover:bg-blue-800 text-gray-100 text-xs py-0.5 px-1 rounded flex items-center justify-start gap-1"
                             onClick={async () => {
                                 const poolPositions = await getAllPoolPositions(cpAmm, pool, getSlot());
                                 setPoolPositions(poolPositions);
@@ -88,7 +88,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                     <div className="grid gap-1">
                         <div className="flex gap-0.5 w-max">
                             <a
-                                className="bg-purple-800 hover:bg-purple-600 text-white text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
+                                className="bg-purple-800 hover:bg-purple-600 text-gray-100 text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
                                 href={`https://edge.meteora.ag/dammv2/${pool.poolInfo.publicKey.toBase58()}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
@@ -97,7 +97,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                 <ExternalLink size={12} />
                             </a>
                             <button
-                                className="bg-purple-800 hover:bg-purple-600 text-white text-xs py-0.5 px-1 rounded flex items-center gap-1"
+                                className="bg-purple-800 hover:bg-purple-600 text-gray-100 text-xs py-0.5 px-1 rounded flex items-center gap-1"
                                 onClick={async () => {
                                     await navigator.clipboard.writeText(pool.poolInfo.publicKey.toBase58());
                                 }}
@@ -108,7 +108,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                             </button>
                         </div>
                         <a
-                            className="bg-purple-800 hover:bg-purple-600 text-white text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
+                            className="bg-purple-800 hover:bg-purple-600 text-gray-100 text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
                             href={`https://gmgn.ai/sol/token/NQhHUcmQ_${pool.tokenA.mint}`}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -119,7 +119,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                     </div>
                     <div className="grid gap-1">
                         <a
-                            className="bg-purple-800 hover:bg-purple-600 text-white text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
+                            className="bg-purple-800 hover:bg-purple-600 text-gray-100 text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
                             href={`https://www.dextools.io/app/en/solana/pair-explorer/${pool.poolInfo.publicKey.toBase58()}`}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -128,7 +128,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                             <ExternalLink size={12} />
                         </a>
                         <a
-                            className="bg-purple-800 hover:bg-purple-600 text-white text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
+                            className="bg-purple-800 hover:bg-purple-600 text-gray-100 text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
                             href={`https://axiom.trade/t/${pool.tokenA.mint}`}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -140,7 +140,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                     <div className="grid w-full gap-1">
                         <button
                             disabled={!connected}
-                            className={`${tokenAccountMap[pool.tokenA.mint] ? "bg-indigo-600 hover:bg-indigo-500" : "bg-blue-600 hover:bg-blue-500"} text-white text-xs py-0.5 px-1 rounded flex items-center justify-start gap-1`}
+                            className={`${tokenAccountMap[pool.tokenA.mint] ? "bg-indigo-900 hover:bg-indigo-800" : "bg-blue-900 hover:bg-blue-800"} text-gray-100 text-xs py-0.5 px-1 rounded flex items-center justify-start gap-1`}
                             onClick={() => {
                                 window.Jupiter.init({
                                     formProps: {
@@ -164,7 +164,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                         </button>
                         <button
                             disabled={!connected}
-                            className={`${userPoolPositionInfoMap[pool.poolInfo.publicKey.toBase58()] ? "bg-indigo-600 hover:bg-indigo-500" : "bg-blue-600 hover:bg-blue-500"} text-white text-xs py-0.5 px-1 rounded flex items-center justify-start gap-1`}
+                            className={`${userPoolPositionInfoMap[pool.poolInfo.publicKey.toBase58()] ? "bg-indigo-600 hover:bg-indigo-500" : "bg-blue-900 hover:bg-blue-800"} text-gray-100 text-xs py-0.5 px-1 rounded flex items-center justify-start gap-1`}
                             onClick={() => {
                                 setDepositPool(pool);
                                 setPopoverIndex(index)
@@ -228,7 +228,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                         </div>
                         <div className="flex gap-1 w-max">
                             <button
-                                className="bg-blue-600 hover:bg-blue-500 text-white text-xs py-0.5 px-1 rounded flex items-center gap-1"
+                                className="bg-blue-900 hover:bg-blue-800 text-gray-100 text-xs py-0.5 px-1 rounded flex items-center gap-1"
                                 onClick={async () => {
                                     await navigator.clipboard.writeText(pool.poolInfo.account.tokenAMint.toBase58());
                                 }}
@@ -239,7 +239,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                             </button>
                             <button
                                 disabled={!connected}
-                                className="bg-blue-600 hover:bg-blue-500 text-white text-xs py-0.5 px-1 rounded flex items-center gap-1"
+                                className="bg-blue-900 hover:bg-blue-800 text-gray-100 text-xs py-0.5 px-1 rounded flex items-center gap-1"
                                 onClick={async () => {
                                     await navigator.clipboard.writeText(pool.poolInfo.account.tokenBMint.toBase58());
                                 }}
@@ -259,7 +259,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                 <div className="flex justify-center font-mono">
                     <div className="flex gap-0.5 w-max">
                         <a
-                            className="bg-blue-600 hover:bg-blue-500 text-white text-xs py-0.5 px-1 rounded flex items-center gap-1"
+                            className="bg-blue-900 hover:bg-blue-800 text-gray-100 text-xs py-0.5 px-1 rounded flex items-center gap-1"
                             href={`https://solscan.io/account/${pool.poolInfo.account.creator.toBase58()}`}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -268,7 +268,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                             <ExternalLink size={12} />
                         </a>
                         <button
-                            className="bg-blue-600 hover:bg-blue-500 text-white text-xs py-0.5 px-1 rounded flex items-center gap-1"
+                            className="bg-blue-900 hover:bg-blue-800 text-gray-100 text-xs py-0.5 px-1 rounded flex items-center gap-1"
                             onClick={async () => {
                                 await navigator.clipboard.writeText(pool.poolInfo.account.creator.toBase58());
                             }}
@@ -296,7 +296,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                 {pool.tokenA.image ? (
                                     <img src={pool.tokenA.image} alt={pool.tokenA.symbol} className="w-full h-full object-cover" />
                                 ) : (
-                                    <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-[10px]">
+                                    <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-gray-100 font-bold text-[10px]">
                                         {pool.tokenA.symbol.slice(0, 2)}
                                     </div>
                                 )}
@@ -305,7 +305,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                             {pool.tokenB.image ? (
                                 <img src={pool.tokenB.image} alt={pool.tokenB.symbol} className="w-full h-full object-cover" />
                             ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold text-[10px]">
+                                <div className="w-full h-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-gray-100 font-bold text-[10px]">
                                     {pool.tokenB.symbol.slice(0, 2)}
                                 </div>
                             )}
@@ -390,7 +390,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                 <div className="flex justify-center font-mono">
                     <div className="flex gap-0.5 w-max">
                         <a
-                            className="bg-blue-600 hover:bg-blue-500 text-white text-xs py-0.5 px-1 rounded flex items-center gap-1"
+                            className="bg-blue-900 hover:bg-blue-800 text-gray-100 text-xs py-0.5 px-1 rounded flex items-center gap-1"
                             href={`https://solscan.io/account/${x.position.positionNftAccount.toBase58()}`}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -468,7 +468,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
             {target.type !== TargetType.None && (
                 <div className="flex gap-1 py-1">
                     <button
-                        className="bg-red-600 hover:bg-red-500 text-white text-xs py-0.5 px-1 rounded grid items-left justify-start gap-1"
+                        className="bg-red-600 hover:bg-red-500 text-gray-100 text-xs py-0.5 px-1 rounded grid items-left justify-start gap-1"
                         onClick={() => {
                             setTarget({ target: "", type: TargetType.None });
 
@@ -485,7 +485,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                 {(target.target as PoolDetailedInfo).tokenB.symbol.slice(0, 10) + ((target.target as PoolDetailedInfo).tokenB.symbol.length > 10 ? "..." : "")}
                             </div>
                             <a
-                                className="bg-purple-800 hover:bg-purple-600 text-white text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
+                                className="bg-purple-800 hover:bg-purple-600 text-gray-100 text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
                                 href={`https://edge.meteora.ag/dammv2/${(target.target as PoolDetailedInfo).poolInfo.publicKey.toBase58()}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
@@ -501,7 +501,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                     {target.type == TargetType.UserInfo && (
                         <div>
                             <a
-                                className="bg-purple-800 hover:bg-purple-600 text-white text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
+                                className="bg-purple-800 hover:bg-purple-600 text-gray-100 text-xs py-0.5 px-1 rounded flex items-center justify-end gap-1"
                                 href={`https://edge.meteora.ag/dammv2/${(target.target as PoolDetailedInfo).poolInfo.publicKey.toBase58()}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
@@ -531,19 +531,19 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                         <div className="flex flex-wrap gap-2 text-xs">
                             <span className="text-gray-400">Sort by:</span>
                             <button
-                                className={`px-2 py-1 rounded ${sortBy === PoolSortType.PoolActivationTime ? 'bg-purple-600' : 'bg-gray-700'} text-white`}
+                                className={`px-2 py-1 rounded ${sortBy === PoolSortType.PoolActivationTime ? 'bg-purple-600' : 'bg-gray-700'} text-gray-100`}
                                 onClick={() => handleSort(PoolSortType.PoolActivationTime, true)}
                             >
                                 Activation
                             </button>
                             <button
-                                className={`px-2 py-1 rounded ${sortBy === PoolSortType.PoolCurrentFee ? 'bg-purple-600' : 'bg-gray-700'} text-white`}
+                                className={`px-2 py-1 rounded ${sortBy === PoolSortType.PoolCurrentFee ? 'bg-purple-600' : 'bg-gray-700'} text-gray-100`}
                                 onClick={() => handleSort(PoolSortType.PoolCurrentFee)}
                             >
                                 Current Fee
                             </button>
                             <button
-                                className={`px-2 py-1 rounded ${sortBy === PoolSortType.PoolTotalFees ? 'bg-purple-600' : 'bg-gray-700'} text-white`}
+                                className={`px-2 py-1 rounded ${sortBy === PoolSortType.PoolTotalFees ? 'bg-purple-600' : 'bg-gray-700'} text-gray-100`}
                                 onClick={() => handleSort(PoolSortType.PoolTotalFees)}
                             >
                                 Total Fees
@@ -660,7 +660,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                 <div className="grid grid-cols-2 gap-2">
                                     <div className="grid grid-cols-2 gap-1">
                                         <a
-                                            className="bg-purple-600 hover:bg-purple-500 text-white text-xs py-1 px-1 rounded flex items-center justify-center gap-1"
+                                            className="bg-purple-600 hover:bg-purple-500 text-gray-100 text-xs py-1 px-1 rounded flex items-center justify-center gap-1"
                                             href={`https://edge.meteora.ag/dammv2/${pool.poolInfo.publicKey.toBase58()}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
@@ -669,7 +669,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                             <ExternalLink size={12} />
                                         </a>
                                         <a
-                                            className="bg-purple-600 hover:bg-purple-500 text-white text-xs py-1 px-1 rounded flex items-center justify-center gap-1"
+                                            className="bg-purple-600 hover:bg-purple-500 text-gray-100 text-xs py-1 px-1 rounded flex items-center justify-center gap-1"
                                             href={`https://gmgn.ai/sol/token/NQhHUcmQ_${pool.tokenA.mint}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
@@ -681,7 +681,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                     <div className="grid grid-cols-2 gap-1">
                                         <button
                                             disabled={!connected}
-                                            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white text-xs py-1 px-1 rounded flex items-center justify-center gap-1"
+                                            className="bg-blue-900 hover:bg-blue-700 disabled:bg-gray-600 text-gray-100 text-xs py-1 px-1 rounded flex items-center justify-center gap-1"
                                             onClick={() => {
                                                 window.Jupiter.init({
                                                     formProps: {
@@ -700,7 +700,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                         </button>
                                         <button
                                             disabled={!connected}
-                                            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white text-xs py-1 px-1 rounded flex items-center justify-center gap-1"
+                                            className="bg-blue-900 hover:bg-blue-700 disabled:bg-gray-600 text-gray-100 text-xs py-1 px-1 rounded flex items-center justify-center gap-1"
                                             onClick={() => {
                                                 setDepositPool(pool);
                                                 setPopoverIndex(index);
