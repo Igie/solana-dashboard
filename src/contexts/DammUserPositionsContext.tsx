@@ -479,6 +479,104 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
         setPositions(newPositions);
     }
 
+    const updatePositions = async (positionAddresses: PublicKey[]) => {
+        if (positionAddresses.length === 0) return;
+        const positionAddressMints = positionAddresses.map(x => x.toBase58());
+        const updatingPositions = positions.filter(x => positionAddressMints.find(y => y === x.positionAddress.toBase58()))
+        //const updatingPositionsMap = getPoolPositionMap(updatingPositions);
+
+
+        const updatedPositions = await cpAmm._program.account.position.fetchMultiple(updatingPositions.map(x => x.positionAddress))
+        const updatedPools = await cpAmm._program.account.pool.fetchMultiple(updatingPositions.map(x => x.poolInfo.publicKey))
+        for (const [index, pos] of updatingPositions.entries()) {
+            pos.positionState = updatedPositions[index]!;
+            pos.poolInfo.account = updatedPools[index]!
+        }
+
+        const metadataMap = await fetchTokenMetadataJup([...new Set([...updatingPositions.map(x => x.tokenA.mint), ...updatingPositions.map(x => x.tokenB.mint)])]);
+
+        for (const position of updatingPositions) {
+            const tokenAMetadata = metadataMap[position.tokenA.mint];
+            const tokenBMetadata = metadataMap[position.tokenB.mint];
+
+            const positionLP = position.positionState.permanentLockedLiquidity.add(
+                position.positionState.unlockedLiquidity).add(
+                    position.positionState.vestedLiquidity)
+
+            const poolLP = position.poolInfo.account.liquidity;
+
+            const withdrawPoolQuote = cpAmm!.getWithdrawQuote({
+                liquidityDelta: poolLP,
+                sqrtPrice: position.poolInfo.account.sqrtPrice,
+                minSqrtPrice: position.poolInfo.account.sqrtMinPrice,
+                maxSqrtPrice: position.poolInfo.account.sqrtMaxPrice,
+            });
+
+            const poolTokenAAmount = new Decimal(withdrawPoolQuote.outAmountA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
+            const poolTokenBAmount = new Decimal(withdrawPoolQuote.outAmountB.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
+
+            const withdrawPositionQuote = cpAmm!.getWithdrawQuote({
+                liquidityDelta: positionLP,
+                sqrtPrice: position.poolInfo.account.sqrtPrice,
+                minSqrtPrice: position.poolInfo.account.sqrtMinPrice,
+                maxSqrtPrice: position.poolInfo.account.sqrtMaxPrice,
+            });
+
+            const positionTokenAAmount = new Decimal(withdrawPositionQuote.outAmountA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
+            const positionTokenBAmount = new Decimal(withdrawPositionQuote.outAmountB.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
+
+            const unclaimedRewards = getUnClaimReward(position.poolInfo.account, position.positionState);
+
+            const tokenAUnclaimedFees = new Decimal(unclaimedRewards.feeTokenA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
+            const tokenBUnclaimedFees = new Decimal(unclaimedRewards.feeTokenB.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
+            const tokenAClaimedFees = new Decimal(position.positionState.metrics.totalClaimedAFee.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
+            const tokenBClaimedFees = new Decimal(position.positionState.metrics.totalClaimedBFee.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
+
+            const shareOfPool = positionLP.muln(10000).div(poolLP).toNumber() / 100;
+
+            position.tokenA.poolAmount = poolTokenAAmount;
+            position.tokenA.positionAmount = positionTokenAAmount;
+            position.tokenA.unclaimedFee = tokenAUnclaimedFees;
+            position.tokenA.claimedFee = tokenAClaimedFees;
+
+            position.tokenB.poolAmount = poolTokenBAmount;
+            position.tokenB.positionAmount = positionTokenBAmount;
+            position.tokenB.unclaimedFee = tokenBUnclaimedFees;
+            position.tokenB.claimedFee = tokenBClaimedFees;
+
+            position.poolValue = poolTokenAAmount * tokenAMetadata!.price.toNumber() +
+                poolTokenBAmount * tokenBMetadata!.price.toNumber();
+            position.positionValue = positionTokenAAmount * tokenAMetadata!.price.toNumber() +
+                positionTokenBAmount * tokenBMetadata!.price.toNumber();
+            position.shareOfPoolPercentage = shareOfPool;
+            position.positionUnclaimedFee =
+                tokenAUnclaimedFees * tokenAMetadata!.price.toNumber() +
+                tokenBUnclaimedFees * tokenBMetadata!.price.toNumber();
+            position.positionClaimedFee =
+                tokenAClaimedFees * tokenAMetadata!.price.toNumber() +
+                tokenBClaimedFees * tokenBMetadata!.price.toNumber();
+
+            position.poolBaseFeeBPS = feeNumeratorToBps(getBaseFeeNumerator(
+                position.poolInfo.account.poolFees.baseFee.feeSchedulerMode,
+                position.poolInfo.account.poolFees.baseFee.cliffFeeNumerator,
+                new BN(position.poolInfo.account.poolFees.baseFee.numberOfPeriod),
+                position.poolInfo.account.poolFees.baseFee.reductionFactor));
+
+            position.poolCurrentFeeBPS = feeNumeratorToBps(getFeeNumerator(
+                position.poolInfo.account.activationType === 0 ? getSlot() :
+                    position.poolInfo.account.activationType === 1 ? currentTime : 0,
+                position.poolInfo.account.activationPoint,
+                position.poolInfo.account.poolFees.baseFee.numberOfPeriod,
+                position.poolInfo.account.poolFees.baseFee.periodFrequency,
+                position.poolInfo.account.poolFees.baseFee.feeSchedulerMode,
+                position.poolInfo.account.poolFees.baseFee.cliffFeeNumerator,
+                position.poolInfo.account.poolFees.baseFee.reductionFactor,
+                position.poolInfo.account.poolFees.dynamicFee
+            ));
+            setPositions(positions);
+        }
+    }
+
     const removePosition = (positionAddress: PublicKey) => {
         const updatedPositions = positions.filter(x => x.positionAddress !== positionAddress);
         setPositions(updatedPositions);
@@ -568,11 +666,24 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
 
     useEffect(() => {
         if (updatedPools && updatedPools.length > 0) {
+            const positionsSet = new Set<PoolPositionInfo>();
+
+            const pools: {
+                [key: string]: PoolPositionInfo[]
+            } = {};
+            for (const pos of positions) {
+                if (!pools[pos.poolInfo.publicKey.toBase58()])
+                    pools[pos.poolInfo.publicKey.toBase58()] = [];
+                pools[pos.poolInfo.publicKey.toBase58()].push(pos);
+            }
+
             for (const updated of updatedPools)
-                if (positions.find(x => x.poolInfo.publicKey.toBase58() === updated.publicKey.toBase58())) {
-                    refreshPositions();
-                    break;
-                }
+                if (pools[updated.publicKey.toBase58()])
+                    for (const f of pools[updated.publicKey.toBase58()])
+                        positionsSet.add(f)
+
+            updatePositions([...positionsSet].map(x => x.positionAddress))
+
         }
     }, [updatedPools])
     return (

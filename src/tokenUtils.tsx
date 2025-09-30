@@ -100,6 +100,7 @@ export const fetchTokenMetadataJup = async (mintAddresses: string[]): Promise<{ 
     if (mintAddresses.length === 0)
         return metadataMap;
 
+    console.log("fetching jup metadata", mintAddresses.length)
     try {
         while (mintAddresses.length > 0) {
             const innerMints = mintAddresses.splice(0, 100);

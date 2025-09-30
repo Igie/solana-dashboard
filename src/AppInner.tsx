@@ -16,7 +16,6 @@ interface ComponentMap {
 interface AppInnerProps {
   network: Cluster
   setNetwork: (n: Cluster) => void
-
 }
 
 const AppInner: React.FC<AppInnerProps> = ({
