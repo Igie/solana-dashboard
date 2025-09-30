@@ -6,16 +6,21 @@ import { Navigation, MobileNavigation } from './components/layout/Navigation'
 import { ArrowLeftRight } from 'lucide-react'
 import { type Cluster } from '@solana/web3.js'
 import { useTokenAccounts } from './contexts/TokenAccountsContext'
-
+import type { Dammv2PoolCreationProps } from './components/Dammv2PoolCreation'
+import Decimal from "decimal.js"
 
 
 interface ComponentMap {
-  [key: string]: React.FC
+  [key: string]: React.FC | React.FC<AppInnerPassProps> | React.FC<Dammv2PoolCreationProps>
 }
 
 interface AppInnerProps {
   network: Cluster
   setNetwork: (n: Cluster) => void
+}
+
+export interface AppInnerPassProps {
+  goToPoolPage:(tokenA:string, tokenAAMount:Decimal) => void,
 }
 
 const AppInner: React.FC<AppInnerProps> = ({
@@ -26,8 +31,18 @@ const AppInner: React.FC<AppInnerProps> = ({
   const [activeTab, setActiveTab] = useState('dashboard')
 
   const { solBalance } = useTokenAccounts()
+
+  const[tokenAMint, setTokenAMint] = useState<string | undefined>(undefined);
+  const[tokenAAmount, setTokenAAmount] = useState<Decimal | undefined>(undefined);
   const ActiveComponent =
     components[activeTab] || (() => <div>Loading...</div>)
+
+  const goToPoolPage = (tokenA:string, tokenAAmount:Decimal) => {
+    setTokenAMint(tokenA);
+    setTokenAAmount(tokenAAmount);
+    setActiveTab("dammv2PoolCreation");
+    
+  }
 
   useEffect(() => {
     setComponents(
@@ -75,7 +90,7 @@ const AppInner: React.FC<AppInnerProps> = ({
 
       <main className="flex flex-col h-[calc(100vh-42px)] pb-[calc(4rem+var(10px))] w-full px-4 py-2">
         <div className="w-full max-w-screen-2xl mx-auto">
-          <ActiveComponent />
+          <ActiveComponent goToPoolPage={goToPoolPage} tokenAMintParam={tokenAMint} tokenAAmountParam={tokenAAmount} />
         </div>
       </main>
 

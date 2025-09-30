@@ -29,7 +29,7 @@ export function DynamicTable<T>({
                     {columns.map((col, colIndex) => (
                         <th
                             key={colIndex}
-                            className={`px-1 py-0.5 border-b flex-nowrap border-gray-700 text-center font-semibold ${col.className ?? ""}`}
+                            className={`px-0.5 gap-y-0.5 border-b text-xs text-nowrap flex-nowrap border-gray-700 items-center justify-center font-semibold ${col.className ?? ""}`}
                         >
                             {col.header}
                         </th>
@@ -45,7 +45,7 @@ export function DynamicTable<T>({
                         {columns.map((col, colIndex) => (
                             <td
                                 key={colIndex}
-                                className={`px-2 py-1 border-b border-gray-700 ${col.className ?? ""}`}
+                                className={`px-0.5 py-0.5 border-b border-gray-700 text-xs ${col.className ?? ""}`}
                             >
                                 {col.render(row, rowIndex)}
                             </td>

@@ -22,7 +22,15 @@ enum PoolCreationType {
     Custom
 }
 
-const Dammv2PoolCreation: React.FC = () => {
+export interface Dammv2PoolCreationProps {
+    tokenAMintParam: string | undefined
+    tokenAAmountParam: Decimal | undefined
+}
+
+const Dammv2PoolCreation: React.FC<Dammv2PoolCreationProps> = ({
+    tokenAMintParam,
+    tokenAAmountParam,
+}) => {
     const { connection } = useConnection()
     const { getSlot } = useGetSlot();
     const { connected } = useWallet()
@@ -38,8 +46,8 @@ const Dammv2PoolCreation: React.FC = () => {
 
     const [poolCreationType, setPoolCreationType] = useState(PoolCreationType.Simple)
 
-    const [tokenAMint, setTokenAMint] = useState("")
-    const [tokenAAmount, setTokenAAmount] = useState<Decimal>(new Decimal(0))
+    const [tokenAMint, setTokenAMint] = useState(tokenAMintParam ? tokenAMintParam : "")
+    const [tokenAAmount, setTokenAAmount] = useState<Decimal>(tokenAAmountParam ? tokenAAmountParam : new Decimal(0))
 
     const [tokenBMint, setTokenBMint] = useState("So11111111111111111111111111111111111111112")
     const [tokenBAmount, setTokenBAmount] = useState<Decimal>(new Decimal(0))
@@ -197,8 +205,8 @@ const Dammv2PoolCreation: React.FC = () => {
     }, []);
 
     return (
-        <div className="flex flex-col h-[calc(100vh-110px)] lg:h-[calc(100vh-55px)] space-y-2 px-2 md:px-0">
-            <div className="bg-gray-900 border border-gray-700 rounded-2xl p-2 space-y-1">
+        <div className="flex flex-col h-[calc(100vh-110px)] lg:h-[calc(100vh-55px)] space-y-1 px-2 md:px-0">
+            <div className="bg-gray-900 border border-gray-700 rounded p-1 space-y-1">
 
                 <div>
                     <div className="relative w-full">
@@ -222,7 +230,7 @@ const Dammv2PoolCreation: React.FC = () => {
                     </div>
                 </div>
             </div>
-            <div className="bg-gray-900 border border-gray-700 rounded-2xl p-1 space-y-1">
+            <div className="bg-gray-900 border border-gray-700 rounded p-1 space-y-1">
                 {connected && (
                     <div className="flex items-center justify-center md:justify-start md:gap-1">
                         <button

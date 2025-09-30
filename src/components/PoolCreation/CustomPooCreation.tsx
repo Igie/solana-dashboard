@@ -267,7 +267,7 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
     }, [tokenAMint, tokenBMint]);
 
     useEffect(() => {
-        if (tokenAMint && tokenBMint) {
+        if (tokenAMint && tokenBMint && tokenMetadata[tokenAMint] && tokenMetadata[tokenBMint]) {
             try {
                 const aDecimals = tokenMetadata[tokenAMint].decimals;
                 const bDecimals = tokenMetadata[tokenBMint].decimals;
@@ -291,7 +291,7 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
 
             }
         }
-    }, [initialPrice, tokenAAmount, minPrice, maxPrice, useMinPrice, useMaxPrice]);
+    }, [initialPrice, tokenAAmount, tokenMetadata, minPrice, maxPrice, useMinPrice, useMaxPrice]);
 
     useEffect(() => {
         updateCommonTokens();

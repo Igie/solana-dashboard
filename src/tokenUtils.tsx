@@ -64,7 +64,6 @@ export interface JupTokenMetadata {
     isVerified: boolean
     mintAuthority?: string
     freezeAuthority?: string
-
 }
 
 export interface JupDataMap {

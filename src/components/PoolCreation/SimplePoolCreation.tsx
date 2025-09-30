@@ -333,7 +333,7 @@ const SimplePoolCreation: React.FC<SimplePoolCreationProps> = (
     }, [useDynamicFee, baseFeePercentage, useFeeScheduler, selectedFeeScheduler, selectedFeeMode, poolConfigs]);
 
     useEffect(() => {
-        if (tokenAMint && tokenBMint) {
+        if (tokenAMint && tokenBMint && tokenMetadata[tokenAMint] && tokenMetadata[tokenBMint]) {
             try {
                 const aDecimals = tokenMetadata[tokenAMint].decimals;
                 const bDecimals = tokenMetadata[tokenBMint].decimals;
@@ -352,7 +352,7 @@ const SimplePoolCreation: React.FC<SimplePoolCreationProps> = (
 
             }
         }
-    }, [initialPrice, tokenAAmount]);
+    }, [initialPrice, tokenAAmount, tokenMetadata]);
 
     useEffect(() => {
         updateCommonTokens();

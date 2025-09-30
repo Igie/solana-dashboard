@@ -16,9 +16,12 @@ import { useSettings } from '../contexts/SettingsContext'
 
 import Dammv2PoolList from './Simple/Dammv2PoolList'
 import { useDammV2PoolsWebsocket } from '../contexts/Dammv2PoolContext'
+import type { AppInnerPassProps } from '../AppInner'
 
+const Portfolio: React.FC<AppInnerPassProps> = ({
+  goToPoolPage,
+}) => {
 
-const Portfolio: React.FC = () => {
   const { jupSlippage, includeDammv2Route } = useSettings();
   const { connection } = useConnection()
   const { publicKey, connected } = useWallet()
@@ -155,7 +158,7 @@ const Portfolio: React.FC = () => {
     <div className="flex flex-col h-[calc(100vh-110px)] lg:h-[calc(100vh-55px)] space-y-1 px-2 md:px-0">
       {/* Portfolio Overview */}
       <div className="grid grid-cols-1 gap-0.5">
-        <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-700/50 rounded-2xl px-3">
+        <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-700/50 rounded px-3">
           <div className="flex items-center justify-between">
             <h4 className="font-semibold text-blue-300">Token Types</h4>
             <Coins className="w-5 h-5 text-blue-400" />
@@ -231,7 +234,7 @@ const Portfolio: React.FC = () => {
         </div>
       </div>
       {/* Token Holdings */}
-      <div className="flex flex-col bg-gray-900 border border-gray-700 rounded-2xl flex-1 min-h-0">
+      <div className="flex flex-col bg-gray-900 border border-gray-700 rounded flex-1 min-h-0">
         {tokenAccounts.length === 0 ? (
           <div className="p-8 text-center">
             <Coins className="w-12 h-12 mx-auto mb-4 text-gray-400" />
@@ -317,11 +320,11 @@ const Portfolio: React.FC = () => {
                         {popupIndex === index && (
                           <div
                             ref={popupRef}
-                            className="absolute z-50 top-12 left-0 w-48 bg-gray-900 border border-gray-700 rounded-xl shadow-lg p-2 space-y-1"
+                            className="absolute z-50 top-12 left-0 w-40 bg-gray-900 border border-gray-700 rounded-xl shadow-lg p-2 space-y-1"
                           >
                             <button
                               onClick={() => handleSwap(tokenAccount)}
-                              className="block w-full text-left px-3 py-2 text-sm text-white hover:bg-purple-700 rounded-md"
+                              className="block w-full text-left px-1 py-0.5 text-sm text-white hover:bg-purple-700 rounded"
                               aria-label={`Swap ${tokenAccount.symbol} via Jupiter`}
                             >
                               Swap via Jupiter
@@ -329,7 +332,7 @@ const Portfolio: React.FC = () => {
 
                             <button
                               onClick={() => handleSwapToSol(tokenAccount)}
-                              className="block w-full text-left px-3 py-2 text-sm text-white hover:bg-purple-700 rounded-md"
+                              className="block w-full text-left px-1 py-0.5 text-sm text-white hover:bg-purple-700 rounded"
                             >
                               Swap all to SOL
                             </button>
@@ -338,13 +341,19 @@ const Portfolio: React.FC = () => {
                                 await fetchPools(tokenAccount.mint);
                                 setPopupIndex(null);
                               }}
-                              className="block w-full text-left px-3 py-2 text-sm text-white hover:bg-purple-700 rounded-md"
+                              className="block w-full text-left px-1 py-0.5 text-sm text-white hover:bg-purple-700 rounded"
                             >
                               Find Pools
                             </button>
                             <button
+                              onClick={async () => goToPoolPage(tokenAccount.mint, tokenAccount.amount)}
+                              className="block w-full text-left px-1 py-0.5 text-sm text-white hover:bg-purple-700 rounded"
+                            >
+                              Create Pool
+                            </button>
+                            <button
                               onClick={() => handleCopyMint(tokenAccount.mint)}
-                              className="block w-full text-left px-3 py-2 text-sm text-white hover:bg-gray-700 rounded-md"
+                              className="block w-full text-left px-1 py-0.5 text-sm text-white hover:bg-purple-700 rounded"
                             >
                               Copy Mint Address
                             </button>

@@ -774,7 +774,7 @@ const DammPositions: React.FC = () => {
     <div className="flex flex-col h-[calc(100vh-110px)] lg:h-[calc(100vh-55px)] space-y-1 px-2 md:px-0">
       {/* Pool Overview Stats */}
       <div className="grid grid-cols-2 gap-0.5">
-        <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-700/50 rounded-2xl px-3">
+        <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-700/50 rounded px-3">
           <div className="flex items-center justify-between">
             <h4 className="font-semibold text-blue-300">Liquidity</h4>
             <Droplets className="w-5 h-5 text-blue-400" />
@@ -784,7 +784,7 @@ const DammPositions: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-900/30 to-purple-800/20 border border-purple-700/50 rounded-2xl px-3">
+        <div className="bg-gradient-to-br from-purple-900/30 to-purple-800/20 border border-purple-700/50 rounded px-3">
           <div className="flex items-center justify-between">
             <h4 className="font-semibold text-purple-300">Pools</h4>
             <TrendingUp className="w-5 h-5 text-purple-400" />
