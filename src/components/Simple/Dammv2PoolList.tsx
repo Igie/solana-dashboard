@@ -164,7 +164,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                         </button>
                         <button
                             disabled={!connected}
-                            className={`${userPoolPositionInfoMap[pool.poolInfo.publicKey.toBase58()] ? "bg-indigo-600 hover:bg-indigo-500" : "bg-blue-900 hover:bg-blue-800"} text-gray-100 text-xs py-0.5 px-1 rounded flex items-center justify-start gap-1`}
+                            className={`${userPoolPositionInfoMap[pool.poolInfo.publicKey.toBase58()] ? "bg-indigo-900 hover:bg-indigo-800" : "bg-blue-900 hover:bg-blue-800"} text-gray-100 text-xs py-0.5 px-1 rounded flex items-center justify-start gap-1`}
                             onClick={() => {
                                 setDepositPool(pool);
                                 setPopoverIndex(index)
