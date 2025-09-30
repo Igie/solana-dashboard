@@ -221,7 +221,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                         }
                                     </div>
                                 </div>)}
-                            <div className="flex flex-grow items-center justify-center">
+                            <div className="flex flex-grow items-center justify-center text-xs">
                                 {pool.tokenA.symbol.slice(0, 10) + (pool.tokenA.symbol.length > 10 ? "..." : "")}/
                                 {pool.tokenB.symbol.slice(0, 10) + (pool.tokenB.symbol.length > 10 ? "..." : "")}
                             </div>
@@ -464,7 +464,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
     }, [sortBy, sortAscending]);
 
     return (
-        <div className="flex flex-col h-full min-h-50 overflow-hidden">
+        <div className="flex flex-col h-full min-h-50 items-center overflow-hidden">
             {target.type !== TargetType.None && (
                 <div className="flex gap-1 py-1">
                     <button
@@ -480,7 +480,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                     </button>
                     {target.type == TargetType.PoolInfo && (
                         <div className="flex gap-1">
-                            <div className="flex flex-grow items-center justify-center">
+                            <div className="flex flex-grow items-center justify-center text-xs">
                                 {(target.target as PoolDetailedInfo).tokenA.symbol.slice(0, 10) + ((target.target as PoolDetailedInfo).tokenA.symbol.length > 10 ? "..." : "")}/
                                 {(target.target as PoolDetailedInfo).tokenB.symbol.slice(0, 10) + ((target.target as PoolDetailedInfo).tokenB.symbol.length > 10 ? "..." : "")}
                             </div>
@@ -514,7 +514,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                 </div>
             )}
             {target.type === TargetType.PoolInfo && (
-                <div className="flex-grow overflow-y-auto bg-gray-900 border border-gray-700 rounded p-3 md:p-3 space-y-2">
+                <div className="overflow-y-auto items-center justify-center bg-gray-900 border border-gray-700 rounded p-3 md:p-3 space-y-2">
 
                     <DynamicTable tableClassName="hidden lg:table sticky" data={poolPositions} columns={positionColumns} hideHeaders={false} />
                 </div>

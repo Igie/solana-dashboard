@@ -400,12 +400,14 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
                   </div>
 
                   {showPools && Object.entries(existingPools).find(x => x[1].tokenA.mint === tokenAccount.mint) && (
-                    <Dammv2PoolList
+                    <div className="flex items-start">
+                      <Dammv2PoolList
                       pools={Object.entries(existingPools).map(x => x[1]).filter(x => x.tokenA.mint === tokenAccount.mint)}
                       tokenMetadataMap={GetTokenMetadataMap(tokenAccounts)}
                       sortParamsCallback={(sortType, ascending) => {
                         setPoolSorting({ type: sortType, ascending })
                       }} />
+                      </div>
                   )}
                 </div>
 

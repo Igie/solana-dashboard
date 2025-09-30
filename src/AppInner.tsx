@@ -89,7 +89,7 @@ const AppInner: React.FC<AppInnerProps> = ({
       </header>
 
       <main className="flex flex-col h-[calc(100vh-42px)] pb-[calc(4rem+var(10px))] w-full px-4 py-2">
-        <div className="w-full max-w-screen mx-auto">
+        <div className="w-full max-w-screen-9/10 mx-auto">
           <ActiveComponent goToPoolPage={goToPoolPage} tokenAMintParam={tokenAMint} tokenAAmountParam={tokenAAmount} />
         </div>
       </main>
