@@ -74,8 +74,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (includeDammv2Route === undefined) {
             setIncludeDammv2Route(true);
         }
-
-        if (jupZapOutSlippage === undefined) {
+        if (swapSolDefaultAmount === undefined) {
             setSwapSolDefaultAmount(0.01);
         }
     }, [])
