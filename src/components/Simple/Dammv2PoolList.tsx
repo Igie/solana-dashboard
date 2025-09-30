@@ -464,7 +464,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
     }, [sortBy, sortAscending]);
 
     return (
-        <div className="flex flex-col h-full min-h-50 items-center overflow-hidden">
+        <div className="flex flex-col h-full min-h-65 items-center overflow-hidden">
             {target.type !== TargetType.None && (
                 <div className="flex gap-1 py-1">
                     <button
@@ -522,7 +522,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
             )}
 
             {pools.length > 0 && target.type === TargetType.None && (
-                <div className="flex-grow overflow-y-auto relative bg-gray-900 border border-gray-700 rounded p-1 md:p-1 space-y-1">
+                <div className="flex h-full flex-grow overflow-y-auto relative bg-gray-900 border border-gray-700 rounded p-1 md:p-1 space-y-1">
                     {target.type === TargetType.None &&
                         (<DynamicTable tableClassName="hidden lg:table sticky" data={pools} columns={poolColumns} hideHeaders={false} />
                         )}
