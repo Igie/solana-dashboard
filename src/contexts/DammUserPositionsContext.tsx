@@ -476,6 +476,8 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
             position.poolInfo.account.poolFees.baseFee.reductionFactor,
             position.poolInfo.account.poolFees.dynamicFee
         ));
+        sortPositionsByInternal(newPositions, sortedBy, sortedAscending);
+        updateLiquidity(newPositions);
         setPositions(newPositions);
     }
 
@@ -573,6 +575,8 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                 position.poolInfo.account.poolFees.baseFee.reductionFactor,
                 position.poolInfo.account.poolFees.dynamicFee
             ));
+            sortPositionsByInternal(positions, sortedBy, sortedAscending);
+            updateLiquidity(positions);
             setPositions(positions);
         }
     }
