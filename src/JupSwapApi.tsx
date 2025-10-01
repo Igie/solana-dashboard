@@ -61,10 +61,6 @@ interface Instruction {
   data: string;
 }
 
-
-
-const baseUrl: string = "https://quote-api.jup.ag/v6";
-
 export const getQuote = async (params: JupiterQuoteParams, notify: boolean = true): Promise<JupiterQuoteResponse> => {
   try {
     const url = new URL(`https://ultra-api.jup.ag/order?`);
@@ -100,7 +96,7 @@ export const getQuote = async (params: JupiterQuoteParams, notify: boolean = tru
 export const getSwapTransactionVersioned = async (quoteResponse: JupiterQuoteResponse, publicKey: PublicKey): Promise<VersionedTransaction> => {
 
   const { swapTransaction } = await (
-    await fetch('https://quote-api.jup.ag/v6/swap', {
+    await fetch('https://lite-api.jup.ag/swap/v1/swap', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -130,7 +126,7 @@ interface SwapInstructions {
 export const getSwapInstructions = async (quoteResponse: JupiterQuoteResponse, pubKey: PublicKey): Promise<SwapInstructions> => {
   console.log(quoteResponse);
   const instructions = await (
-    await fetch(`${baseUrl}/swap-instructions`, {
+    await fetch(`https://lite-api.jup.ag/swap/v1/swap-instructions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -164,7 +160,7 @@ export const getSwapInstructions = async (quoteResponse: JupiterQuoteResponse, p
 
 export const getSwapTransaction = async (quoteResponse: JupiterQuoteResponse, connection: Connection, pubKey: PublicKey): Promise<Transaction | VersionedTransaction> => {
   const instructions = await (
-    await fetch(`${baseUrl}/swap-instructions`, {
+    await fetch(`https://lite-api.jup.ag/swap/v1/swap-instructions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

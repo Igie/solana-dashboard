@@ -175,7 +175,6 @@ export const TransactionManagerProvider = ({ children }: { children: ReactNode }
         }
 
         try {
-
             if (signAllTransactions === undefined) {
                 txToast.error("signAllTransactions is not available!");
                 return [];
@@ -270,8 +269,6 @@ export const TransactionManagerProvider = ({ children }: { children: ReactNode }
             onError?.(err);
             return [];
         }
-
-
     }
 
     useEffect(() => {
