@@ -78,7 +78,7 @@ export const TransactionManagerProvider = ({ children }: { children: ReactNode }
 
                 signedTx.sign(signers);
                 sig = await connection.sendRawTransaction(signedTx.serialize(), {
-                    maxRetries: 3,
+                    maxRetries: 1,
                     preflightCommitment: 'confirmed',
                 });
 
@@ -195,7 +195,7 @@ export const TransactionManagerProvider = ({ children }: { children: ReactNode }
             const result = await Promise.allSettled(signedTxnsSignerPair.map(async (x) => {
                 try {
                     const sig = await connection.sendRawTransaction(x.tx.serialize(), {
-                        maxRetries: 3,
+                        maxRetries: 1,
                         preflightCommitment: 'confirmed',
                     });
                     const confirmation = await connection.confirmTransaction(
@@ -273,7 +273,7 @@ export const TransactionManagerProvider = ({ children }: { children: ReactNode }
             const result = await Promise.allSettled(signedTxns.map(async (x) => {
                 try {
                     const sig = await connection.sendRawTransaction(x.serialize(), {
-                        maxRetries: 3,
+                        maxRetries: 1,
                         preflightCommitment: 'confirmed',
                     });
                     const confirmation = await connection.confirmTransaction(
