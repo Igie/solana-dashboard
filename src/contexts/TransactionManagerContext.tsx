@@ -381,6 +381,7 @@ export const TransactionManagerProvider = ({ children }: { children: ReactNode }
         })
         const messageV0 = transactionMesage.compileToV0Message(alt ? [alt] : []);
         const versioned = new VersionedTransaction(messageV0);
+        console.log(`generated transaction with ${ixs.length} instructions: size ${versioned.serialize().length}`)
         return versioned;
     }
 
@@ -395,6 +396,7 @@ export const TransactionManagerProvider = ({ children }: { children: ReactNode }
             })
             const messageV0 = transactionMesage.compileToV0Message(alt ? [alt] : []);
             const versioned = new VersionedTransaction(messageV0);
+            console.log(`generated transaction with ${innerIxs.length} instructions, size ${versioned.serialize().length}`);
             result.push(versioned);
         }
         return result;
