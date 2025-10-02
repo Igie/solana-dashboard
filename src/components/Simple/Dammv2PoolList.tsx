@@ -522,7 +522,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
             )}
 
             {pools.length > 0 && target.type === TargetType.None && (
-                <div className="flex h-full flex-grow overflow-y-auto relative bg-gray-900 border border-gray-700 rounded p-1 md:p-1 space-y-1">
+                <div className="flex md:flex-row flex-col h-full flex-grow overflow-y-auto relative bg-gray-900 border border-gray-700 rounded p-1 md:p-1 space-y-1">
                     {target.type === TargetType.None &&
                         (<DynamicTable tableClassName="hidden lg:table sticky" data={pools} columns={poolColumns} hideHeaders={false} />
                         )}
@@ -714,7 +714,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                 </div>
                                 {popoverIndex === index && (
                                     <DepositPopover
-                                        className={"absolute flex flex-col z-50 bg-[#0d111c] text-gray-100 border border-gray-700 rounded-sm p-1 gap-1 text-sm justify-center"}
+                                        className={"absolute flex flex-col z-50 top-0 bg-[#0d111c] text-gray-100 border border-gray-700 rounded-sm p-1 gap-1 text-sm justify-center"}
                                         owner={publicKey!}
                                         positionInfo={positions.find(x => x.poolInfo.publicKey.toBase58() === depositPool?.poolInfo.publicKey.toBase58()) || null}
                                         poolInfo={depositPool!.poolInfo}
