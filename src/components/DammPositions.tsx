@@ -364,7 +364,15 @@ const DammPositions: React.FC = () => {
       if (!tx) continue;
       console.log("new transaction");
       console.log(tx);
-      const message = TransactionMessage.decompile(tx.transaction.message)
+
+      const addressLookupTableAccounts = await Promise.all(
+        tx.transaction.message.addressTableLookups.map(async (lookup) => {
+          return await connection.getAddressLookupTable(lookup.accountKey)
+        }))
+
+      const message = TransactionMessage.decompile(tx.transaction.message, {
+        addressLookupTableAccounts: addressLookupTableAccounts.map(x => x.value).filter(x => x !== null)
+      })
 
       let i = -1;
       for (const ix of message.instructions) {
