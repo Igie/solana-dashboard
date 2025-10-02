@@ -43,7 +43,7 @@ export function DynamicTable<T>({
           {data.map((row, rowIndex) => (
             <tr
               key={rowIndex}
-              className={rowClassName ? rowClassName(row, rowIndex) : ""}
+              className={rowClassName ? rowClassName(row, rowIndex) : "" + " hover:bg-gray-800/50"}
             >
               {columns.map((col, colIndex) => (
                 <td
