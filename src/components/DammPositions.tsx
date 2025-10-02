@@ -88,7 +88,7 @@ const DammPositions: React.FC = () => {
     })
 
     try {
-      await sendTxn(txn.instructions, 0, undefined, undefined, {
+      await sendTxn(txn.instructions, 10000, undefined, undefined, {
         notify: true,
         onSuccess: () => {
           updatePosition(position.positionAddress);
@@ -105,7 +105,7 @@ const DammPositions: React.FC = () => {
     positions = positions.filter(x => x.positionUnclaimedFee > 0);
 
     while (positions.length > 0) {
-      const innerPositions = positions.splice(0, 4)
+      const innerPositions = positions.splice(0, 3)
       const t = new Transaction();
 
       let unwrapSol = false;
@@ -911,7 +911,7 @@ const DammPositions: React.FC = () => {
                         return {
                           ixs: x,
                         }
-                      }), 0, undefined,
+                      }), 10000, undefined,
                         {
                           onSuccess: async () => {
                             await refreshPositions();
@@ -963,7 +963,7 @@ const DammPositions: React.FC = () => {
                               return {
                                 ixs: x,
                               }
-                            }), 0, undefined, {
+                            }), 1000, undefined, {
                               onSuccess: async () => {
                                 await refreshPositions();
                               }
