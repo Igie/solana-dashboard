@@ -5,7 +5,7 @@ import { useTransactionManager } from '../contexts/TransactionManagerContext'
 import { toast } from 'sonner'
 import { BN, } from '@coral-xyz/anchor'
 import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-adapter'
-import { ComputeBudgetProgram, PublicKey, Transaction, TransactionInstruction, TransactionMessage, type AccountMeta } from '@solana/web3.js'
+import { PublicKey, Transaction, TransactionInstruction, TransactionMessage, type AccountMeta } from '@solana/web3.js'
 import { copyToClipboard, getPoolPositionFromPublicKeys, getSchedulerType, getShortMintS, renderFeeTokenImages, type PoolPositionInfo } from '../constants'
 import { useCpAmm } from '../contexts/CpAmmContext'
 import { AuthorityType, createSetAuthorityInstruction, getMint, NATIVE_MINT, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token'
@@ -44,7 +44,7 @@ interface PnlInfo {
 const DammPositions: React.FC = () => {
   const { connection } = useConnection()
   const { publicKey, connected } = useWallet()
-  const { sendLegacyTxn, sendMultiTxn } = useTransactionManager()
+  const { sendTxn, sendMultiTxn } = useTransactionManager()
   const { cpAmm, coder } = useCpAmm();
   const { positions, totalLiquidityValue, loading, refreshPositions, updatePosition, removePosition, sortPositionsBy, removeLiquidityAndSwapToQuote, sortedBy, sortedAscending } = useDammUserPositions();
   const [selectedPositions, setSelectedPositions] = useState<Set<string>>(new Set());
@@ -86,23 +86,9 @@ const DammPositions: React.FC = () => {
       tokenAVault: position.poolInfo.account.tokenAVault,
       tokenBVault: position.poolInfo.account.tokenBVault,
     })
-    const t = new Transaction();
-    t.add(...txn.instructions);
-    t.feePayer = publicKey!
-    const sim = await connection.simulateTransaction(t);
-    if (sim.value.err) {
-      console.log(sim);
-      txToast.error("Failed to simulate claimPositionFee2 transaction!");
-      return;
-    }
-
-    const final = new Transaction();
-    final.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 0 }));
-    final.add(ComputeBudgetProgram.setComputeUnitLimit({ units: Math.max(sim.value.unitsConsumed! * 1.1, 5000) }));
-    final.add(...txn.instructions);
 
     try {
-      await sendLegacyTxn(final, undefined, {
+      await sendTxn(txn.instructions, 0, undefined, undefined, {
         notify: true,
         onSuccess: () => {
           updatePosition(position.positionAddress);
@@ -115,12 +101,11 @@ const DammPositions: React.FC = () => {
   }
 
   const getClaimFeesTx = async (positions: PoolPositionInfo[]) => {
-
-    const txns = [];
+    const ixs = [];
     positions = positions.filter(x => x.positionUnclaimedFee > 0);
 
     while (positions.length > 0) {
-      const innerPositions = positions.splice(0, 2)
+      const innerPositions = positions.splice(0, 4)
       const t = new Transaction();
 
       let unwrapSol = false;
@@ -159,21 +144,13 @@ const DammPositions: React.FC = () => {
       }
 
       t.instructions.push(...atas, ...claims);
-      console.log(atas);
+
       if (unwrapSol) t.instructions.push(await unwrapSOLInstruction(publicKey!, publicKey!, true));
 
-      t.feePayer = publicKey!;
-      const sim = await connection.simulateTransaction(t);
-      if (!sim.value.err) {
-        const final = new Transaction();
-        console.log(sim.value.unitsConsumed!);
-        final.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100000 }));
-        final.add(ComputeBudgetProgram.setComputeUnitLimit({ units: sim.value.unitsConsumed! * 1.1 }));
-        final.add(t);
-        txns.push(final);
-      }
+
+      ixs.push(t.instructions);
     }
-    return txns;
+    return ixs;
   };
 
   const handleClosePosition = async (position: PoolPositionInfo) => {
@@ -193,23 +170,9 @@ const DammPositions: React.FC = () => {
       vestings: [],
       currentPoint: new BN(0),
     });
-    const t = new Transaction();
-    t.add(...txn.instructions);
-    t.feePayer = publicKey!
-    const sim = await connection.simulateTransaction(t);
-    if (sim.value.err) {
-      console.log(sim);
-      txToast.error("Failed to simulate claimPositionFee2 transaction!");
-      return;
-    }
-
-    const final = new Transaction();
-    final.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 0 }));
-    final.add(ComputeBudgetProgram.setComputeUnitLimit({ units: Math.max(sim.value.unitsConsumed! * 1.1, 5000) }));
-    final.add(...txn.instructions);
 
     try {
-      await sendLegacyTxn(final, undefined, {
+      await sendTxn(txn.instructions, 10000, undefined, undefined, {
         notify: true,
         onSuccess: () => {
           removePosition(position.positionAddress);
@@ -227,7 +190,7 @@ const DammPositions: React.FC = () => {
     if (amount < 100)
       return await getRemoveLiquidityTx(positions, amount);
 
-    const txns = [];
+    const ixs = [];
     positions = positions.filter(x => !cpAmm.isLockedPosition(x.positionState))
     while (positions.length > 0) {
       const innerPositions = positions.splice(0, 1);
@@ -253,21 +216,13 @@ const DammPositions: React.FC = () => {
         });
         t.add(...txn.instructions);
       }
-      t.feePayer = publicKey!;
-      const sim = await connection.simulateTransaction(t)
-      if (!sim.value.err) {
-        const final = new Transaction();
-        final.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100000 }));
-        final.add(ComputeBudgetProgram.setComputeUnitLimit({ units: sim.value.unitsConsumed! * 1.1 }));
-        final.add(t);
-        txns.push(final);
-      }
+      ixs.push(t.instructions);
     }
-    return txns;
+    return ixs;
   };
 
   const getRemoveLiquidityTx = async (positions: PoolPositionInfo[], amount: number) => {
-    const txns = [];
+    const ixs = [];
     positions = positions.filter(x => !cpAmm.isLockedPosition(x.positionState))
 
     let epoch = 0;
@@ -332,19 +287,9 @@ const DammPositions: React.FC = () => {
         });
         t.add(...txn.instructions);
       }
-      t.feePayer = publicKey!;
-      const sim = await connection.simulateTransaction(t)
-      if (!sim.value.err) {
-        const final = new Transaction();
-        final.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100000 }));
-        final.add(ComputeBudgetProgram.setComputeUnitLimit({ units: sim.value.unitsConsumed! * 1.1 }));
-        final.add(t);
-        txns.push(final);
-      } else {
-        console.log(sim)
-      }
+      ixs.push(t.instructions)
     }
-    return txns;
+    return ixs;
   };
 
   const handleClosePositionAndSwap = async (position: PoolPositionInfo) => {
@@ -357,8 +302,8 @@ const DammPositions: React.FC = () => {
 
   const getSendPositionTx = async (positions: PoolPositionInfo[], recipient: PublicKey) => {
 
-    if (positions.length == 0) return [];
-    const txns = [];
+    const ixs: TransactionInstruction[][] = [];
+    if (positions.length == 0) return ixs;
 
     while (positions.length > 0) {
       const innerPositions = positions.splice(0, 14)
@@ -376,25 +321,10 @@ const DammPositions: React.FC = () => {
           )
         )
       }
-      t.feePayer = publicKey!;
-      const sim = await connection.simulateTransaction(t)
-      if (!sim.value.err) {
-        const final = new Transaction();
-        final.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 0 }));
-        final.add(ComputeBudgetProgram.setComputeUnitLimit({ units: Math.max(sim.value.unitsConsumed! * 1.1, 5000) }));
-        final.add(t);
-        txns.push(final);
-      } else
-        console.log(sim)
-    }
-    return txns;
-  };
-  // const getClosePositionAndSwapTx = async (positions: PoolPositionInfo[]) => {
-  //   positions = positions.filter(x => !cpAmm.isLockedPosition(x.positionState))
-  //   const txns = getZapOutTx(positions);
-
-  //   return txns;
-  // };
+      ixs.push(t.instructions)
+    };
+    return ixs;
+  }
 
   const calculatePnl = async (position: PoolPositionInfo) => {
     let signatures = await connection.getSignaturesForAddress(position.positionNftAccount);
@@ -972,20 +902,21 @@ const DammPositions: React.FC = () => {
                   onClick={async () => {
                     const selectedPositionsTemp = [...selectedPositions];
 
-                    const txns: Transaction[] = await getClaimFeesTx(getPoolPositionFromPublicKeys(positions, selectedPositionsTemp));
+                    const ixs = await getClaimFeesTx(getPoolPositionFromPublicKeys(positions, selectedPositionsTemp));
 
                     setSelectedPositions(new Set());
 
-                    if (txns.length > 0)
-                      await sendMultiTxn(txns.map(x => {
+                    if (ixs.length > 0)
+                      await sendMultiTxn(ixs.map(x => {
                         return {
-                          tx: x,
+                          ixs: x,
                         }
-                      }), {
-                        onSuccess: async () => {
-                          await refreshPositions();
-                        }
-                      })
+                      }), 0, undefined,
+                        {
+                          onSuccess: async () => {
+                            await refreshPositions();
+                          }
+                        })
                   }
                   }
                 >
@@ -1024,15 +955,15 @@ const DammPositions: React.FC = () => {
                             txToast.error("Failed to find recipient!");
                             return;
                           }
-                          const txns: Transaction[] = await getSendPositionTx(getPoolPositionFromPublicKeys(positions, selectedPositionsTemp), recipient)
+                          const ixs = await getSendPositionTx(getPoolPositionFromPublicKeys(positions, selectedPositionsTemp), recipient)
                           setSelectedPositions(new Set());
                           setSendPositionsDropdownOpen(false);
-                          if (txns.length > 0)
-                            await sendMultiTxn(txns.map(x => {
+                          if (ixs.length > 0)
+                            await sendMultiTxn(ixs.map(x => {
                               return {
-                                tx: x,
+                                ixs: x,
                               }
-                            }), {
+                            }), 0, undefined, {
                               onSuccess: async () => {
                                 await refreshPositions();
                               }
@@ -1052,15 +983,15 @@ const DammPositions: React.FC = () => {
                     onClick={async () => {
                       try {
                         const selectedPositionsTemp = [...selectedPositions];
-                        const txns: Transaction[] = await getClosePositionTx(getPoolPositionFromPublicKeys(positions, selectedPositionsTemp), closePositionRange)
+                        const ixs = await getClosePositionTx(getPoolPositionFromPublicKeys(positions, selectedPositionsTemp), closePositionRange)
                         setSelectedPositions(new Set());
 
-                        if (txns.length > 0)
-                          await sendMultiTxn(txns.map(x => {
+                        if (ixs.length > 0)
+                          await sendMultiTxn(ixs.map(x => {
                             return {
-                              tx: x,
+                              ixs: x,
                             }
-                          }), {
+                          }), 10000, undefined, {
                             onSuccess: async () => {
                               await refreshPositions();
                             }

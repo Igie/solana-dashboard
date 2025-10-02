@@ -25,7 +25,7 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
   const { jupSlippage, includeDammv2Route } = useSettings();
   const { connection } = useConnection()
   const { publicKey, connected } = useWallet()
-  const { sendTxn, sendMultiTxn } = useTransactionManager();
+  const { sendVersionedTxn, sendMultiVersionedTxn } = useTransactionManager();
   const { setPoolSorting }
     = useDammV2PoolsWebsocket();
   const { tokenAccounts, existingPools, refreshTokenAccounts, fetchPools } = useTokenAccounts()
@@ -101,7 +101,7 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
 
     const txn = await getSwapTransactionVersioned(quote, publicKey!);
 
-    await sendTxn(txn, undefined, {
+    await sendVersionedTxn(txn, {
       notify: true,
       onError: () => {
         txToast.error("Swap failed");
@@ -208,11 +208,7 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
 
                 if (txns.length > 0) {
                   setSelectedAccounts(new Set());
-                  await sendMultiTxn(txns.map(x => {
-                    return {
-                      tx: x,
-                    }
-                  }), {
+                  await sendMultiVersionedTxn(txns, {
                     onSuccess: async () => {
                       await refreshTokenAccounts();
                     }
@@ -402,12 +398,12 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
                   {showPools && Object.entries(existingPools).find(x => x[1].tokenA.mint === tokenAccount.mint) && (
                     <div className="flex items-start">
                       <Dammv2PoolList
-                      pools={Object.entries(existingPools).map(x => x[1]).filter(x => x.tokenA.mint === tokenAccount.mint)}
-                      tokenMetadataMap={GetTokenMetadataMap(tokenAccounts)}
-                      sortParamsCallback={(sortType, ascending) => {
-                        setPoolSorting({ type: sortType, ascending })
-                      }} />
-                      </div>
+                        pools={Object.entries(existingPools).map(x => x[1]).filter(x => x.tokenA.mint === tokenAccount.mint)}
+                        tokenMetadataMap={GetTokenMetadataMap(tokenAccounts)}
+                        sortParamsCallback={(sortType, ascending) => {
+                          setPoolSorting({ type: sortType, ascending })
+                        }} />
+                    </div>
                   )}
                 </div>
 

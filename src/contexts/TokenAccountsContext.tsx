@@ -101,7 +101,7 @@ export const TokenAccountsProvider: React.FC<{ children: React.ReactNode }> = ({
             return { tokenAccounts, tokenMetadata }
         } catch (err) {
             console.error('Failed to fetch token accounts:', err)
-            setTokenAccounts([])
+            setTokenAccounts([]);
             setTokenMetadata([]);
         }
         setLoading(false)

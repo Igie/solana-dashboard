@@ -91,7 +91,7 @@ const SimplePoolCreation: React.FC<SimplePoolCreationProps> = (
 ) => {
     const { cpAmm } = useCpAmm();
     const { connected, publicKey } = useWallet();
-    const { sendLegacyTxn } = useTransactionManager();
+    const { sendTxn } = useTransactionManager();
     const { refreshPositions } = useDammUserPositions();
 
     const [poolConfigs, setPoolConfigs] = useState<DetailedPoolConfig[]>([])
@@ -214,7 +214,7 @@ const SimplePoolCreation: React.FC<SimplePoolCreationProps> = (
                 tokenBProgram: new PublicKey(tokenBMetadata?.tokenProgram || TOKEN_PROGRAM_ID),
             });
             try {
-                await sendLegacyTxn(tx, [positionNft],
+                await sendTxn(tx.instructions, 10000, [positionNft], undefined,
                     {
                         notify: true,
                         onSuccess: async () => {

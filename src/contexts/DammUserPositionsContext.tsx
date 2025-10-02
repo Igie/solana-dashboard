@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { ComputeBudgetProgram, PublicKey, Transaction } from '@solana/web3.js'
+import { PublicKey, Transaction } from '@solana/web3.js'
 import { feeNumeratorToBps, getBaseFeeNumerator, getFeeNumerator, getPriceFromSqrtPrice, getUnClaimReward } from '@meteora-ag/cp-amm-sdk'
 import { fetchTokenMetadataJup } from '../tokenUtils'
 import Decimal from 'decimal.js'
@@ -74,7 +74,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
     const { getSlot } = useGetSlot();
     const { publicKey } = useWallet();
     const { updatedPools } = useDammV2PoolsWebsocket()
-    const { sendTxn, sendLegacyTxn } = useTransactionManager();
+    const { sendTxn, sendVersionedTxn } = useTransactionManager();
     const { cpAmm, } = useCpAmm();
     const { refreshTokenAccounts } = useTokenAccounts();
     const [sortedBy, setSortBy] = useState<SortType>(SortType.PoolBaseFee);
@@ -611,22 +611,10 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
 
         const t = new Transaction();
         t.add(...txn.instructions);
-        t.feePayer = publicKey!;
 
-        const sim = await connection.simulateTransaction(t)
-        if (sim.value.err) {
-            txToast.error("Failed to simulate removeAllLiquidityAndClosePosition transaction!");
-            return false;
-
-        }
-
-        const final = new Transaction();
-        final.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50000 }));
-        final.add(ComputeBudgetProgram.setComputeUnitLimit({ units: Math.max(sim.value.unitsConsumed! * 1.1, 5000) }));
-        final.add(...txn.instructions);
 
         try {
-            await sendLegacyTxn(final, undefined, {
+            await sendTxn(txn.instructions, 10000, undefined, undefined, {
                 notify: true,
                 onSuccess: () => {
                     removePosition(position.positionAddress);
@@ -655,7 +643,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
 
             const transaction = await getSwapTransactionVersioned(quote, publicKey!);
 
-            await sendTxn(transaction, undefined, {
+            await sendVersionedTxn(transaction, {
                 notify: true,
                 onError: () => {
                     txToast.error("Swap failed");

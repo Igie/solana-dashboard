@@ -141,7 +141,6 @@ export const fetchTokenAccounts = async (c: Connection, publicKey: PublicKey): P
     if (!publicKey || !c) return [[], []];
 
     // Get all token accounts for the wallet
-
     const tokenAccountsSPL = (await c.getParsedTokenAccountsByOwner(
         publicKey,
         { programId: TOKEN_PROGRAM_ID }
@@ -197,7 +196,7 @@ export const fetchTokenAccounts = async (c: Connection, publicKey: PublicKey): P
     }
 
     if (mintAddresses.length > 0) {
-        const metadataMap = await fetchTokenMetadataJup(mintAddresses);
+        const metadataMap = await fetchTokenMetadataJup([...new Set(mintAddresses)]);
 
         const metadataArray: TokenMetadata[] = [];
         const updatedAccounts = accounts.map(account => {

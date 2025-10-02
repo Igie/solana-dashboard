@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { getTokenProgram, type DepositQuote } from '@meteora-ag/cp-amm-sdk';
-import { ComputeBudgetProgram, Keypair, LAMPORTS_PER_SOL, PublicKey, Transaction } from '@solana/web3.js';
+import { Keypair, LAMPORTS_PER_SOL, PublicKey, Transaction } from '@solana/web3.js';
 import Decimal from 'decimal.js';
 import { type TokenAccount } from '../../tokenUtils';
 import { DecimalInput } from './DecimalInput';
@@ -40,7 +40,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
   const { publicKey } = useWallet();
   const { connection } = useConnection();
   const { cpAmm } = useCpAmm();
-  const { sendTxn, sendLegacyTxn } = useTransactionManager();
+  const { sendTxn, sendVersionedTxn } = useTransactionManager();
   const { refreshTokenAccounts, loading } = useTokenAccounts();
   const { refreshPositions } = useDammUserPositions();
 
@@ -164,8 +164,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
       });
 
       const transaction = await getSwapTransactionVersioned(quote, owner);
-
-      await sendTxn(transaction, undefined, {
+      await sendVersionedTxn(transaction, {
         notify: true,
         onError: () => {
           txToast.error("Swap failed");
@@ -186,7 +185,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
     if (amount < 100)
       return await getRemoveLiquidityTx(positions, amount);
 
-    const txns = [];
+    const ixs = [];
     positions = positions.filter(x => !cpAmm.isLockedPosition(x.positionState))
 
     while (positions.length > 0) {
@@ -206,21 +205,13 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
         });
         t.add(...txn.instructions);
       }
-      t.feePayer = publicKey!;
-      const sim = await connection.simulateTransaction(t)
-      if (!sim.value.err) {
-        const final = new Transaction();
-        final.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100000 }));
-        final.add(ComputeBudgetProgram.setComputeUnitLimit({ units: sim.value.unitsConsumed! * 1.1 }));
-        final.add(t);
-        txns.push(final);
-      }
+      ixs.push(t.instructions)
     }
-    return txns;
+    return ixs;
   };
 
   const getRemoveLiquidityTx = async (positions: PoolPositionInfo[], amount: number) => {
-    const txns = [];
+    const ixs = [];
     positions = positions.filter(x => !cpAmm.isLockedPosition(x.positionState))
 
     let epoch = 0;
@@ -285,19 +276,9 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
         });
         t.add(...txn.instructions);
       }
-      t.feePayer = publicKey!;
-      const sim = await connection.simulateTransaction(t)
-      if (!sim.value.err) {
-        const final = new Transaction();
-        final.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100000 }));
-        final.add(ComputeBudgetProgram.setComputeUnitLimit({ units: sim.value.unitsConsumed! * 1.1 }));
-        final.add(t);
-        txns.push(final);
-      } else {
-        console.log(sim)
-      }
+      ixs.push(t.instructions);
     }
-    return txns;
+    return ixs;
   };
 
   useEffect(() => {
@@ -312,7 +293,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
 
   useEffect(() => {
     const listener = (e: MouseEvent) => {
-      if (popupRef.current && 
+      if (popupRef.current &&
         !popupRef.current.contains(e.target as Node)) {
         onClose();
       }
@@ -328,7 +309,6 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
     const inputB = new BN(amountB.mul(Decimal.pow(10, tokenB!.decimals)).toString());
 
     if (positionInfo) {
-      const t = new Transaction()
       const tx = await cpAmm.addLiquidity({
         owner: owner,
         positionNftAccount: positionInfo.positionNftAccount,
@@ -346,23 +326,8 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
         tokenAProgram: getTokenProgram(positionInfo.poolInfo.account.tokenAFlag),
         tokenBProgram: getTokenProgram(positionInfo.poolInfo.account.tokenBFlag),
       })
-      t.add(...tx.instructions);
-      t.feePayer = publicKey!;
 
-      const sim = await connection.simulateTransaction(t)
-      if (sim.value.err) {
-
-        txToast.error("Failed to simulate addLiquidity transaction!");
-        console.log(sim);
-        return;
-      }
-
-      const final = new Transaction();
-      final.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50000 }));
-      final.add(ComputeBudgetProgram.setComputeUnitLimit({ units: Math.max(sim.value.unitsConsumed! * 1.1, 5000) }));
-      final.add(...tx.instructions);
-
-      await sendLegacyTxn(final, undefined, {
+      await sendTxn(tx.instructions, 10000, undefined, undefined, {
         notify: true,
         onSuccess: async () => {
           onClose();
@@ -376,7 +341,6 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
 
     } else {
       const positionNft = Keypair.generate();
-      const t = new Transaction();
       const tx = await cpAmm.createPositionAndAddLiquidity({
         owner: owner,
         pool: poolInfo.publicKey,
@@ -390,22 +354,9 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
         tokenBMint: poolInfo.account.tokenBMint,
         tokenAProgram: getTokenProgram(poolInfo.account.tokenAFlag),
         tokenBProgram: getTokenProgram(poolInfo.account.tokenBFlag),
-
       });
-      t.add(...tx.instructions);
-      t.feePayer = publicKey!;
 
-      const sim = await connection.simulateTransaction(t)
-      if (sim.value.err) {
-        txToast.error("Failed to simulate createPositionAndAddLiquidity transaction!");
-        return;
-      }
-      const final = new Transaction();
-      final.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50000 }));
-      final.add(ComputeBudgetProgram.setComputeUnitLimit({ units: Math.max(sim.value.unitsConsumed! * 1.1, 5000) }));
-      final.add(...tx.instructions);
-
-      await sendLegacyTxn(tx, [positionNft], {
+      await sendTxn(tx.instructions, 100000, [positionNft], undefined, {
         notify: true,
         onSuccess: async () => {
           onClose();
@@ -540,8 +491,8 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
           <button
             className="bg-purple-600 hover:bg-purple-500 px-2 rounded-xs max-h-6 text-white"
             onClick={async () => {
-              const txns: Transaction[] = await getClosePositionTx([positionInfo], closePositionRange)
-              await sendLegacyTxn(txns[0], undefined, {
+              const ixs = await getClosePositionTx([positionInfo], closePositionRange)
+              await sendTxn(ixs[0], 10000, undefined, undefined, {
                 notify: true,
                 onSuccess: async () => {
                   await setTokensAB();

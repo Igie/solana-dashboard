@@ -394,7 +394,6 @@ export const getPoolPositionFromPublicKeys = (poolPositions: PoolPositionInfo[],
     } = {}
     for (const pos of poolPositions)
         map[pos.positionAddress.toBase58()] = pos;
-    console.log(map)
     const filtered = publicKeys.map(x => map[x]).filter(x => x !== undefined);
     console.log(filtered)
     return filtered;
