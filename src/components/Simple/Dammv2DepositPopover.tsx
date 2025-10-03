@@ -2,14 +2,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import { getTokenProgram, type DepositQuote } from '@meteora-ag/cp-amm-sdk';
 import { Keypair, LAMPORTS_PER_SOL, PublicKey, Transaction } from '@solana/web3.js';
 import Decimal from 'decimal.js';
-import { type TokenAccount } from '../../tokenUtils';
+import { fetchTokenMetadata, type TokenAccount } from '../../tokenUtils';
 import { DecimalInput } from './DecimalInput';
 import { BN } from '@coral-xyz/anchor';
 import { useTokenAccounts } from '../../contexts/TokenAccountsContext';
 import type { PoolInfo, PoolPositionInfo } from '../../constants';
 import { useDammUserPositions } from '../../contexts/DammUserPositionsContext';
 import { getQuote, getSwapTransactionVersioned } from '../../JupSwapApi';
-import { getMint, NATIVE_MINT, TOKEN_2022_PROGRAM_ID, type Mint } from '@solana/spl-token';
+import { ASSOCIATED_TOKEN_PROGRAM_ID, getAccount, getAssociatedTokenAddress, getAssociatedTokenAddressSync, getMint, NATIVE_MINT, TOKEN_2022_PROGRAM_ID, unpackAccount, type Mint } from '@solana/spl-token';
 import { useTransactionManager } from '../../contexts/TransactionManagerContext';
 import { txToast } from './TxToast';
 import { useSettings } from '../../contexts/SettingsContext';
@@ -41,8 +41,10 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
   const { connection } = useConnection();
   const { cpAmm } = useCpAmm();
   const { sendTxn, sendVersionedTxn } = useTransactionManager();
-  const { refreshTokenAccounts, loading } = useTokenAccounts();
+  const { refreshTokenAccounts, solBalance } = useTokenAccounts();
   const { refreshPositions } = useDammUserPositions();
+
+  const [loading, setLoading] = useState(false);
 
   const [amountA, setAmountA] = useState(new Decimal(0));
   const [amountB, setAmountB] = useState(new Decimal(0));
@@ -56,52 +58,103 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
 
   const [closePositionRange, setClosePositionRange] = useState(100);
 
-
-
   const tokenAInfo = useRef<{ mint: Mint, currentEpoch: number }>(undefined)
   const tokenBInfo = useRef<{ mint: Mint, currentEpoch: number }>(undefined)
 
   const setTokensAB = async () => {
     if (!poolInfo) return;
-    const ta = await refreshTokenAccounts();
-    const mintA = poolInfo.account.tokenAMint.toBase58();
-    const mintB = poolInfo.account.tokenBMint.toBase58();
+    setLoading(true)
+    //const ta = await refreshTokenAccounts();
+    try {
+      const mintA = poolInfo.account.tokenAMint.toBase58();
+      const mintB = poolInfo.account.tokenBMint.toBase58();
 
-    const tokenAATA = ta.tokenAccounts.find(x => x.mint == mintA);
-    const tokenBATA = ta.tokenAccounts.find(x => x.mint == mintB)
+      const pubKeyA = getAssociatedTokenAddressSync(poolInfo.account.tokenAMint, publicKey!, false, getTokenProgram(poolInfo.account.tokenAFlag));
+      const pubKeyB = getAssociatedTokenAddressSync(poolInfo.account.tokenBMint, publicKey!, false, getTokenProgram(poolInfo.account.tokenBFlag));
 
-    let currentEpoch = 0;
+      console.log(mintA, mintB);
+      console.log(pubKeyA.toBase58(), pubKeyB.toBase58());
+      const [tas, meta] =
+        await Promise.all([
+          connection.getMultipleAccountsInfo([pubKeyA, pubKeyB], "confirmed"),
+          fetchTokenMetadata([mintA, mintB])
+        ])
 
-    if (tokenAATA?.tokenProgram == TOKEN_2022_PROGRAM_ID.toBase58() ||
-      tokenAATA?.tokenProgram == TOKEN_2022_PROGRAM_ID.toBase58())
-      currentEpoch = (await connection.getEpochInfo()).epoch;
 
-    if (tokenAATA?.tokenProgram == TOKEN_2022_PROGRAM_ID.toBase58())
-      tokenAInfo.current = {
-        mint: await getMint(connection,
-          poolInfo.account.tokenAMint,
-          connection.commitment,
-          new PublicKey(tokenAATA?.tokenProgram)
-        ),
-        currentEpoch,
+
+      console.log(tas);
+
+      const taA = tas[0] ? unpackAccount(pubKeyA, tas[0], getTokenProgram(poolInfo.account.tokenAFlag)) : undefined;
+      const taB = tas[1] ? unpackAccount(pubKeyA, tas[1], getTokenProgram(poolInfo.account.tokenBFlag)) : undefined;
+
+      const amountA = mintA === NATIVE_MINT.toBase58()
+        ? new Decimal(taA ? taA.amount.toString() : 0).div(LAMPORTS_PER_SOL).add(solBalance)
+        : new Decimal(taA ? taA.amount.toString() : 0).div(Decimal.pow(10, meta[mintA].decimals));
+
+      const amountB = mintB === NATIVE_MINT.toBase58()
+        ? new Decimal(taB ? taB.amount.toString() : 0).div(LAMPORTS_PER_SOL).add(solBalance)
+        : new Decimal(taB ? taB.amount.toString() : 0).div(Decimal.pow(10, meta[mintB].decimals));
+
+      const tokenAATA: TokenAccount | undefined = amountA.eq(0) ? undefined : {
+        ...meta[mintA],
+        amount: amountA,
+        value: amountA.mul(meta[mintA].price)
       }
-    else
-      tokenAInfo.current = undefined;
 
-    if (tokenBATA?.tokenProgram == TOKEN_2022_PROGRAM_ID.toBase58())
-      tokenBInfo.current = {
-        mint: await getMint(connection,
-          poolInfo.account.tokenBMint,
-          connection.commitment,
-          new PublicKey(tokenBATA?.tokenProgram)
-        ),
-        currentEpoch,
+      const tokenBATA: TokenAccount | undefined = amountB.eq(0) ? undefined : {
+        ...meta[mintB],
+        amount: amountB,
+        value: amountB.mul(meta[mintB].price)
       }
-    else
-      tokenBInfo.current = undefined;
 
-    setTokenA(tokenAATA)
-    setTokenB(tokenBATA)
+      // const tokenAATA = ta.tokenAccounts.find(x => x.mint == mintA);
+      // const tokenBATA = ta.tokenAccounts.find(x => x.mint == mintB);
+
+      console.log(taA)
+      console.log(tokenAATA)
+      console.log(taB)
+      console.log(tokenBATA)
+
+
+      let currentEpoch = 0;
+
+      if (tokenAATA?.tokenProgram == TOKEN_2022_PROGRAM_ID.toBase58() ||
+        tokenAATA?.tokenProgram == TOKEN_2022_PROGRAM_ID.toBase58())
+        currentEpoch = (await connection.getEpochInfo()).epoch;
+
+      if (tokenAATA?.tokenProgram == TOKEN_2022_PROGRAM_ID.toBase58())
+        tokenAInfo.current = {
+          mint: await getMint(connection,
+            poolInfo.account.tokenAMint,
+            connection.commitment,
+            new PublicKey(tokenAATA?.tokenProgram)
+          ),
+          currentEpoch,
+        }
+      else
+        tokenAInfo.current = undefined;
+
+      if (tokenBATA?.tokenProgram == TOKEN_2022_PROGRAM_ID.toBase58())
+        tokenBInfo.current = {
+          mint: await getMint(connection,
+            poolInfo.account.tokenBMint,
+            connection.commitment,
+            new PublicKey(tokenBATA?.tokenProgram)
+          ),
+          currentEpoch,
+        }
+      else
+        tokenBInfo.current = undefined;
+
+      setTokenA(tokenAATA)
+      setTokenB(tokenBATA)
+    }
+    catch (e) {
+      console.error(e);
+
+    } finally {
+      setLoading(false);
+    }
   }
 
   const refreshPool = async () => {
@@ -391,8 +444,8 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
         <div className='flex flex-col gap-1 items-start'>
           <div className="flex flex-col justify-end gap-1">
             <button
-              onClick={() => {
-                refreshTokenAccounts()
+              onClick={async () => {
+                await setTokensAB();
               }}
               disabled={loading}
               className="flex items-center gap-1 px-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 rounded text-md transition-colors w-auto justify-center"
