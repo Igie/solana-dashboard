@@ -110,7 +110,7 @@ const Dammv2PoolCreation: React.FC<Dammv2PoolCreationProps> = ({
 
         const allPools = [...allPoolsA, ...allPoolsB];
 
-        const related = allPools.sort((x, y) => y.account.activationPoint.sub(x.account.activationPoint).toNumber()).slice(0, 20);
+        const related = allPools.sort((x, y) => y.account.activationPoint.sub(x.account.activationPoint).toNumber()).slice(0, 100);
         mints.push(...related.map(p => p.account.tokenAMint.toBase58()));
         mints.push(...related.map(p => p.account.tokenBMint.toBase58()));
         mints = [...new Set(mints)];
