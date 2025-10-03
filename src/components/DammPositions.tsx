@@ -520,16 +520,14 @@ const DammPositions: React.FC = () => {
                 data: decode(inner!.instructions[0].data),
                 programId: tx.transaction.message.staticAccountKeys[inner!.instructions[0].programIdIndex],
               })
-              console.log(transactionA)
-              console.log(tx.transaction.message.staticAccountKeys.map(x => x.toBase58()))
-              console.log(inner!.instructions[0].programIdIndex)
-              console.log(inner!.instructions)
+              if (transactionA.programId === undefined) transactionA.programId = TOKEN_2022_PROGRAM_ID;
               console.log("token A program:", transactionA.programId.toBase58())
               const transactionB = new TransactionInstruction({
                 keys: keysB,
                 data: decode(inner!.instructions[1].data),
                 programId: tx.transaction.message.staticAccountKeys[inner!.instructions[1].programIdIndex],
               })
+              if (transactionB.programId === undefined) transactionB.programId = TOKEN_2022_PROGRAM_ID;
               console.log("token B program:", transactionB.programId.toBase58())
               const test = splToken.decodeInstruction(transactionA, transactionA.programId);
               console.log("test", test);
