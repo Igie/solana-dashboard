@@ -374,6 +374,8 @@ const DammPositions: React.FC = () => {
         addressLookupTableAccounts: addressLookupTableAccounts.map(x => x.value).filter(x => x !== null)
       })
 
+
+
       let i = -1;
       for (const ix of message.instructions) {
         i++;
@@ -385,7 +387,7 @@ const DammPositions: React.FC = () => {
 
 
           const posNftAccount = formatted?.accounts.find(x => x.name === "Position Nft Account")
-          //console.log(formatted)
+          console.log("pos nft: " +posNftAccount?.pubkey.toBase58())
           if (!posNftAccount || !posNftAccount.pubkey.equals(position.positionNftAccount)) {
             console.log("wrong position nft", posNftAccount);
             console.log("required", position.positionNftAccount.toBase58());
@@ -518,6 +520,10 @@ const DammPositions: React.FC = () => {
                 data: decode(inner!.instructions[0].data),
                 programId: tx.transaction.message.staticAccountKeys[inner!.instructions[0].programIdIndex],
               })
+              console.log(transactionA)
+              console.log(tx.transaction.message.staticAccountKeys.map(x => x.toBase58()))
+              console.log(inner!.instructions[0].programIdIndex)
+              console.log(inner!.instructions)
               console.log("token A program:", transactionA.programId.toBase58())
               const transactionB = new TransactionInstruction({
                 keys: keysB,
