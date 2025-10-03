@@ -9,7 +9,7 @@ import { useTokenAccounts } from '../../contexts/TokenAccountsContext';
 import type { PoolInfo, PoolPositionInfo } from '../../constants';
 import { useDammUserPositions } from '../../contexts/DammUserPositionsContext';
 import { getQuote, getSwapTransactionVersioned } from '../../JupSwapApi';
-import { ASSOCIATED_TOKEN_PROGRAM_ID, getAccount, getAssociatedTokenAddress, getAssociatedTokenAddressSync, getMint, NATIVE_MINT, TOKEN_2022_PROGRAM_ID, unpackAccount, type Mint } from '@solana/spl-token';
+import { getAssociatedTokenAddressSync, getMint, NATIVE_MINT, TOKEN_2022_PROGRAM_ID, unpackAccount, type Mint } from '@solana/spl-token';
 import { useTransactionManager } from '../../contexts/TransactionManagerContext';
 import { txToast } from './TxToast';
 import { useSettings } from '../../contexts/SettingsContext';
@@ -41,7 +41,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
   const { connection } = useConnection();
   const { cpAmm } = useCpAmm();
   const { sendTxn, sendVersionedTxn } = useTransactionManager();
-  const { refreshTokenAccounts, solBalance } = useTokenAccounts();
+  const { solBalance } = useTokenAccounts();
   const { refreshPositions } = useDammUserPositions();
 
   const [loading, setLoading] = useState(false);
@@ -80,8 +80,6 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
           fetchTokenMetadata([mintA, mintB])
         ])
 
-
-
       console.log(tas);
 
       const taA = tas[0] ? unpackAccount(pubKeyA, tas[0], getTokenProgram(poolInfo.account.tokenAFlag)) : undefined;
@@ -109,11 +107,6 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
 
       // const tokenAATA = ta.tokenAccounts.find(x => x.mint == mintA);
       // const tokenBATA = ta.tokenAccounts.find(x => x.mint == mintB);
-
-      console.log(taA)
-      console.log(tokenAATA)
-      console.log(taB)
-      console.log(tokenBATA)
 
 
       let currentEpoch = 0;
