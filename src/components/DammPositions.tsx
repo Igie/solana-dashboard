@@ -1565,7 +1565,7 @@ const DammPositions: React.FC = () => {
 
                           <iframe
                             src={`https://www.gmgn.cc/kline/sol/${position.tokenA.mint}`}
-                            className="w-full h-full rounded border border-gray-700"
+                            className="w-auto h-auto md:w-full md:h-full rounded border border-gray-700"
                           />
 
                         </div>
