@@ -554,7 +554,7 @@ const DammPositions: React.FC = () => {
               let tokenAFee = 0;
               let tokenBFee = 0;
 
-              const ixB =  inner!.instructions[inner!.instructions.length >= 3 ? 1 : 0];
+              const ixB = inner!.instructions[inner!.instructions.length >= 3 ? 1 : 0];
 
               if (inner!.instructions.length >= 2) {
                 const keysB: AccountMeta[] = ixB.accounts.map(x => {
@@ -565,7 +565,7 @@ const DammPositions: React.FC = () => {
                   }
                 })!;
 
-                  const transactionB = new TransactionInstruction({
+                const transactionB = new TransactionInstruction({
                   keys: keysB,
                   data: decode(ixB.data),
                   programId: tx.transaction.message.staticAccountKeys[ixB.programIdIndex],

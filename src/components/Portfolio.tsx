@@ -163,26 +163,48 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
             <Coins className="w-5 h-5 text-blue-400" />
           </div>
           <div className="font-bold text-white">
-            {tokenAccounts.length}
+            {tokenAccounts.filter(x => x.amount.greaterThan(0)).length}
           </div>
         </div>
       </div>
-      <div className="flex items-center justify-between">
-        <button
-          onClick={async () => {
-            await fetchPortfolioData();
-            setSelectedAccounts(new Set());
-          }}
-          disabled={loading}
-          className="flex items-center gap-1 px-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded text-md transition-colors w-auto justify-center"
-        >
-          {loading ? (
-            <RefreshCw className="w-4 h-4 animate-spin" />
-          ) : (
-            <RefreshCw className="w-4 h-4" />
-          )}
-          Refresh
-        </button>
+      <div className="flex items-stretch justify-start md:gap-1 gap-0.5">
+        <div className="flex flex-col justify-end gap-1">
+          <button
+            onClick={() => {
+              fetchPortfolioData()
+              setSelectedAccounts(new Set())
+            }}
+            disabled={loading}
+            className="flex items-center gap-1 px-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded text-md transition-colors w-auto justify-center"
+          >
+            {loading ? (
+              <RefreshCw className="w-4 h-4 animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4" />
+            )}
+            Refresh
+          </button>
+          <button
+            onClick={() => {
+              setSelectedAccounts(new Set([...tokenAccounts.filter(x => x.amount.greaterThan(0))]))
+            }}
+            disabled={loading}
+            className="flex items-center gap-1 px-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded text-md transition-colors w-auto justify-center"
+          >
+            Select All
+          </button>
+        </div>
+        <div className="flex flex-col justify-end gap-1">
+          <button
+            onClick={() => {
+              setSelectedAccounts(new Set())
+            }}
+            disabled={loading}
+            className="flex items-center gap-1 px-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded text-md transition-colors w-auto justify-center"
+          >
+            Deselect All
+          </button>
+        </div>
       </div>
       <div className="bg-green-900/20 border border-green-700/50 rounded-xl p-1">
         <div className="sm:flex-row items-center sm:items-center justify-start gap-1">
@@ -240,7 +262,7 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
                   }
                 }), 0, undefined, {
                   notify: true,
-                  onSuccess:async () =>{
+                  onSuccess: async () => {
                     await refreshTokenAccounts();
                   }
                 });
@@ -272,7 +294,7 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
           <div className="flex flex-col h-full overflow-hidden">
             <div className="flex-1 overflow-y-auto divide-y divide-gray-700">
               {/* Token Entries */}
-              {tokenAccounts.map((tokenAccount, index) => (
+              {tokenAccounts.filter(x => x.amount.greaterThan(0)).map((tokenAccount, index) => (
                 <div
                   key={index}
                   className="flex flex-col py-0.5 px-1 hover:bg-gray-800/50 transition-colors"
