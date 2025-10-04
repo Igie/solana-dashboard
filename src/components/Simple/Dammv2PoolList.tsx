@@ -3,8 +3,7 @@ import { SortArrow } from "./SortArrow";
 import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { DepositPopover } from "./Dammv2DepositPopover";
 import React, { useEffect, useState } from "react";
-import { useTokenAccounts } from "../../contexts/TokenAccountsContext";
-import { GetTokenAccountMap, type TokenAccountMap, type TokenMetadataMap } from "../../tokenUtils";
+import { GetTokenAccountMap, useTokenAccounts, type TokenAccountMap } from "../../contexts/TokenAccountsContext";
 import { formatDuration, getAllPoolPositions, getShortMint, PoolSortType, sortPools, type PoolDetailedInfo, type PoolPositionInfo, type PoolPositionInfoMap } from "../../constants";
 import { useWallet } from "@jup-ag/wallet-adapter";
 import { getPoolPositionMap, useDammUserPositions } from "../../contexts/DammUserPositionsContext";
@@ -12,6 +11,7 @@ import { DynamicTable, type Column } from "./DynamicTable";
 import { launchpads } from "./../launchpads/Launchpads";
 import { useGetSlot } from "../../contexts/GetSlotContext";
 import { useCpAmm } from "../../contexts/CpAmmContext";
+import type { TokenMetadataMap } from "../../contexts/TokenMetadataContext";
 interface Dammv2PoolListProps {
     pools: PoolDetailedInfo[]
     tokenMetadataMap: TokenMetadataMap,

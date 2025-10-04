@@ -3,7 +3,6 @@ import Decimal from "decimal.js"
 import { Keypair, PublicKey } from "@solana/web3.js"
 import { CollectFeeMode, derivePoolAddress, feeNumeratorToBps, FeeSchedulerMode, getBaseFeeNumerator, getBaseFeeParams, getPriceFromSqrtPrice, getSqrtPriceFromPrice, MAX_SQRT_PRICE, MIN_SQRT_PRICE, type ConfigState } from "@meteora-ag/cp-amm-sdk"
 import { DecimalInput } from "../Simple/DecimalInput"
-import { type TokenMetadataMap } from "../../tokenUtils"
 import { BN } from "@coral-xyz/anchor"
 import { useCpAmm } from "../../contexts/CpAmmContext"
 import { useWallet } from "@jup-ag/wallet-adapter"
@@ -13,6 +12,7 @@ import { useTransactionManager } from "../../contexts/TransactionManagerContext"
 import { toast } from "sonner"
 import { SYSTEM_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/native/system"
 import { useDammUserPositions } from "../../contexts/DammUserPositionsContext"
+import type { TokenMetadataMap } from "../../contexts/TokenMetadataContext"
 
 interface PoolConfig {
     publicKey: PublicKey;

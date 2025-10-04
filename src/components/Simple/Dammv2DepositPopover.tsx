@@ -2,10 +2,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { getTokenProgram, type DepositQuote } from '@meteora-ag/cp-amm-sdk';
 import { Keypair, LAMPORTS_PER_SOL, PublicKey, Transaction } from '@solana/web3.js';
 import Decimal from 'decimal.js';
-import { fetchTokenMetadata, type TokenAccount } from '../../tokenUtils';
 import { DecimalInput } from './DecimalInput';
 import { BN } from '@coral-xyz/anchor';
-import { useTokenAccounts } from '../../contexts/TokenAccountsContext';
+import { useTokenAccounts, type TokenAccount } from '../../contexts/TokenAccountsContext';
 import type { PoolInfo, PoolPositionInfo } from '../../constants';
 import { useDammUserPositions } from '../../contexts/DammUserPositionsContext';
 import { getQuote, getSwapTransactionVersioned } from '../../JupSwapApi';
@@ -16,6 +15,7 @@ import { useSettings } from '../../contexts/SettingsContext';
 import { useConnection, useWallet } from '@jup-ag/wallet-adapter';
 import { useCpAmm } from '../../contexts/CpAmmContext';
 import { RefreshCw } from 'lucide-react';
+import { useTokenMetadata } from '../../contexts/TokenMetadataContext';
 
 
 interface DepositPopoverProps {
@@ -41,6 +41,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
   const { connection } = useConnection();
   const { cpAmm } = useCpAmm();
   const { sendTxn, sendVersionedTxn } = useTransactionManager();
+  const { fetchTokenMetadata } = useTokenMetadata();
   const { solBalance } = useTokenAccounts();
   const { refreshPositions } = useDammUserPositions();
 

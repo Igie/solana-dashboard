@@ -4,7 +4,7 @@ import { RefreshCcw } from 'lucide-react'
 import { feeNumeratorToBps, getBaseFeeNumerator, getFeeNumerator, getPriceFromSqrtPrice } from '@meteora-ag/cp-amm-sdk'
 import { PublicKey } from '@solana/web3.js'
 import { BN } from '@coral-xyz/anchor'
-import { fetchTokenMetadataJup, GetTokenMetadataMap, type TokenMetadataMap } from '../tokenUtils'
+import { GetTokenMetadataMap, useTokenMetadata, type TokenMetadataMap } from '../contexts/TokenMetadataContext'
 import Decimal from 'decimal.js'
 import { MintSelectorInput } from './Simple/MintSelectorInput'
 import { useTokenAccounts } from '../contexts/TokenAccountsContext'
@@ -35,6 +35,7 @@ const Dammv2PoolCreation: React.FC<Dammv2PoolCreationProps> = ({
     const { getSlot } = useGetSlot();
     const { connected } = useWallet()
     const { cpAmm } = useCpAmm();
+    const { fetchTokenMetadata } = useTokenMetadata();
     const [searchMint, setSearchMint] = useState('')
     const { refreshTokenAccounts } = useTokenAccounts()
 
@@ -75,7 +76,7 @@ const Dammv2PoolCreation: React.FC<Dammv2PoolCreationProps> = ({
             mints.push(...allPools.map(p => p.account.tokenAMint.toBase58()));
             mints.push(...allPools.map(p => p.account.tokenBMint.toBase58()));
             mints = [...new Set(mints)]
-            const tm = await fetchTokenMetadataJup(mints);
+            const tm = await fetchTokenMetadata(mints);
             setTokenMetadataMap(tm);
             setPools(allPools);
             mapPools(allPools, tm);
@@ -114,7 +115,7 @@ const Dammv2PoolCreation: React.FC<Dammv2PoolCreationProps> = ({
         mints.push(...related.map(p => p.account.tokenAMint.toBase58()));
         mints.push(...related.map(p => p.account.tokenBMint.toBase58()));
         mints = [...new Set(mints)];
-        const tm = await fetchTokenMetadataJup(mints);
+        const tm = await fetchTokenMetadata(mints);
         setTokenMetadataMap(tm);
         setPools(related)
         mapPools(related, tm);

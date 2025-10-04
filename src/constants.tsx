@@ -2,8 +2,9 @@ import { CpAmm, feeNumeratorToBps, getBaseFeeNumerator, getFeeNumerator, getPric
 import { PublicKey } from "@solana/web3.js";
 
 import Decimal from 'decimal.js'
-import type { TokenMetadata, TokenMetadataMap } from "./tokenUtils";
+
 import { BN } from "@coral-xyz/anchor";
+import type { TokenMetadata, TokenMetadataMap } from "./contexts/TokenMetadataContext";
 
 export const MAINNET_HELIUS_RPC: string = `https://mainnet.helius-rpc.com/?api-key=${import.meta.env.VITE_HELIUS_API_KEY}`;
 export const DEVNET_HELIUS_RPC: string = `https://devnet.helius-rpc.com?api-key=${import.meta.env.VITE_HELIUS_API_KEY}`;

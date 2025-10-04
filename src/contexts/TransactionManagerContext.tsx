@@ -124,6 +124,7 @@ export const TransactionManagerProvider = ({ children }: { children: ReactNode }
         }
 
         try {
+            console.log("serialized txn length:", txn.serialize().length);
             const blockhash = await connection.getLatestBlockhash();
             const sig = await sendTransaction(txn, connection, { preflightCommitment: 'confirmed' });
 
@@ -266,6 +267,9 @@ export const TransactionManagerProvider = ({ children }: { children: ReactNode }
                 return [];
             }
             const blockhash = await connection.getLatestBlockhash();
+
+            console.log("serialized txn lengths:", txns.map(x => x.serialize().length));
+
 
             const signedTxns = await signAllTransactions(txns);
 

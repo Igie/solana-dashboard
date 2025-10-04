@@ -17,6 +17,7 @@ import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom'
 import { SettingsProvider } from './contexts/SettingsContext'
 import { DammV2PoolProvider } from './contexts/Dammv2PoolContext'
 import { GetSlotProvider } from './contexts/GetSlotContext'
+import { TokenMetadataProvider } from './contexts/TokenMetadataContext'
 
 interface GlobalProvidersProps {
   children: React.ReactNode
@@ -28,15 +29,16 @@ const GlobalProviders: React.FC<GlobalProvidersProps> = ({ children }) => (
 
       <TransactionManagerProvider>
         <CpAmmProvider>
-          <DammV2PoolProvider>
+
+          <TokenMetadataProvider>
             <TokenAccountsProvider>
-
-
-              <DammUserPositionsProvider>{children}</DammUserPositionsProvider>
-
+              <DammV2PoolProvider>
+                <DammUserPositionsProvider>{children}</DammUserPositionsProvider>
+              </DammV2PoolProvider>
 
             </TokenAccountsProvider>
-          </DammV2PoolProvider>
+          </TokenMetadataProvider>
+
         </CpAmmProvider>
       </TransactionManagerProvider>
 

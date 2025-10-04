@@ -3,11 +3,11 @@ import { useConnection } from '@jup-ag/wallet-adapter'
 import { getDetailedPools, PoolSortType, sortPools, type PoolDetailedInfo, type PoolInfo, type PoolInfoMap } from '../constants';
 import { PublicKey, type GetProgramAccountsFilter, type KeyedAccountInfo } from '@solana/web3.js';
 import { useCpAmm } from './CpAmmContext';
-import { fetchTokenMetadata, type TokenMetadataMap } from '../tokenUtils';
 import { launchpads } from '../components/launchpads/Launchpads';
 import { feeNumeratorToBps, getFeeNumerator } from '@meteora-ag/cp-amm-sdk';
 import { BN } from '@coral-xyz/anchor';
 import { useGetSlot } from './GetSlotContext';
+import { useTokenMetadata, type TokenMetadataMap } from './TokenMetadataContext';
 
 interface PoolSorting {
     type: PoolSortType,
@@ -72,7 +72,7 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const { connection } = useConnection();
     const { cpAmm } = useCpAmm();
     const { getSlot } = useGetSlot();
-
+    const { fetchTokenMetadata } = useTokenMetadata();
     const updateTimeout = useRef<NodeJS.Timeout | undefined>(undefined);
 
     const [fetchingPools, setFetchingPools] = useState(false);
@@ -229,8 +229,9 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         const tokenBMints = filteredSimplePools.current.map(x => x.account.tokenBMint.toBase58());
         const mints = [...new Set([...tokenAMints, ...tokenBMints])];
 
-        if (fetchMetadata)
+        if (fetchMetadata) {
             tokenMetadataMap.current = await fetchTokenMetadata(mints);
+        }
         try {
             detailedPools.current = getDetailedPools(cpAmm, filteredSimplePools.current, tokenMetadataMap.current, slotNow, startTime);
         } catch (e) {

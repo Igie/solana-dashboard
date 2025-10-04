@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { PublicKey, Transaction } from '@solana/web3.js'
 import { feeNumeratorToBps, getBaseFeeNumerator, getFeeNumerator, getPriceFromSqrtPrice, getUnClaimReward } from '@meteora-ag/cp-amm-sdk'
-import { fetchTokenMetadataJup } from '../tokenUtils'
 import Decimal from 'decimal.js'
 import { BN } from '@coral-xyz/anchor'
 import { useConnection, useWallet } from '@jup-ag/wallet-adapter'
@@ -14,6 +13,7 @@ import { useCpAmm } from './CpAmmContext'
 import type { PoolPositionInfo, PoolPositionInfoMap } from '../constants'
 import { useGetSlot } from './GetSlotContext'
 import { useDammV2PoolsWebsocket } from './Dammv2PoolContext'
+import { useTokenMetadata } from './TokenMetadataContext'
 
 
 
@@ -73,9 +73,10 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
     const { connection } = useConnection();
     const { getSlot } = useGetSlot();
     const { publicKey } = useWallet();
-    const { updatedPools } = useDammV2PoolsWebsocket()
+    const { updatedPools } = useDammV2PoolsWebsocket();
     const { sendTxn, sendVersionedTxn } = useTransactionManager();
     const { cpAmm, } = useCpAmm();
+    const { fetchTokenMetadata } = useTokenMetadata();
     const { refreshTokenAccounts } = useTokenAccounts();
     const [sortedBy, setSortBy] = useState<SortType>(SortType.PoolBaseFee);
     const [sortedAscending, setSortAscending] = useState<boolean | undefined>(true);
@@ -137,7 +138,8 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                             claimedFee: 0,
                             isVerified: false,
                             price: new Decimal(0),
-                            supply: 0
+                            supply: 0,
+                            lastUpdated: 0,
                         },
                         tokenB: {
                             mint: pool.tokenBMint.toString(),
@@ -151,7 +153,8 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                             claimedFee: 0,
                             isVerified: false,
                             price: new Decimal(0),
-                            supply: 0
+                            supply: 0,
+                            lastUpdated: 0,
                         },
                         shareOfPoolPercentage: 0.5,
                         poolValue: 0,
@@ -180,7 +183,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
             const mintAddresses = Array.from(allMints)
 
             // Fetch metadata and prices for all tokens
-            const metadataMap = await fetchTokenMetadataJup(mintAddresses);
+            const metadataMap = await fetchTokenMetadata(mintAddresses);
             const positionsParsed: PoolPositionInfo[] = [];
             for (const position of positionsTemp) {
 
@@ -397,7 +400,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
         position.positionState = await cpAmm.fetchPositionState(position.positionAddress);
         position.poolInfo.account = await cpAmm.fetchPoolState(position.poolInfo.publicKey);
 
-        const metadataMap = await fetchTokenMetadataJup([position.tokenA.mint, position.tokenB.mint]);
+        const metadataMap = await fetchTokenMetadata([position.tokenA.mint, position.tokenB.mint]);
 
         const tokenAMetadata = metadataMap[position.tokenA.mint];
         const tokenBMetadata = metadataMap[position.tokenB.mint];
@@ -495,7 +498,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
             pos.poolInfo.account = updatedPools[index]!
         }
 
-        const metadataMap = await fetchTokenMetadataJup([...new Set([...updatingPositions.map(x => x.tokenA.mint), ...updatingPositions.map(x => x.tokenB.mint)])]);
+        const metadataMap = await fetchTokenMetadata([...new Set([...updatingPositions.map(x => x.tokenA.mint), ...updatingPositions.map(x => x.tokenB.mint)])]);
 
         for (const position of updatingPositions) {
             const tokenAMetadata = metadataMap[position.tokenA.mint];

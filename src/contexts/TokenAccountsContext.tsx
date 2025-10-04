@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { fetchTokenAccounts, GetTokenMetadataMap, type TokenAccount, type TokenMetadata, type TokenMetadataMap } from '../tokenUtils'
 import { useConnection, useWallet } from '@jup-ag/wallet-adapter'
 import Decimal from "decimal.js"
 import { LAMPORTS_PER_SOL } from '@solana/web3.js'
@@ -9,8 +8,47 @@ import { feeNumeratorToBps, getBaseFeeNumerator, getFeeNumerator, getPriceFromSq
 import { useCpAmm } from '../contexts/CpAmmContext'
 import { useGetSlot } from '../contexts/GetSlotContext'
 import { useDammV2PoolsWebsocket } from './Dammv2PoolContext'
-import { NATIVE_MINT } from '@solana/spl-token'
+import { NATIVE_MINT, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from '@solana/spl-token'
+import { GetTokenMetadataMap, useTokenMetadata, type TokenMetadata, type TokenMetadataMap } from './TokenMetadataContext'
 
+export interface TokenAccount {
+    mint: string
+    tokenProgram: string
+    name: string
+    symbol: string
+    price: Decimal
+    decimals: number
+    supply: number,
+    image?: string
+    description?: string
+    value: Decimal
+    amount: Decimal
+    isVerified: boolean
+    mintAuthority?: string
+    freezeAuthority?: string
+
+    lastUpdated: number,
+}
+
+export const metadataToAccounts = (tm: TokenMetadata[]): TokenAccount[] => {
+    return tm.map(x => ({
+        ...x,
+        amount: new Decimal(0),
+        value: new Decimal(0)
+    }));
+}
+
+export interface TokenAccountMap {
+    [key: string]: TokenAccount
+}
+
+export const GetTokenAccountMap = (tokenAccounts: TokenAccount[]): TokenAccountMap => {
+    const tokenAccountMap: TokenAccountMap = {}
+    tokenAccounts.map((x) => {
+        tokenAccountMap[x.mint] = x;
+    });
+    return tokenAccountMap;
+}
 
 interface TokenAccountsContextType {
     tokenAccounts: TokenAccount[]
@@ -37,9 +75,10 @@ const TokenAccountsContext = createContext<TokenAccountsContextType>({
 export const useTokenAccounts = () => useContext(TokenAccountsContext)
 
 export const TokenAccountsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { publicKey } = useWallet()
-    const { connection } = useConnection()
+    const { publicKey } = useWallet();
+    const { connection } = useConnection();
     const { cpAmm } = useCpAmm();
+    const { fetchTokenMetadata } = useTokenMetadata();
     const { updatedPools } = useDammV2PoolsWebsocket();
     const { getSlot } = useGetSlot();
 
@@ -89,11 +128,101 @@ export const TokenAccountsProvider: React.FC<{ children: React.ReactNode }> = ({
         refreshTokenAccounts();
     }, []);
 
+    const fetchTokenAccounts = async (): Promise<[TokenMetadata[], TokenAccount[]]> => {
+        if (!publicKey || !connection) return [[], []];
+
+        // Get all token accounts for the wallet
+        const [tokenAccountsSPL, tokenAccountsSPL2022] = await Promise.all([
+            connection.getParsedTokenAccountsByOwner(
+                publicKey,
+                { programId: TOKEN_PROGRAM_ID }
+            ),
+            connection.getParsedTokenAccountsByOwner(
+                publicKey,
+                { programId: TOKEN_2022_PROGRAM_ID }
+            )]);
+
+
+        const tokenAccounts = [...tokenAccountsSPL.value, ...tokenAccountsSPL2022.value];
+        const accounts: TokenAccount[] = []
+        const mintAddresses: string[] = ["So11111111111111111111111111111111111111112"]
+
+        const currentTime = Date.now();
+
+        accounts.push({
+            mint: "So11111111111111111111111111111111111111112",
+            tokenProgram: "",
+            amount: new Decimal(await connection.getBalance(publicKey)).div(LAMPORTS_PER_SOL),
+            decimals: 9,
+            symbol: 'Loading...',
+            name: 'Loading...',
+            price: new Decimal(0),
+            value: new Decimal(0),
+            isVerified: false,
+            supply: 0,
+            lastUpdated: currentTime,
+        })
+
+        for (const account of tokenAccounts) {
+            const parsedInfo = account.account.data.parsed.info
+            const mintAddress = parsedInfo.mint
+            const decimals = parsedInfo.tokenAmount.decimals
+            const amount = new Decimal(parsedInfo.tokenAmount.amount).div(Decimal.pow(10, decimals))
+
+            if (amount.greaterThan(0) && decimals > 0) {
+                mintAddresses.push(mintAddress)
+                accounts.push({
+                    mint: mintAddress,
+                    tokenProgram: "",
+                    amount,
+                    decimals,
+                    symbol: 'Loading...',
+                    name: 'Loading...',
+                    price: new Decimal(0),
+                    value: new Decimal(0),
+                    isVerified: false,
+                    supply: 0,
+                    mintAuthority: undefined,
+                    freezeAuthority: undefined,
+                    lastUpdated: currentTime,
+                })
+            }
+        }
+
+        if (mintAddresses.length > 0) {
+            const metadataMap = await fetchTokenMetadata([...new Set(mintAddresses)]);
+
+            const metadataArray: TokenMetadata[] = [];
+            const updatedAccounts = accounts.map(account => {
+                if (metadataMap[account.mint]?.name.startsWith("kVault") ||
+                    !metadataMap[account.mint]?.tokenProgram
+                ) return;
+                const price: Decimal = metadataMap[account.mint].price;
+                const value = account.amount.mul(price)
+                metadataArray.push(metadataMap[account.mint]);
+                return {
+                    ...account,
+                    tokenProgram: metadataMap[account.mint]?.tokenProgram,
+                    symbol: metadataMap[account.mint]?.symbol || 'UNK',
+                    name: metadataMap[account.mint]?.name || 'Unknown Token',
+                    image: metadataMap[account.mint]?.image,
+                    price,
+                    value,
+                    isVerified: metadataMap[account.mint]?.isVerified,
+                }
+            })
+            const finalAccounts = updatedAccounts.filter(x => x !== undefined)
+            return [metadataArray, finalAccounts];
+        }
+
+        return [[], []];
+    }
+
     const refreshTokenAccounts = async () => {
         if (!publicKey || !connection) return { tokenAccounts: [], tokenMetadata: [] }
         setLoading(true)
         try {
-            const [tokenMetadata, tokenAccounts] = await fetchTokenAccounts(connection, publicKey);
+            const [tokenMetadata, tokenAccounts] = await fetchTokenAccounts();
             const sortedAccounts = tokenAccounts.sort((x, y) => (y.price.toNumber() * y.amount.toNumber()) - (x.price.toNumber() * x.amount.toNumber()))
             setTokenAccounts(sortedAccounts);
             setTokenMetadata(tokenMetadata);

@@ -5,7 +5,6 @@ import { CollectFeeMode, deriveCustomizablePoolAddress, FeeSchedulerMode, getBas
 import { DecimalInput } from "../Simple/DecimalInput"
 import { NumberInput } from "../Simple/NumberInput"
 import { formatDurationNumber } from "../../constants"
-import { type TokenMetadataMap } from "../../tokenUtils"
 import { BN } from "@coral-xyz/anchor"
 import { useCpAmm } from "../../contexts/CpAmmContext"
 import { useWallet } from "@jup-ag/wallet-adapter"
@@ -14,6 +13,7 @@ import { txToast } from "../Simple/TxToast"
 import { useTransactionManager } from "../../contexts/TransactionManagerContext"
 import { toast } from "sonner"
 import { useDammUserPositions } from "../../contexts/DammUserPositionsContext"
+import type { TokenMetadataMap } from "../../contexts/TokenMetadataContext"
 
 interface CustomPoolCreationProps {
 

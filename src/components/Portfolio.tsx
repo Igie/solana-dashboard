@@ -1,10 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 
-import { VersionedTransaction } from '@solana/web3.js'
-
 import { Coins, RefreshCw, Wallet, ExternalLink, CheckCircle, XCircle } from 'lucide-react'
-import { GetTokenMetadataMap, type TokenAccount } from '../tokenUtils'
-import { useTokenAccounts } from '../contexts/TokenAccountsContext'
+import { useTokenAccounts, type TokenAccount } from '../contexts/TokenAccountsContext'
 import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-adapter'
 import { toast } from 'sonner'
 import { getQuote, getSwapTransactionVersioned } from '../JupSwapApi'
@@ -17,6 +14,7 @@ import { useSettings } from '../contexts/SettingsContext'
 import Dammv2PoolList from './Simple/Dammv2PoolList'
 import { useDammV2PoolsWebsocket } from '../contexts/Dammv2PoolContext'
 import type { AppInnerPassProps } from '../AppInner'
+import { GetTokenMetadataMap } from '../contexts/TokenMetadataContext'
 
 const Portfolio: React.FC<AppInnerPassProps> = ({
   goToPoolPage,
@@ -194,16 +192,8 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
               onClick={async () => {
                 const selectedAccountsTemp = [...selectedAccounts];
 
-                const txns: VersionedTransaction[] = [];
-                for (const pos of selectedAccountsTemp) {
-                  const txn = await getSwapToSolTx(pos)
-                  if (txn)
-                    txns.push(txn);
-                }
-                if (txns.length == 0) {
-                  txToast.error("Did not get quote for any mint!")
-                  return;
-                }
+                const txns = (await Promise.all(selectedAccountsTemp.map(x => getSwapToSolTx(x))))
+                  .filter(x => x !== null);
 
 
                 if (txns.length > 0) {
