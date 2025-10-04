@@ -470,6 +470,7 @@ const DammPositions: React.FC = () => {
                 data: decode(inner!.instructions[inner!.instructions.length - 3].data),
                 programId: tx.transaction.message.staticAccountKeys[inner!.instructions[inner!.instructions.length - 3].programIdIndex],
               })
+              if (transactionA.programId === undefined) transactionA.programId = TOKEN_2022_PROGRAM_ID;
               console.log("token A program:", transactionA.programId.toBase58())
 
               const transactionB = new TransactionInstruction({
@@ -477,6 +478,7 @@ const DammPositions: React.FC = () => {
                 data: decode(inner!.instructions[inner!.instructions.length - 2].data),
                 programId: tx.transaction.message.staticAccountKeys[inner!.instructions[inner!.instructions.length - 2].programIdIndex],
               })
+              if (transactionB.programId === undefined) transactionB.programId = TOKEN_2022_PROGRAM_ID;
               console.log("token B program:", transactionB.programId.toBase58())
 
               const tokenAIx = splToken.decodeTransferCheckedInstruction(transactionA, transactionA.programId);
@@ -551,8 +553,11 @@ const DammPositions: React.FC = () => {
               const inner = tx.meta?.innerInstructions!.find(x => x.index === i)
               let tokenAFee = 0;
               let tokenBFee = 0;
+
+              const ixB =  inner!.instructions[inner!.instructions.length >= 3 ? 1 : 0];
+
               if (inner!.instructions.length >= 2) {
-                const keysB: AccountMeta[] = inner!.instructions[0].accounts.map(x => {
+                const keysB: AccountMeta[] = ixB.accounts.map(x => {
                   return {
                     pubkey: tx.transaction.message.staticAccountKeys[x],
                     isSigner: tx.transaction.message.isAccountSigner(x),
@@ -560,20 +565,22 @@ const DammPositions: React.FC = () => {
                   }
                 })!;
 
-                const transactionB = new TransactionInstruction({
+                  const transactionB = new TransactionInstruction({
                   keys: keysB,
-                  data: decode(inner!.instructions[0].data),
-                  programId: tx.transaction.message.staticAccountKeys[inner!.instructions[0].programIdIndex],
+                  data: decode(ixB.data),
+                  programId: tx.transaction.message.staticAccountKeys[ixB.programIdIndex],
                 })
+                if (transactionB.programId === undefined) transactionB.programId = TOKEN_2022_PROGRAM_ID;
                 console.log("token B program:", transactionB.programId.toBase58())
 
                 const tokenBIx = splToken.decodeTransferCheckedInstruction(transactionB, transactionB.programId);
                 tokenBFee = new Decimal(tokenBIx.data.amount.toString()).div(Decimal.pow(10, tokenBIx.data.decimals)).toNumber();
+                console.log("token B fee:", tokenBFee);
               }
               let tokenAIx = null;
               if (inner!.instructions.length >= 3) {
-
-                const keysA: AccountMeta[] = inner?.instructions[1].accounts.map(x => {
+                const ixA = inner!.instructions[0];
+                const keysA: AccountMeta[] = ixA.accounts.map(x => {
                   return {
                     pubkey: tx.transaction.message.staticAccountKeys[x],
                     isSigner: tx.transaction.message.isAccountSigner(x),
@@ -582,13 +589,15 @@ const DammPositions: React.FC = () => {
                 })!;
                 const transactionA = new TransactionInstruction({
                   keys: keysA,
-                  data: decode(inner!.instructions[1].data),
-                  programId: tx.transaction.message.staticAccountKeys[inner!.instructions[1].programIdIndex],
+                  data: decode(ixA.data),
+                  programId: tx.transaction.message.staticAccountKeys[ixA.programIdIndex],
                 })
+                if (transactionA.programId === undefined) transactionA.programId = TOKEN_2022_PROGRAM_ID;
                 console.log("token A program:", transactionA.programId.toBase58())
 
                 tokenAIx = splToken.decodeTransferCheckedInstruction(transactionA, transactionA.programId);
                 tokenAFee = new Decimal(tokenAIx.data.amount.toString()).div(Decimal.pow(10, tokenAIx.data.decimals)).toNumber();
+                console.log("token A fee:", tokenAFee);
               }
               pnlInfo.instructionChange.push({
                 instruction: decoded.name,
@@ -627,13 +636,13 @@ const DammPositions: React.FC = () => {
                 data: decode(inner!.instructions[0].data),
                 programId: tx.transaction.message.staticAccountKeys[inner!.instructions[0].programIdIndex],
               })
-
+              if (transactionA.programId === undefined) transactionA.programId = TOKEN_2022_PROGRAM_ID;
               const transactionB = new TransactionInstruction({
                 keys: keysB,
                 data: decode(inner!.instructions[1].data),
                 programId: tx.transaction.message.staticAccountKeys[inner!.instructions[1].programIdIndex],
               })
-
+              if (transactionB.programId === undefined) transactionB.programId = TOKEN_2022_PROGRAM_ID;
               const tokenAIx = splToken.decodeTransferCheckedInstruction(transactionA, transactionA.programId);
               const tokenBIx = splToken.decodeTransferCheckedInstruction(transactionB, transactionB.programId);
 
