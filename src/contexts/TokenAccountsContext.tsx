@@ -23,11 +23,10 @@ export interface TokenAccount {
     description?: string
     value: Decimal
     amount: Decimal
-    lamports:number,
+    lamports: number,
     isVerified: boolean
     mintAuthority?: string
     freezeAuthority?: string
-
     lastUpdated: number,
 }
 
@@ -60,7 +59,8 @@ interface TokenAccountsContextType {
     loading: boolean
     refreshTokenAccounts: () => Promise<{ tokenAccounts: TokenAccount[], tokenMetadata: TokenMetadata[] }>
     getEmptyTokenAccounts: () => TokenAccount[]
-    fetchPools: (mint: string) => Promise<void>;
+    fetchPools: (mint: string) => Promise<void>
+    updateTokenAccounts: (tokenAccounts: (TokenAccount | undefined)[]) => void
 }
 
 const TokenAccountsContext = createContext<TokenAccountsContextType>({
@@ -74,6 +74,7 @@ const TokenAccountsContext = createContext<TokenAccountsContextType>({
     },
     getEmptyTokenAccounts: () => [],
     fetchPools: async (_: string) => { },
+    updateTokenAccounts: () => { },
 })
 
 export const useTokenAccounts = () => useContext(TokenAccountsContext)
@@ -173,8 +174,7 @@ export const TokenAccountsProvider: React.FC<{ children: React.ReactNode }> = ({
             const mintAddress = parsedInfo.mint
             const decimals = parsedInfo.tokenAmount.decimals
             const amount = new Decimal(parsedInfo.tokenAmount.amount).div(Decimal.pow(10, decimals))
-            if (amount.eq(0))
-            {
+            if (amount.eq(0)) {
                 console.log(account.pubkey.toBase58())
                 console.log(parsedInfo.tokenAmount)
             }
@@ -359,8 +359,27 @@ export const TokenAccountsProvider: React.FC<{ children: React.ReactNode }> = ({
     };
 
 
+    const updateTokenAccounts = (tas: (TokenAccount | undefined)[]) => {
+        const taTemp = GetTokenAccountMap(tokenAccounts);
+        const currentTime = Date.now();
+        for (const ta of tas) {
+            console.log(ta)
+            if (ta === undefined) continue;
+            if (taTemp[ta.mint]) {
+                const existing = taTemp[ta.mint];
+                existing.amount = ta.amount;
+                existing.price = ta.price;
+                existing.value = ta.value;
+                existing.lastUpdated = currentTime;
+            } else
+                taTemp[ta.mint] = ta;
+        }
+
+        setTokenAccounts(Object.entries(taTemp).map(x => x[1]));
+    }
+
     return (
-        <TokenAccountsContext.Provider value={{ tokenAccounts, tokenMetadata, existingPools, solBalance, loading, refreshTokenAccounts, getEmptyTokenAccounts, fetchPools }}>
+        <TokenAccountsContext.Provider value={{ tokenAccounts, tokenMetadata, existingPools, solBalance, loading, refreshTokenAccounts, getEmptyTokenAccounts, fetchPools, updateTokenAccounts }}>
             {children}
         </TokenAccountsContext.Provider>
     )

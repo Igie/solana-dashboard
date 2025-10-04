@@ -158,7 +158,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                 Jup Trade
                                 <PanelsTopLeft size={12} />
                             </div>
-                            {tokenAccountMap[pool.tokenA.mint] && (
+                            {tokenAccountMap[pool.tokenA.mint] && tokenAccountMap[pool.tokenA.mint].amount.greaterThan(0) && (
                                 <span>{tokenAccountMap[pool.tokenA.mint].amount.toFixed(2)}</span>
                             )}
                         </button>

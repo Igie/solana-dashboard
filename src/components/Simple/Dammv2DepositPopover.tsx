@@ -42,7 +42,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
   const { cpAmm } = useCpAmm();
   const { sendTxn, sendVersionedTxn } = useTransactionManager();
   const { fetchTokenMetadata } = useTokenMetadata();
-  const { solBalance } = useTokenAccounts();
+  const { solBalance, updateTokenAccounts } = useTokenAccounts();
   const { refreshPositions } = useDammUserPositions();
 
   const [loading, setLoading] = useState(false);
@@ -83,9 +83,17 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
 
       console.log(tas);
 
-      const taA = tas[0] ? unpackAccount(pubKeyA, tas[0], getTokenProgram(poolInfo.account.tokenAFlag)) : undefined;
-      const taB = tas[1] ? unpackAccount(pubKeyA, tas[1], getTokenProgram(poolInfo.account.tokenBFlag)) : undefined;
+      const taA = tas[0] 
+      ? unpackAccount(pubKeyA, tas[0], getTokenProgram(poolInfo.account.tokenAFlag)) 
+      : undefined;
+      const taB = tas[1] 
+      ? unpackAccount(pubKeyB, tas[1], getTokenProgram(poolInfo.account.tokenBFlag)) 
+      : undefined;
 
+      console.log(pubKeyA.toBase58())
+      console.log(pubKeyB.toBase58())
+      console.log("taA", taA)
+      console.log("taB", taB)
       const amountA = mintA === NATIVE_MINT.toBase58()
         ? new Decimal(taA ? taA.amount.toString() : 0).div(LAMPORTS_PER_SOL).add(solBalance)
         : new Decimal(taA ? taA.amount.toString() : 0).div(Decimal.pow(10, meta[mintA].decimals));
@@ -94,19 +102,24 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
         ? new Decimal(taB ? taB.amount.toString() : 0).div(LAMPORTS_PER_SOL).add(solBalance)
         : new Decimal(taB ? taB.amount.toString() : 0).div(Decimal.pow(10, meta[mintB].decimals));
 
-      const tokenAATA: TokenAccount | undefined = amountA.eq(0) ? undefined : {
+      const tokenAATA: TokenAccount | undefined = (taA === undefined &&  mintA !== NATIVE_MINT.toBase58()) 
+      ? undefined 
+      : {
         ...meta[mintA],
         amount: amountA,
         value: amountA.mul(meta[mintA].price),
         lamports: 0,
       }
 
-      const tokenBATA: TokenAccount | undefined = amountB.eq(0) ? undefined : {
+      const tokenBATA: TokenAccount | undefined = (taB === undefined &&  mintB !== NATIVE_MINT.toBase58()) 
+      ? undefined : {
         ...meta[mintB],
         amount: amountB,
         value: amountB.mul(meta[mintB].price),
         lamports: 0,
       }
+
+      updateTokenAccounts([tokenAATA, tokenBATA]);
 
       // const tokenAATA = ta.tokenAccounts.find(x => x.mint == mintA);
       // const tokenBATA = ta.tokenAccounts.find(x => x.mint == mintB);
