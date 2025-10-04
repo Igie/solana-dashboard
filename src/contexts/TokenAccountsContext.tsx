@@ -23,6 +23,7 @@ export interface TokenAccount {
     description?: string
     value: Decimal
     amount: Decimal
+    lamports:number,
     isVerified: boolean
     mintAuthority?: string
     freezeAuthority?: string
@@ -34,7 +35,8 @@ export const metadataToAccounts = (tm: TokenMetadata[]): TokenAccount[] => {
     return tm.map(x => ({
         ...x,
         amount: new Decimal(0),
-        value: new Decimal(0)
+        value: new Decimal(0),
+        lamports: 0,
     }));
 }
 
@@ -57,6 +59,7 @@ interface TokenAccountsContextType {
     solBalance: Decimal
     loading: boolean
     refreshTokenAccounts: () => Promise<{ tokenAccounts: TokenAccount[], tokenMetadata: TokenMetadata[] }>
+    getEmptyTokenAccounts: () => TokenAccount[]
     fetchPools: (mint: string) => Promise<void>;
 }
 
@@ -69,6 +72,7 @@ const TokenAccountsContext = createContext<TokenAccountsContextType>({
     refreshTokenAccounts: async () => {
         return { tokenAccounts: [], tokenMetadata: [] }
     },
+    getEmptyTokenAccounts: () => [],
     fetchPools: async (_: string) => { },
 })
 
@@ -158,6 +162,7 @@ export const TokenAccountsProvider: React.FC<{ children: React.ReactNode }> = ({
             name: 'Loading...',
             price: new Decimal(0),
             value: new Decimal(0),
+            lamports: 0,
             isVerified: false,
             supply: 0,
             lastUpdated: currentTime,
@@ -168,8 +173,12 @@ export const TokenAccountsProvider: React.FC<{ children: React.ReactNode }> = ({
             const mintAddress = parsedInfo.mint
             const decimals = parsedInfo.tokenAmount.decimals
             const amount = new Decimal(parsedInfo.tokenAmount.amount).div(Decimal.pow(10, decimals))
-
-            if (amount.greaterThan(0) && decimals > 0) {
+            if (amount.eq(0))
+            {
+                console.log(account.pubkey.toBase58())
+                console.log(parsedInfo.tokenAmount)
+            }
+            if (decimals > 0) {
                 mintAddresses.push(mintAddress)
                 accounts.push({
                     mint: mintAddress,
@@ -180,6 +189,7 @@ export const TokenAccountsProvider: React.FC<{ children: React.ReactNode }> = ({
                     name: 'Loading...',
                     price: new Decimal(0),
                     value: new Decimal(0),
+                    lamports: account.account.lamports,
                     isVerified: false,
                     supply: 0,
                     mintAuthority: undefined,
@@ -256,6 +266,10 @@ export const TokenAccountsProvider: React.FC<{ children: React.ReactNode }> = ({
         } finally {
             setFetchingPools(false);
         }
+    }
+
+    const getEmptyTokenAccounts = () => {
+        return tokenAccounts.filter(x => x.amount.eq(0));
     }
 
     const mapPools = async (p: PoolInfo[], tm: TokenMetadataMap) => {
@@ -346,7 +360,7 @@ export const TokenAccountsProvider: React.FC<{ children: React.ReactNode }> = ({
 
 
     return (
-        <TokenAccountsContext.Provider value={{ tokenAccounts, tokenMetadata, existingPools, solBalance, loading, refreshTokenAccounts, fetchPools }}>
+        <TokenAccountsContext.Provider value={{ tokenAccounts, tokenMetadata, existingPools, solBalance, loading, refreshTokenAccounts, getEmptyTokenAccounts, fetchPools }}>
             {children}
         </TokenAccountsContext.Provider>
     )

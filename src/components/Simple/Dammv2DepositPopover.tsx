@@ -97,13 +97,15 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
       const tokenAATA: TokenAccount | undefined = amountA.eq(0) ? undefined : {
         ...meta[mintA],
         amount: amountA,
-        value: amountA.mul(meta[mintA].price)
+        value: amountA.mul(meta[mintA].price),
+        lamports: 0,
       }
 
       const tokenBATA: TokenAccount | undefined = amountB.eq(0) ? undefined : {
         ...meta[mintB],
         amount: amountB,
-        value: amountB.mul(meta[mintB].price)
+        value: amountB.mul(meta[mintB].price),
+        lamports: 0,
       }
 
       // const tokenAATA = ta.tokenAccounts.find(x => x.mint == mintA);

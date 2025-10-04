@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 import { getQuote, getSwapTransactionVersioned } from '../JupSwapApi'
 import { useTransactionManager } from '../contexts/TransactionManagerContext'
 import { txToast } from './Simple/TxToast'
-import { TOKEN_PROGRAM_ID } from '@solana/spl-token'
+import { createCloseAccountInstruction, getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID } from '@solana/spl-token'
 import Decimal from "decimal.js"
 import { useSettings } from '../contexts/SettingsContext'
 
@@ -15,6 +15,7 @@ import Dammv2PoolList from './Simple/Dammv2PoolList'
 import { useDammV2PoolsWebsocket } from '../contexts/Dammv2PoolContext'
 import type { AppInnerPassProps } from '../AppInner'
 import { GetTokenMetadataMap } from '../contexts/TokenMetadataContext'
+import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js'
 
 const Portfolio: React.FC<AppInnerPassProps> = ({
   goToPoolPage,
@@ -23,10 +24,10 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
   const { jupSlippage, includeDammv2Route } = useSettings();
   const { connection } = useConnection()
   const { publicKey, connected } = useWallet()
-  const { sendVersionedTxn, sendMultiVersionedTxn } = useTransactionManager();
+  const { sendMultiTxn, sendVersionedTxn, sendMultiVersionedTxn } = useTransactionManager();
   const { setPoolSorting }
     = useDammV2PoolsWebsocket();
-  const { tokenAccounts, existingPools, refreshTokenAccounts, fetchPools } = useTokenAccounts()
+  const { tokenAccounts, existingPools, refreshTokenAccounts, getEmptyTokenAccounts, fetchPools } = useTokenAccounts()
   const [loading, setLoading] = useState(false)
   const [popupIndex, setPopupIndex] = useState<number | null>(null)
   const popupRef = useRef<HTMLDivElement | null>(null)
@@ -208,6 +209,44 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
               }
             >
               Swap All to SOL ({selectedAccounts.size})
+            </button>
+
+            <button
+              className="bg-blue-600 hover:bg-blue-500 px-1 py-0.5 rounded text-white flex items-center sm:flex-none"
+              onClick={async () => {
+                const accs = getEmptyTokenAccounts();
+
+                const allIxs = accs.map(x => {
+                  const tokenProgram = new PublicKey(x.tokenProgram)
+                  return createCloseAccountInstruction(
+                    getAssociatedTokenAddressSync(new PublicKey(x.mint), publicKey!, false, tokenProgram), // token account to close
+                    publicKey!, // destination to receive SOL
+                    publicKey!, // owner of token account
+                    [], // multiSigners
+                    tokenProgram // programId
+                  )
+                });
+
+                const ixs = [];
+
+                while (allIxs.length > 0) {
+                  const innerIxs = allIxs.splice(0, 25)
+                  ixs.push(innerIxs);
+                }
+
+                sendMultiTxn(ixs.map(x => {
+                  return {
+                    ixs: x,
+                  }
+                }), 0, undefined, {
+                  notify: true,
+                  onSuccess:async () =>{
+                    await refreshTokenAccounts();
+                  }
+                });
+              }}
+            >
+              Close Empty Accounts({getEmptyTokenAccounts().length})({getEmptyTokenAccounts().map(x => x.lamports).reduce((sum, cur) => sum + cur, 0) / LAMPORTS_PER_SOL} SOL)
             </button>
             <label className='bg-blue-600 hover:bg-blue-500 px-1 py-0.5 rounded text-white flex items-center gap-1 sm:flex-none'>
               <input type='checkbox'
@@ -402,7 +441,7 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
           </div>
         )}
       </div>
-    </div>
+    </div >
   )
 }
 
