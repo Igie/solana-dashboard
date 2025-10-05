@@ -15,8 +15,8 @@ export interface TokenMetadata {
     isVerified: boolean
     mintAuthority?: string
     freezeAuthority?: string
-
-    lastUpdated: number,
+    createdAt?:Date
+    lastUpdated: number
 }
 
 export interface JupTokenMetadata {
@@ -32,6 +32,10 @@ export interface JupTokenMetadata {
     isVerified: boolean
     mintAuthority?: string
     freezeAuthority?: string
+
+    firstPool: {
+        createdAt?: Date
+    }
 }
 
 export interface TokenMetadataMap {
@@ -53,9 +57,9 @@ interface TokenMetadataContextType {
 }
 
 const TokenMetadataContext = createContext<TokenMetadataContextType>({
-    fetchTokenMetadata: async () => { 
+    fetchTokenMetadata: async () => {
         console.log("bad")
-        return {} 
+        return {}
     },
 })
 
@@ -106,6 +110,7 @@ export const TokenMetadataProvider: React.FC<{ children: React.ReactNode }> = ({
                         supply: tm.totalSupply,
                         mintAuthority: tm.mintAuthority,
                         freezeAuthority: tm.freezeAuthority,
+                        createdAt: new Date(tm.firstPool.createdAt!),
                         lastUpdated: currentTime,
                     }
                     tokenMetadataMap.current[tm.id] = tmItem;

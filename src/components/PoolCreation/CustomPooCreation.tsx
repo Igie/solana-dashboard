@@ -47,8 +47,8 @@ const Presets: Preset[] = [
         useDynamicFee: true,
         baseFee: 0.01,
         maxFee: 50,
-        totalSchedulerDuration: 48000000,
-        schedulerReductionPeriod: 48000000,
+        totalSchedulerDuration: 2880000000,
+        schedulerReductionPeriod: 2880000000,
         feeSchedulerMode: FeeSchedulerMode.Linear,
         collectFeeMode: CollectFeeMode.OnlyB,
     },
@@ -57,8 +57,8 @@ const Presets: Preset[] = [
         useDynamicFee: true,
         baseFee: 0.01,
         maxFee: 40,
-        totalSchedulerDuration: 48000000,
-        schedulerReductionPeriod: 48000000,
+        totalSchedulerDuration: 2880000000,
+        schedulerReductionPeriod: 2880000000,
         feeSchedulerMode: FeeSchedulerMode.Linear,
         collectFeeMode: CollectFeeMode.OnlyB,
     },
@@ -68,8 +68,8 @@ const Presets: Preset[] = [
         useDynamicFee: true,
         baseFee: 0.01,
         maxFee: 30,
-        totalSchedulerDuration: 48000000,
-        schedulerReductionPeriod: 48000000,
+        totalSchedulerDuration: 2880000000,
+        schedulerReductionPeriod: 2880000000,
         feeSchedulerMode: FeeSchedulerMode.Linear,
         collectFeeMode: CollectFeeMode.OnlyB,
     },
@@ -115,9 +115,9 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
 
     const [baseFeePercentage, setBaseFeePercentage] = useState(new Decimal(0.01))
 
-    const [totalSchedulerDuration, setTotalSchedulerDuration] = useState<number>(480000)
+    const [totalSchedulerDuration, setTotalSchedulerDuration] = useState<number>(2880000000)
 
-    const [schedulerReductionPeriod, setSchedulerReductionPeriod] = useState<number>(480000)
+    const [schedulerReductionPeriod, setSchedulerReductionPeriod] = useState<number>(2880000000)
 
     const [selectedFeeScheduler, setSelectedFeeScheduler] = useState<FeeSchedulerMode>(FeeSchedulerMode.Linear)
     const [feeSchedulerDropdownOpen, setFeeSchedulerDropdownOpen] = useState(false)
@@ -158,8 +158,8 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
 
             const maxFee = maxBaseFeePercentage.toNumber();
             const minFee = baseFeePercentage.toNumber();
-            const totalDuration = new BN(totalSchedulerDuration).muln(60);
-            const reductionPeriod = schedulerReductionPeriod * 60;
+            const totalDuration = new BN(totalSchedulerDuration);
+            const reductionPeriod = new BN(schedulerReductionPeriod);
             const poolFees = {
                 baseFee: getBaseFeeParams(maxFee * 100, minFee * 100, selectedFeeScheduler, totalDuration.div(new BN(reductionPeriod)).toNumber(), totalDuration.toNumber()),
                 padding: [],

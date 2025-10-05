@@ -4,7 +4,7 @@ import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { DepositPopover } from "./Dammv2DepositPopover";
 import React, { useEffect, useState } from "react";
 import { GetTokenAccountMap, useTokenAccounts, type TokenAccountMap } from "../../contexts/TokenAccountsContext";
-import { formatDuration, getAllPoolPositions, getShortMint, PoolSortType, sortPools, type PoolDetailedInfo, type PoolPositionInfo, type PoolPositionInfoMap } from "../../constants";
+import { formatDuration, formatDurationNumber, getAllPoolPositions, getShortMint, PoolSortType, sortPools, type PoolDetailedInfo, type PoolPositionInfo, type PoolPositionInfoMap } from "../../constants";
 import { useWallet } from "@jup-ag/wallet-adapter";
 import { getPoolPositionMap, useDammUserPositions } from "../../contexts/DammUserPositionsContext";
 import { DynamicTable, type Column } from "./DynamicTable";
@@ -326,12 +326,23 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
         },
         {
             header: <div className="flex items-center justify-center">
-                Activation Time
+                Pool Age
                 {SortArrow<PoolSortType>(PoolSortType.PoolActivationTime, sortBy, sortAscending, handleSort)}
             </div>,
             render: (pool) => (
                 <div className="text-center">
-                    {formatDuration(pool.age)}
+                    {formatDurationNumber(pool.age)}
+                </div>
+            )
+        },
+
+        {
+            header: <div className="flex items-center justify-center">
+                First Pool Age
+            </div>,
+            render: (pool) => (
+                <div className="text-center">
+                    {pool.tokenA.createdAt ? formatDurationNumber((Date.now() - pool.tokenA.createdAt!.getTime()) / 1000) : "Unknown"}
                 </div>
             )
         },
