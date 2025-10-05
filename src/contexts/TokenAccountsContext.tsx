@@ -360,7 +360,6 @@ export const TokenAccountsProvider: React.FC<{ children: React.ReactNode }> = ({
         setExistingPools(existing);
     };
 
-
     const updateTokenAccounts = (tas: (TokenAccount | undefined)[]) => {
         const taTemp = GetTokenAccountMap(tokenAccounts);
         const currentTime = Date.now();

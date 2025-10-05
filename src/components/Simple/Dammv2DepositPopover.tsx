@@ -121,10 +121,6 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
 
       updateTokenAccounts([tokenAATA, tokenBATA]);
 
-      // const tokenAATA = ta.tokenAccounts.find(x => x.mint == mintA);
-      // const tokenBATA = ta.tokenAccounts.find(x => x.mint == mintB);
-
-
       let currentEpoch = 0;
 
       if (tokenAATA?.tokenProgram == TOKEN_2022_PROGRAM_ID.toBase58() ||
@@ -389,6 +385,8 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
         tokenBProgram: getTokenProgram(positionInfo.poolInfo.account.tokenBFlag),
       })
 
+
+
       await sendTxn(tx.instructions, 10000, undefined, undefined, {
         notify: true,
         onSuccess: async () => {
@@ -396,8 +394,9 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
           await setTokensAB();
           await refreshPositions();
         },
-        onError: () => {
+        onError: async () => {
           txToast.error("Failed to deposit!")
+          await getDepositAmountB(amountA);
         }
       });
 
@@ -425,8 +424,9 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
           await setTokensAB();
           await refreshPositions();
         },
-        onError: () => {
-          txToast.error("Failed to add liquidity!")
+        onError: async () => {
+          txToast.error("Failed to add liquidity!");
+          await getDepositAmountB(amountA);
         }
       });
     }
