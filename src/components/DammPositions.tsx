@@ -1067,9 +1067,9 @@ const DammPositions: React.FC = () => {
             <div className="grid grid-cols-12 divide-x divide-gray-700 gap-2 px-4 py-1 text-xs font-medium text-gray-300 uppercase tracking-wider">
               <div className="col-span-1"></div>
               <div className="col-span-2">Pair</div>
-              <div className="col-span-2">Your Liquidity</div>
+              <div className="col-span-3">Your Liquidity</div>
               <div className="col-span-3">Claimable/Claimed</div>
-              <div className="col-span-2">Scheduler</div>
+              <div className="col-span-1">Scheduler</div>
               <div className="col-span-2">Fees</div>
             </div>
           </div>
@@ -1189,9 +1189,34 @@ const DammPositions: React.FC = () => {
                   </div>
 
                   {/* Your Liquidity */}
-                  <div className="grid col-span-2">
+                  <div className="grid col-span-3">
                     <div className="flex text-md">
-                      <div className="text-white font-medium">{`$${position.positionValue.toFixed(2)} / $${position.poolValue.toFixed(2)}`}</div>
+                      <div className="flex font-medium">
+                        <div className="text-white">{`$${position.positionValue.toFixed(2)}`}</div>
+                        {position.positionValueChange > 0 && (
+                          <div className="text-green-700">{`+$${position.positionValueChange.toFixed(2)}`}</div>
+                        )}
+                        {position.positionValueChange === 0 && (
+                          <div />
+                        )}
+                        {position.positionValueChange < 0 && (
+                          <div className="text-red-700">{`$${position.positionValueChange.toFixed(2)}`}</div>
+                        )}
+
+                      </div>
+                      <div className="px-0.5 justify-center">/</div>
+                      <div className="flex font-medium">
+                        <div className="text-white">{`$${position.poolValue.toFixed(2)}`}</div>
+                        {position.poolValueChange > 0 && (
+                          <div className="text-green-700">{`+$${position.poolValueChange.toFixed(2)}`}</div>
+                        )}
+                        {position.poolValueChange === 0 && (
+                          <div />
+                        )}
+                        {position.poolValueChange < 0 && (
+                          <div className="text-red-700">{`$${position.poolValueChange.toFixed(2)}`}</div>
+                        )}
+                      </div>
                     </div>
                     <div className="text-xs text-gray-400">
                       ({position.shareOfPoolPercentage.toFixed(2)}%)
@@ -1208,14 +1233,22 @@ const DammPositions: React.FC = () => {
                       {/* Fees row */}
                       <div className="grid grid-cols-3 gap-2 text-sm min-w-[120px]">
                         {/* Unclaimed */}
-                        {position.positionUnclaimedFee > 0 ? (
-                          <span className="text-green-400 min-w-[60px] font-medium">
-                            ${position.positionUnclaimedFee.toFixed(2)}
-                          </span>
-                        ) : (
-                          <span className="text-gray-500 min-w-[60px]">-</span>
-                        )}
+                        <div className="flex gap-x-0.5">
+                          {position.positionUnclaimedFee > 0 ? (
+                            <div className="flex min-w-[100px] font-medium">
+                              <div className="text-green-400">${position.positionUnclaimedFee.toFixed(2)}</div>
+                              {position.positionUnclaimedFeeChange > 0 ? (
+                                <div className="text-green-500">{`+$${position.positionUnclaimedFeeChange.toFixed(2)}`}</div>
+                              ) : (
+                                <div />
+                              )}
 
+                            </div>
+                          ) : (
+                            <div className="text-gray-500 min-w-[120px]">-</div>
+                          )}
+
+                        </div>
                         {/* Claimed */}
                         {position.positionClaimedFee > 0 ? (
                           <span className="text-green-700 min-w-[60px] font-medium">
@@ -1322,7 +1355,7 @@ const DammPositions: React.FC = () => {
                   </div>
 
                   {/* Scheduler */}
-                  <div className="col-span-2">
+                  <div className="col-span-1">
                     <div className="text-white text-sm">
                       {getSchedulerType(position.poolInfo.account.poolFees.baseFee.feeSchedulerMode)}
                     </div>

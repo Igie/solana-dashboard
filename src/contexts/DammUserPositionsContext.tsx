@@ -158,9 +158,12 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                         },
                         shareOfPoolPercentage: 0.5,
                         poolValue: 0,
+                        poolValueChange: 0,
                         positionValue: 0,
+                        positionValueChange: 0,
                         positionUnclaimedFee: 0,
                         positionClaimedFee: 0,
+                        positionUnclaimedFeeChange: 0,
                         poolBaseFeeBPS: 0,
                         poolCurrentFeeBPS: 0,
                     })
@@ -243,17 +246,15 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                     unclaimedFee: tokenBUnclaimedFees,
                     claimedFee: tokenBClaimedFees
                 }
-
                 position.poolValue = (poolTokenAAmount * poolPrice +
                     poolTokenBAmount) * tokenBMetadata!.price.toNumber();
 
                 position.positionValue = (positionTokenAAmount * poolPrice +
-                    positionTokenBAmount) * tokenBMetadata!.price.toNumber();
+                    positionTokenBAmount) * tokenBMetadata!.price.toNumber();;
                 position.shareOfPoolPercentage = shareOfPool;
 
-                position.positionUnclaimedFee =
-                    tokenAUnclaimedFees * tokenAMetadata!.price.toNumber() +
-                    tokenBUnclaimedFees * tokenBMetadata!.price.toNumber();
+                position.positionUnclaimedFee = tokenAUnclaimedFees * tokenAMetadata!.price.toNumber() +
+                    tokenBUnclaimedFees * tokenBMetadata!.price.toNumber();;
 
                 position.positionClaimedFee =
                     tokenAClaimedFees * tokenAMetadata!.price.toNumber() +
@@ -407,7 +408,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
 
         const positionLP = position.positionState.permanentLockedLiquidity.add(
             position.positionState.unlockedLiquidity).add(
-                position.positionState.vestedLiquidity)
+                position.positionState.vestedLiquidity);
 
         const poolLP = position.poolInfo.account.liquidity;
 
@@ -433,10 +434,14 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
 
         const unclaimedRewards = getUnClaimReward(position.poolInfo.account, position.positionState);
 
+
         const tokenAUnclaimedFees = new Decimal(unclaimedRewards.feeTokenA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
         const tokenBUnclaimedFees = new Decimal(unclaimedRewards.feeTokenB.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
+        
         const tokenAClaimedFees = new Decimal(position.positionState.metrics.totalClaimedAFee.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
         const tokenBClaimedFees = new Decimal(position.positionState.metrics.totalClaimedBFee.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
+
+        const poolPrice = getPriceFromSqrtPrice(position.poolInfo.account.sqrtPrice, tokenAMetadata!.decimals, tokenBMetadata!.decimals).toNumber();
 
         const shareOfPool = positionLP.muln(10000).div(poolLP).toNumber() / 100;
 
@@ -450,10 +455,16 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
         position.tokenB.unclaimedFee = tokenBUnclaimedFees;
         position.tokenB.claimedFee = tokenBClaimedFees;
 
-        position.poolValue = poolTokenAAmount * tokenAMetadata!.price.toNumber() +
-            poolTokenBAmount * tokenBMetadata!.price.toNumber();
+
+
+        const newPoolValue = (poolTokenAAmount * poolPrice +
+            poolTokenBAmount) * tokenBMetadata!.price.toNumber();
+        position.poolValueChange = newPoolValue - position.poolValue;
+        position.poolValue = newPoolValue;
+
         position.positionValue = positionTokenAAmount * tokenAMetadata!.price.toNumber() +
             positionTokenBAmount * tokenBMetadata!.price.toNumber();
+
         position.shareOfPoolPercentage = shareOfPool;
         position.positionUnclaimedFee =
             tokenAUnclaimedFees * tokenAMetadata!.price.toNumber() +
@@ -488,7 +499,6 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
         if (positionAddresses.length === 0) return;
         const positionAddressMints = positionAddresses.map(x => x.toBase58());
         const updatingPositions = positions.filter(x => positionAddressMints.find(y => y === x.positionAddress.toBase58()))
-        //const updatingPositionsMap = getPoolPositionMap(updatingPositions);
 
 
         const updatedPositions = await cpAmm._program.account.position.fetchMultiple(updatingPositions.map(x => x.positionAddress))
@@ -534,8 +544,11 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
 
             const tokenAUnclaimedFees = new Decimal(unclaimedRewards.feeTokenA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
             const tokenBUnclaimedFees = new Decimal(unclaimedRewards.feeTokenB.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
+            
             const tokenAClaimedFees = new Decimal(position.positionState.metrics.totalClaimedAFee.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
             const tokenBClaimedFees = new Decimal(position.positionState.metrics.totalClaimedBFee.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
+
+            const poolPrice = getPriceFromSqrtPrice(position.poolInfo.account.sqrtPrice, tokenAMetadata!.decimals, tokenBMetadata!.decimals).toNumber();
 
             const shareOfPool = positionLP.muln(10000).div(poolLP).toNumber() / 100;
 
@@ -549,14 +562,25 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
             position.tokenB.unclaimedFee = tokenBUnclaimedFees;
             position.tokenB.claimedFee = tokenBClaimedFees;
 
-            position.poolValue = poolTokenAAmount * tokenAMetadata!.price.toNumber() +
-                poolTokenBAmount * tokenBMetadata!.price.toNumber();
-            position.positionValue = positionTokenAAmount * tokenAMetadata!.price.toNumber() +
-                positionTokenBAmount * tokenBMetadata!.price.toNumber();
+            const newPoolValue = (poolTokenAAmount * poolPrice +
+                poolTokenBAmount) * tokenBMetadata!.price.toNumber();
+            position.poolValueChange = newPoolValue - position.poolValue;
+            position.poolValue = newPoolValue;
+
+            const newPositionValue = (positionTokenAAmount * poolPrice +
+                positionTokenBAmount) * tokenBMetadata!.price.toNumber();
+            position.positionValueChange = newPositionValue - position.positionValue;
+            position.positionValue = newPositionValue;
+
             position.shareOfPoolPercentage = shareOfPool;
-            position.positionUnclaimedFee =
+
+            const positionUnclaimedFeeChange =
                 tokenAUnclaimedFees * tokenAMetadata!.price.toNumber() +
                 tokenBUnclaimedFees * tokenBMetadata!.price.toNumber();
+            position.positionUnclaimedFeeChange =
+                positionUnclaimedFeeChange - position.positionUnclaimedFee;
+            position.positionUnclaimedFee = positionUnclaimedFeeChange;
+
             position.positionClaimedFee =
                 tokenAClaimedFees * tokenAMetadata!.price.toNumber() +
                 tokenBClaimedFees * tokenBMetadata!.price.toNumber();
@@ -591,14 +615,6 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
     }
 
     const removeLiquidityAndSwapToQuote = async (position: PoolPositionInfo): Promise<boolean> => {
-
-        //const success = await zapOut(position);
-        //if (success) {
-        //    return true;
-        //}
-        //console.log("Falling back to simple remove liquidity and swap");
-        //txToast.error("Remove liquidity and swap failed. Falling back to simple remove and swap.");
-
         const txn = await cpAmm.removeAllLiquidityAndClosePosition({
             owner: publicKey!,
             position: position.positionAddress,

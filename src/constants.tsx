@@ -28,9 +28,12 @@ export interface PoolPositionInfo {
     tokenA: PoolPositionTokenInfo
     tokenB: PoolPositionTokenInfo
     shareOfPoolPercentage: number
-    poolValue: number // USD value
+    poolValue: number
+    poolValueChange:number,
     positionValue: number
+    positionValueChange: number
     positionUnclaimedFee: number
+    positionUnclaimedFeeChange: number
     positionClaimedFee: number
     poolBaseFeeBPS: number
     poolCurrentFeeBPS: number
@@ -266,9 +269,12 @@ export const getAllPoolPositions = async (cpAmm: CpAmm, pool: PoolDetailedInfo, 
                 },
                 shareOfPoolPercentage: 0.5,
                 poolValue: 0,
+                poolValueChange: 0,
                 positionValue: 0,
+                positionValueChange: 0,
                 positionUnclaimedFee: 0,
                 positionClaimedFee: 0,
+                positionUnclaimedFeeChange: 0,
                 poolBaseFeeBPS: 0,
                 poolCurrentFeeBPS: 0,
             })
@@ -437,7 +443,7 @@ export function formatDuration(seconds: number | null): string {
 
 export function formatDurationNumber(seconds: number | null): string {
     if (seconds === null) return "0s"
-    
+
     const d = Math.floor(seconds / 86400)
     const h = Math.floor((seconds % 86400) / 3600)
     const m = Math.floor((seconds % 3600) / 60)
@@ -447,7 +453,7 @@ export function formatDurationNumber(seconds: number | null): string {
     if (d > 0) parts.push(`${d}d`)
     if (h > 0 || d > 0) parts.push(`${h}h`)
     if (m > 0 || h > 0 || d > 0) parts.push(`${m}m`)
-    if (d === 0 && h === 0 && m === 0) parts.push(`${s}s`)
+    if (d === 0 && h === 0 && m === 0) parts.push(`${s.toFixed(0)}s`)
 
     return parts.join(' ');
 }
