@@ -240,6 +240,7 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                 const newPool = newPoolsMap[oldPool.poolInfo.publicKey.toBase58()];
                 if (newPool) {
                     newPool.totalFeesChange = newPool.totalFees.sub(oldPool.totalFees);
+                    newPool.TVLChange = newPool.TVL - oldPool.TVL;
                 }
             }
             detailedPools.current = newPools;

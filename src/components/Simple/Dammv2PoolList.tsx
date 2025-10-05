@@ -350,8 +350,19 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
         {
             header: 'TVL',
             render: (pool) => (
-                <div className="text-center">
-                    ${pool.TVL.toFixed(2)}
+                <div className="grid grid-cols-2 gap-0.5 text-center">
+                    <div >
+                        {"$" + pool.TVL.toFixed(2)}
+                    </div>
+                    {pool.TVLChange > 0 && (
+                        <div className="text-green-800">{`+$${pool.TVLChange.toFixed(2)}`}</div>
+                    )}
+                    {pool.TVLChange === 0 && (
+                        <div />
+                    )}
+                    {pool.TVLChange < 0 && (
+                        <div className="text-red-800">{`-$${(pool.TVLChange * -1).toFixed(2)}`}</div>
+                    )}
                 </div>
             )
         },

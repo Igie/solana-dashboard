@@ -63,6 +63,7 @@ export interface PoolDetailedInfo {
     totalFeeBPS: number
     price: Decimal
     TVL: number
+    TVLChange: number
     lockedTVL: number
     totalFees: Decimal
     totalFeesChange:Decimal
@@ -185,6 +186,7 @@ export const getDetailedPools = (cpAmm: CpAmm, p: PoolInfo[], tm: TokenMetadataM
             )),
             price: new Decimal(getPriceFromSqrtPrice(x.account.sqrtPrice, poolTokenA.decimals, poolTokenB.decimals)),
             TVL: (poolPrice.mul(new Decimal(poolTokenAAmount)).toNumber() * tokenBMetadata.price.toNumber() + poolTokenBAmount * tokenBMetadata.price.toNumber()),
+            TVLChange: 0,
             lockedTVL: poolPrice.mul(new Decimal(poolTokenAAmountLocked)).toNumber() * tokenBMetadata.price.toNumber() + poolTokenBAmountLocked * tokenBMetadata.price.toNumber(),
             totalFees: poolTokenA.totalFees.add(poolTokenB.totalFees),
             totalFeesChange: new Decimal(0),
