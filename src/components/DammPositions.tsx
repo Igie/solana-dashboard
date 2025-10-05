@@ -1200,7 +1200,7 @@ const DammPositions: React.FC = () => {
                           <div />
                         )}
                         {position.positionValueChange < 0 && (
-                          <div className="text-red-700">{`$${position.positionValueChange.toFixed(2)}`}</div>
+                          <div className="text-red-700">{`-$${(position.positionValueChange * -1).toFixed(2)}`}</div>
                         )}
 
                       </div>
@@ -1214,7 +1214,7 @@ const DammPositions: React.FC = () => {
                           <div />
                         )}
                         {position.poolValueChange < 0 && (
-                          <div className="text-red-700">{`$${position.poolValueChange.toFixed(2)}`}</div>
+                          <div className="text-red-700">{`-$${(position.poolValueChange * -1).toFixed(2)}`}</div>
                         )}
                       </div>
                     </div>
