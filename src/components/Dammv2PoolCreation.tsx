@@ -196,6 +196,7 @@ const Dammv2PoolCreation: React.FC<Dammv2PoolCreationProps> = ({
                 TVL: poolPrice.mul(new Decimal(poolTokenAAmount)).toNumber() * tokenBMetadata.price.toNumber() + poolTokenBAmount * tokenBMetadata.price.toNumber(),
                 lockedTVL: poolPrice.mul(new Decimal(poolTokenAAmountLocked)).toNumber() * tokenBMetadata.price.toNumber() + poolTokenBAmountLocked * tokenBMetadata.price.toNumber(),
                 totalFees: poolTokenA.totalFees.add(poolTokenB.totalFees),
+                totalFeesChange: new Decimal(0),
             });
         };
         setDetailedPools(detailedPools);

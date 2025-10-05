@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState, } from 'react'
 import { useConnection } from '@jup-ag/wallet-adapter'
-import { getDetailedPools, PoolSortType, sortPools, type PoolDetailedInfo, type PoolInfo, type PoolInfoMap } from '../constants';
+import { getDetailedPools, GetPoolDetailedInfoMap, PoolSortType, sortPools, type PoolDetailedInfo, type PoolInfo, type PoolInfoMap } from '../constants';
 import { PublicKey, type GetProgramAccountsFilter, type KeyedAccountInfo } from '@solana/web3.js';
 import { useCpAmm } from './CpAmmContext';
 import { launchpads } from '../components/launchpads/Launchpads';
@@ -233,7 +233,16 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             tokenMetadataMap.current = await fetchTokenMetadata(mints);
         }
         try {
-            detailedPools.current = getDetailedPools(cpAmm, filteredSimplePools.current, tokenMetadataMap.current, slotNow, startTime);
+            const newPools = getDetailedPools(cpAmm, filteredSimplePools.current, tokenMetadataMap.current, slotNow, startTime);
+            const newPoolsMap = GetPoolDetailedInfoMap(newPools);
+
+            for (const oldPool of detailedPools.current) {
+                const newPool = newPoolsMap[oldPool.poolInfo.publicKey.toBase58()];
+                if (newPool) {
+                    newPool.totalFeesChange = newPool.totalFees.sub(oldPool.totalFees);
+                }
+            }
+            detailedPools.current = newPools;
         } catch (e) {
             console.error(e)
             console.log("fetched metadata? " + fetchMetadata);

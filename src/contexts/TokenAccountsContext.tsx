@@ -347,6 +347,7 @@ export const TokenAccountsProvider: React.FC<{ children: React.ReactNode }> = ({
                     TVL: poolPrice.mul(new Decimal(poolTokenAAmount)).toNumber() * tokenBMetadata.price.toNumber() + poolTokenBAmount * tokenBMetadata.price.toNumber(),
                     lockedTVL: poolPrice.mul(new Decimal(poolTokenAAmountLocked)).toNumber() * tokenBMetadata.price.toNumber() + poolTokenBAmountLocked * tokenBMetadata.price.toNumber(),
                     totalFees: poolTokenA.totalFees.add(poolTokenB.totalFees),
+                    totalFeesChange: new Decimal(0),
                 });
             } catch (e) {
                 console.error(e)

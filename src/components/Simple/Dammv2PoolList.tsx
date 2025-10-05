@@ -386,10 +386,17 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                 {SortArrow<PoolSortType>(PoolSortType.PoolTotalFees, sortBy, sortAscending, handleSort)}
             </div>,
             render: (pool) => (
-                <div className="text-center">
-                    {"$" + pool.totalFees.toFixed(2)}
-
+                <div className="grid grid-cols-2 gap-0.5 text-center min-w-40">
+                    <div >
+                        {"$" + pool.totalFees.toFixed(2)}
+                    </div>
+                    {pool.totalFeesChange.greaterThan(0) ? (
+                        <div className="text-green-800">{`+$${pool.totalFeesChange.toFixed(2)}`}</div>
+                    ) : (
+                        <div />
+                    )}
                 </div>
+
             )
         },
     ]
