@@ -137,7 +137,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                             <ExternalLink size={12} />
                         </a>
                     </div>
-                    <div className="grid w-full gap-1">
+                    <div className="grid w-full min-w-35 gap-1">
                         <button
                             disabled={!connected}
                             className={`${tokenAccountMap[pool.tokenA.mint] ? "bg-indigo-900 hover:bg-indigo-800" : "bg-blue-900 hover:bg-blue-800"} text-gray-100 text-xs py-0.5 px-1 rounded flex items-center justify-start gap-1`}
