@@ -674,6 +674,10 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
             });
         } return true;
     }
+      useEffect(() => {
+        refreshPositions();
+        console.log("refreshing positions from context")
+      }, [connection, publicKey])
 
     useEffect(() => {
         if (updatedPools && updatedPools.length > 0) {

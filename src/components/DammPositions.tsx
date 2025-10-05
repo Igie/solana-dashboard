@@ -683,8 +683,8 @@ const DammPositions: React.FC = () => {
   }
 
   useEffect(() => {
-    refreshPositions();
     setSelectedPositions(new Set());
+    console.log("refreshing positions from page")
   }, [connection, publicKey])
 
   useEffect(() => {

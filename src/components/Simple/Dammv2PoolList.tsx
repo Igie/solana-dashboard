@@ -464,11 +464,6 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
     ]
 
     useEffect(() => {
-        //refreshTokenAccounts();
-        //refreshPositions();
-    }, []);
-
-    useEffect(() => {
         setTokenAccountMap(GetTokenAccountMap(tokenAccounts));
     }, [tokenAccounts]);
 
