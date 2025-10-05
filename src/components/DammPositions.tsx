@@ -1235,7 +1235,7 @@ const DammPositions: React.FC = () => {
                         {/* Unclaimed */}
                         <div className="flex gap-x-0.5">
                           {position.positionUnclaimedFee > 0 ? (
-                            <div className="flex min-w-[100px] font-medium">
+                            <div className="flex min-w-[120px] font-medium">
                               <div className="text-green-400">${position.positionUnclaimedFee.toFixed(2)}</div>
                               {position.positionUnclaimedFeeChange > 0 ? (
                                 <div className="text-green-500">{`+$${position.positionUnclaimedFeeChange.toFixed(2)}`}</div>
