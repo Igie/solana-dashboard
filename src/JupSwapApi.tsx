@@ -63,7 +63,7 @@ interface Instruction {
 
 export const getQuote = async (params: JupiterQuoteParams, notify: boolean = true): Promise<JupiterQuoteResponse> => {
   try {
-    const url = new URL(`https://ultra-api.jup.ag/order?`);
+    const url = new URL(`https://lite-api.jup.ag/swap/v1/quote?`);
     url.searchParams.append("inputMint", params.inputMint);
     url.searchParams.append("outputMint", params.outputMint);
     url.searchParams.append("amount", params.amount.toString());
