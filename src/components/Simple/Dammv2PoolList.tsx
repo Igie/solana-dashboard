@@ -284,7 +284,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
         {
             header: 'Fee Mode',
             render: (pool) => (
-                <div className="flex justify-center gap-1">
+                <div className="flex items-center justify-center text-xs gap-1">
                     <div className="text-center">
                         {pool.poolInfo.account.collectFeeMode === 0 ? <div className="text-red-400">Both </div> :
                             pool.poolInfo.account.collectFeeMode === 1 ? <div className="text-green-400">Quote </div> : "Unknown"}
@@ -350,18 +350,18 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
         {
             header: 'TVL',
             render: (pool) => (
-                <div className="grid grid-cols-2 gap-0.5 text-center min-w-40">
+                <div className="grid grid-cols-2 gap-0.5 text-center text-md min-w-35">
                     <div >
                         {"$" + pool.TVL.toFixed(2)}
                     </div>
                     {pool.TVLChange > 0 && (
-                        <div className="text-green-800">{`+$${pool.TVLChange.toFixed(2)}`}</div>
+                        <div className="text-green-700">{`+$${pool.TVLChange.toFixed(2)}`}</div>
                     )}
                     {pool.TVLChange === 0 && (
                         <div />
                     )}
                     {pool.TVLChange < 0 && (
-                        <div className="text-red-800">{`-$${(pool.TVLChange * -1).toFixed(2)}`}</div>
+                        <div className="text-red-700">{`-$${(pool.TVLChange * -1).toFixed(2)}`}</div>
                     )}
                 </div>
             )
@@ -397,12 +397,12 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                 {SortArrow<PoolSortType>(PoolSortType.PoolTotalFees, sortBy, sortAscending, handleSort)}
             </div>,
             render: (pool) => (
-                <div className="grid grid-cols-2 gap-0.5 text-center min-w-40">
+                <div className="grid grid-cols-2 gap-0.5 text-center text-md min-w-35">
                     <div >
                         {"$" + pool.totalFees.toFixed(2)}
                     </div>
                     {pool.totalFeesChange.greaterThan(0) ? (
-                        <div className="text-green-800">{`+$${pool.totalFeesChange.toFixed(2)}`}</div>
+                        <div className="text-green-700">{`+$${pool.totalFeesChange.toFixed(2)}`}</div>
                     ) : (
                         <div />
                     )}
@@ -582,10 +582,10 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                             <div key={index} className="lg:hidden space-y-1">
                                 {/* Token Info */}
                                 <div className="flex justify-between items-start">
-                                    <div className="space-y-1 w-full">
+                                    <div className="space-y-1 w-full text-xs">
                                         <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2">
                                             <span className="text-xs text-gray-400 w-12">Base:</span>
-                                            <span className="text-sm font-mono truncate min-w-0">
+                                            <span className="text-xs font-mono truncate min-w-0">
                                                 {(tokenMetadataMap[pool.poolInfo.account.tokenAMint.toBase58()]?.symbol &&
                                                     tokenMetadataMap[pool.poolInfo.account.tokenAMint.toBase58()]?.symbol.length > 15)
                                                     ? tokenMetadataMap[pool.poolInfo.account.tokenAMint.toBase58()]?.symbol.slice(0, 15) + '...'
@@ -602,7 +602,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                         </div>
                                         <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2">
                                             <span className="text-xs text-gray-400 w-12">Quote:</span>
-                                            <span className="text-sm font-mono truncate min-w-0">
+                                            <span className="text-xs font-mono truncate min-w-0">
                                                 {(tokenMetadataMap[pool.poolInfo.account.tokenBMint.toBase58()]?.symbol &&
                                                     tokenMetadataMap[pool.poolInfo.account.tokenBMint.toBase58()]?.symbol.length > 15)
                                                     ? tokenMetadataMap[pool.poolInfo.account.tokenBMint.toBase58()]?.symbol.slice(0, 15) + '...'
