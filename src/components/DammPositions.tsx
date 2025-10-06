@@ -16,6 +16,8 @@ import { DepositPopover } from './Simple/Dammv2DepositPopover'
 import * as splToken from "@solana/spl-token"
 import Decimal from "decimal.js"
 import { decode } from '@coral-xyz/anchor/dist/cjs/utils/bytes/bs58'
+import Popup from 'reactjs-popup';
+//import 'reactjs-popup/dist/index.css';
 
 interface PnlInfo {
   instructionChange:
@@ -1190,34 +1192,52 @@ const DammPositions: React.FC = () => {
 
                   {/* Your Liquidity */}
                   <div className="grid col-span-3">
-                    <div className="flex text-md">
-                      <div className="flex font-medium">
-                        <div className="text-white">{`$${position.positionValue.toFixed(2)}`}</div>
-                        {position.positionValueChange > 0 && (
-                          <div className="text-green-700">{`+$${position.positionValueChange.toFixed(2)}`}</div>
-                        )}
-                        {position.positionValueChange === 0 && (
-                          <div />
-                        )}
-                        {position.positionValueChange < 0 && (
-                          <div className="text-red-700">{`-$${(position.positionValueChange * -1).toFixed(2)}`}</div>
-                        )}
+                    <Popup key={index} trigger={() => {
+                      return (
+                        <div className="flex text-md">
+                          <div className="flex font-medium">
+                            <div className="text-white">{`$${position.positionValue.toFixed(2)}`}</div>
+                            {position.positionValueChange > 0 && (
+                              <div className="text-green-700">{`+$${position.positionValueChange.toFixed(2)}`}</div>
+                            )}
+                            {position.positionValueChange === 0 && (
+                              <div />
+                            )}
+                            {position.positionValueChange < 0 && (
+                              <div className="text-red-700">{`-$${(position.positionValueChange * -1).toFixed(2)}`}</div>
+                            )}
+
+                          </div>
+                          <div className="px-0.5 justify-center">/</div>
+                          <div className="flex font-medium">
+                            <div className="text-white">{`$${position.poolValue.toFixed(2)}`}</div>
+                            {position.poolValueChange > 0 && (
+                              <div className="text-green-700">{`+$${position.poolValueChange.toFixed(2)}`}</div>
+                            )}
+                            {position.poolValueChange === 0 && (
+                              <div />
+                            )}
+                            {position.poolValueChange < 0 && (
+                              <div className="text-red-700">{`-$${(position.poolValueChange * -1).toFixed(2)}`}</div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    } arrow={false} on={["hover"]} mouseEnterDelay={50} position="bottom center">
+                      <div className="grid grid-cols-5 text-center gap-x-4 divide-gray-600">
+                        <div className="col-span-2 border-gray-600 border-r">{`${position.tokenA.positionAmount.toFixed(4)}`}</div>
+                        <div className="col-span-2 border-gray-600 border-r">{`${position.tokenA.poolAmount.toFixed(4)}`}</div>
+                        <div>{`${position.tokenA.symbol}`}</div>
+
+                        <div className="col-span-2 border-gray-600 border-r">{`${position.tokenB.positionAmount.toFixed(4)}`}</div>
+                        <div className="col-span-2 border-gray-600 border-r">{`${position.tokenB.poolAmount.toFixed(4)}`}</div>
+                        <div>{`${position.tokenB.symbol}`}</div>
 
                       </div>
-                      <div className="px-0.5 justify-center">/</div>
-                      <div className="flex font-medium">
-                        <div className="text-white">{`$${position.poolValue.toFixed(2)}`}</div>
-                        {position.poolValueChange > 0 && (
-                          <div className="text-green-700">{`+$${position.poolValueChange.toFixed(2)}`}</div>
-                        )}
-                        {position.poolValueChange === 0 && (
-                          <div />
-                        )}
-                        {position.poolValueChange < 0 && (
-                          <div className="text-red-700">{`-$${(position.poolValueChange * -1).toFixed(2)}`}</div>
-                        )}
-                      </div>
-                    </div>
+                    </Popup>
+
                     <div className="text-xs text-gray-400">
                       ({position.shareOfPoolPercentage.toFixed(2)}%)
                     </div>
@@ -1232,23 +1252,34 @@ const DammPositions: React.FC = () => {
 
                       {/* Fees row */}
                       <div className="grid grid-cols-3 gap-2 text-sm min-w-[120px]">
-                        {/* Unclaimed */}
-                        <div className="flex gap-x-0.5">
-                          {position.positionUnclaimedFee > 0 ? (
-                            <div className="flex min-w-[120px] font-medium">
-                              <div className="text-green-400">${position.positionUnclaimedFee.toFixed(2)}</div>
-                              {position.positionUnclaimedFeeChange > 0 ? (
-                                <div className="text-green-500">{`+$${position.positionUnclaimedFeeChange.toFixed(2)}`}</div>
+                        <Popup key={index} trigger={() => {
+                          return (
+                            <div className="flex gap-x-0.5">
+                              {position.positionUnclaimedFee > 0 ? (
+                                <div className="flex min-w-[120px] font-medium">
+                                  <div className="text-green-400">${position.positionUnclaimedFee.toFixed(2)}</div>
+                                  {position.positionUnclaimedFeeChange > 0 ? (
+                                    <div className="text-green-500">{`+$${position.positionUnclaimedFeeChange.toFixed(2)}`}</div>
+                                  ) : (
+                                    <div />
+                                  )}
+
+                                </div>
                               ) : (
-                                <div />
+                                <div className="text-gray-500 min-w-[120px]">-</div>
                               )}
-
                             </div>
-                          ) : (
-                            <div className="text-gray-500 min-w-[120px]">-</div>
-                          )}
+                          );
+                        }
 
-                        </div>
+                        } arrow={false} on={["hover"]} mouseEnterDelay={50} position="bottom center" >
+                          <div className="flex flex-col">
+                            {position.tokenA.unclaimedFee > 0 && (<div>{position.tokenA.symbol}: {position.tokenA.unclaimedFee.toFixed(4)}</div>)}
+                            {position.tokenB.unclaimedFee > 0 && (<div>{position.tokenB.symbol}: {position.tokenB.unclaimedFee.toFixed(4)}</div>)}
+                          </div>
+                        </Popup>
+                        {/* Unclaimed */}
+
                         {/* Claimed */}
                         {position.positionClaimedFee > 0 ? (
                           <span className="text-green-700 min-w-[60px] font-medium">

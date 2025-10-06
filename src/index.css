@@ -5,3 +5,29 @@
 :root {
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
+
+.popup-content {
+  margin: auto;
+  background: var(--color-gray-800);
+  border: 1px solid var(--color-gray-950);
+  border-radius: var(--radius-sm);
+  padding: 1px;
+  color: white;
+  font-size: 0.75rem;
+  padding: 2px;
+  padding-inline: calc(var(--spacing) * 1);
+}
+.popup-arrow {
+  color: oklch(37.3% 0.034 259.733);
+}
+[role='tooltip'].popup-content {
+  //width: 200px;
+  box-shadow: rgba(0, 0, 0, 0.16) 0px 0px 3px;
+}
+
+.popup-overlay {
+  background: rgba(0, 0, 0, 0.5);
+}
+[data-popup='tooltip'].popup-overlay {
+  background: transparent;
+}
