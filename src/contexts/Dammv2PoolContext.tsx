@@ -64,7 +64,7 @@ const DammV2PoolContext = createContext<DammV2PoolContextType>({
 });
 
 const UPDATE_INTERVAL = 4000;
-const MAX_SIMPLE_POOLS = 100;
+const MAX_SIMPLE_POOLS = 500;
 
 export const useDammV2PoolsWebsocket = () => useContext(DammV2PoolContext)
 
@@ -434,15 +434,15 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                     x.account.poolFees.dynamicFee
                 ));
 
-                if (currentFee <= 1000 && countMainPools < MAX_SIMPLE_POOLS) {
+                if (currentFee <= 1000 && countMainPools < 40) {
                     simpleMainPoolsMap.current[x.publicKey.toBase58()] = x;
                     countMainPools++;
                 }
-                if (currentFee > 1000 && countNonMainPools < MAX_SIMPLE_POOLS) {
+                if (currentFee > 1000 && countNonMainPools < 40) {
                     simpleNonMainPoolsMap.current[x.publicKey.toBase58()] = x;
                     countNonMainPools++;
                 }
-                if (countMainPools >= MAX_SIMPLE_POOLS && countNonMainPools >= MAX_SIMPLE_POOLS)
+                if (countMainPools >= 40 && countNonMainPools >= 40)
                     break;
             }
 
