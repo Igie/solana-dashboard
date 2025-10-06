@@ -350,7 +350,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
         {
             header: 'TVL',
             render: (pool) => (
-                <div className="grid grid-cols-2 gap-0.5 text-center">
+                <div className="grid grid-cols-2 gap-0.5 text-center min-w-40">
                     <div >
                         {"$" + pool.TVL.toFixed(2)}
                     </div>

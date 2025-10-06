@@ -42,9 +42,9 @@ interface PnlInfo {
 }
 
 const DammPositions: React.FC = () => {
-  const { connection } = useConnection()
-  const { publicKey, connected } = useWallet()
-  const { sendTxn, sendMultiTxn } = useTransactionManager()
+  const { connection } = useConnection();
+  const { publicKey, connected } = useWallet();
+  const { sendTxn, sendMultiTxn } = useTransactionManager();
   const { cpAmm, coder } = useCpAmm();
   const { positions, totalLiquidityValue, loading, refreshPositions, updatePosition, removePosition, sortPositionsBy, removeLiquidityAndSwapToQuote, sortedBy, sortedAscending } = useDammUserPositions();
   const [selectedPositions, setSelectedPositions] = useState<Set<string>>(new Set());
@@ -186,7 +186,6 @@ const DammPositions: React.FC = () => {
   };
 
   const getClosePositionTx = async (positions: PoolPositionInfo[], amount: number) => {
-
     if (amount < 100)
       return await getRemoveLiquidityTx(positions, amount);
 
@@ -194,6 +193,7 @@ const DammPositions: React.FC = () => {
     positions = positions.filter(x => !cpAmm.isLockedPosition(x.positionState))
     while (positions.length > 0) {
       const innerPositions = positions.splice(0, 1);
+
       const index = positions.findIndex(x => innerPositions[0].tokenA.mint === x.tokenA.mint ||
         innerPositions[0].tokenA.mint === x.tokenB.mint ||
         innerPositions[0].tokenB.mint === x.tokenA.mint ||
