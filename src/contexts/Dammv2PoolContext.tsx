@@ -239,8 +239,18 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             for (const oldPool of detailedPools.current) {
                 const newPool = newPoolsMap[oldPool.poolInfo.publicKey.toBase58()];
                 if (newPool) {
-                    newPool.totalFeesChange = newPool.totalFees.sub(oldPool.totalFees);
-                    newPool.TVLChange = newPool.TVL - oldPool.TVL;
+
+                    newPool.FeesLiquidityChange ={
+                        tokenAAmount: newPool.tokenA.totalFeesToken.sub(oldPool.tokenA.totalFeesToken),
+                        tokenBAmount: newPool.tokenB.totalFeesToken.sub(oldPool.tokenB.totalFeesToken)
+                    }
+
+                    newPool.TVLUsdChange = newPool.TVLUsd - oldPool.TVLUsd;
+
+                    newPool.LiquidityChange = {
+                        tokenAAmount: newPool.tokenA.poolAmount.sub(oldPool.tokenA.poolAmount),
+                        tokenBAmount: newPool.tokenB.poolAmount.sub(oldPool.tokenB.poolAmount)
+                    }
                 }
             }
             detailedPools.current = newPools;

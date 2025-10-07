@@ -4,7 +4,7 @@ import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { DepositPopover } from "./Dammv2DepositPopover";
 import React, { useEffect, useState } from "react";
 import { GetTokenAccountMap, useTokenAccounts, type TokenAccountMap } from "../../contexts/TokenAccountsContext";
-import { formatDuration, formatDurationNumber, getAllPoolPositions, getShortMint, PoolSortType, sortPools, type PoolDetailedInfo, type PoolPositionInfo, type PoolPositionInfoMap } from "../../constants";
+import { formatDuration, formatDurationNumber, getAllPoolPositions, getShortMint, PoolSortType, sortPools, toUsd, type PoolDetailedInfo, type PoolPositionInfo, type PoolPositionInfoMap } from "../../constants";
 import { useWallet } from "@jup-ag/wallet-adapter";
 import { getPoolPositionMap, useDammUserPositions } from "../../contexts/DammUserPositionsContext";
 import { DynamicTable, type Column } from "./DynamicTable";
@@ -352,16 +352,16 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
             render: (pool) => (
                 <div className="grid grid-cols-2 gap-0.5 text-center text-md min-w-35">
                     <div >
-                        {"$" + pool.TVL.toFixed(2)}
+                        {"$" + pool.TVLUsd.toFixed(2)}
                     </div>
-                    {pool.TVLChange > 0 && (
-                        <div className="text-green-700">{`+$${pool.TVLChange.toFixed(2)}`}</div>
+                    {!pool.LiquidityChange.tokenBAmount.eq(0) && pool.TVLUsdChange> 0 && (
+                        <div className="text-green-700">{`+$${pool.TVLUsdChange.toFixed(2)}`}</div>
                     )}
-                    {pool.TVLChange === 0 && (
+                    {pool.LiquidityChange.tokenBAmount.eq(0) && (
                         <div />
                     )}
-                    {pool.TVLChange < 0 && (
-                        <div className="text-red-700">{`-$${(pool.TVLChange * -1).toFixed(2)}`}</div>
+                    {!pool.LiquidityChange.tokenBAmount.eq(0) && pool.TVLUsdChange < 0 && (
+                        <div className="text-red-700">{`-$${(pool.TVLUsdChange * -1).toFixed(2)}`}</div>
                     )}
                 </div>
             )
@@ -399,10 +399,10 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
             render: (pool) => (
                 <div className="grid grid-cols-2 gap-0.5 text-center text-md min-w-35">
                     <div >
-                        {"$" + pool.totalFees.toFixed(2)}
+                        {"$" + pool.totalFeesUsd.toFixed(2)}
                     </div>
-                    {pool.totalFeesChange.greaterThan(0) ? (
-                        <div className="text-green-700">{`+$${pool.totalFeesChange.toFixed(2)}`}</div>
+                    {(pool.FeesLiquidityChange.tokenAAmount.greaterThan(0) || pool.FeesLiquidityChange.tokenBAmount.greaterThan(0)) ? (
+                        <div className="text-green-700">{`+$${toUsd(pool.FeesLiquidityChange, pool).toFixed(2)}`}</div>
                     ) : (
                         <div />
                     )}
@@ -624,7 +624,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                 <div className="grid grid-cols-2 gap-1 text-xs">
                                     <div>
                                         <span className="text-gray-400">TVL: </span>
-                                        <span className="truncate">${pool.TVL.toFixed(2)}</span>
+                                        <span className="truncate">${pool.TVLUsd.toFixed(2)}</span>
                                     </div>
                                     <div className="min-w-0 flex gap-1 justify-end">
                                         <span className="text-gray-400">Activation: </span>
@@ -668,15 +668,15 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                 <div className="grid grid-cols-3 gap-1 text-xs">
                                     <div className="text-center bg-gray-700 rounded">
                                         <div className="text-gray-400">Token A Fees</div>
-                                        <div>${pool.tokenA.totalFees.toFixed(2)}</div>
+                                        <div>${pool.tokenA.totalFeesUsd.toFixed(2)}</div>
                                     </div>
                                     <div className="text-center bg-gray-700 rounded">
                                         <div className="text-gray-400">Token B Fees</div>
-                                        <div>${pool.tokenB.totalFees.toFixed(2)}</div>
+                                        <div>${pool.tokenB.totalFeesUsd.toFixed(2)}</div>
                                     </div>
                                     <div className="text-center bg-gray-700 rounded">
                                         <div className="text-gray-400">Total Fees</div>
-                                        <div>${pool.totalFees.toFixed(2)}</div>
+                                        <div>${pool.totalFeesUsd.toFixed(2)}</div>
                                     </div>
                                 </div>
 

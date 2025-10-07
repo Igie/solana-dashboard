@@ -29,7 +29,7 @@ export interface PoolPositionInfo {
     tokenB: PoolPositionTokenInfo
     shareOfPoolPercentage: number
     poolValue: number
-    poolValueChange:number,
+    poolValueChange: number,
     positionValue: number
     positionValueChange: number
     positionUnclaimedFee: number
@@ -50,9 +50,12 @@ export interface PoolInfo {
 }
 
 export interface PoolTokenInfo extends TokenMetadata {
-    poolAmount: number
-    totalFees: Decimal,
+    poolAmount: Decimal
+    totalFeesToken: Decimal,
+    totalFeesUsd: Decimal,
 }
+
+export interface Liquidity { tokenAAmount: Decimal, tokenBAmount: Decimal }
 
 export interface PoolDetailedInfo {
     poolInfo: PoolInfo
@@ -62,13 +65,18 @@ export interface PoolDetailedInfo {
     baseFeeBPS: number
     totalFeeBPS: number
     price: Decimal
-    TVL: number
-    TVLChange: number
+    TVLUsd: number
+    TVLUsdChange:number
+    LiquidityChange: Liquidity
     lockedTVL: number
-    totalFees: Decimal
-    totalFeesChange:Decimal
+    totalFeesUsd: Decimal
+    FeesLiquidityChange: Liquidity
 }
 
+export const toUsd = (l:Liquidity, pool:PoolDetailedInfo) =>
+{
+    return l.tokenAAmount.mul(pool.tokenA.price).toNumber() + l.tokenBAmount.mul(pool.tokenB.price).toNumber();
+}
 
 export interface PoolDetailedInfoMap {
     [key: string]: PoolDetailedInfo
@@ -134,22 +142,23 @@ export const getDetailedPools = (cpAmm: CpAmm, p: PoolInfo[], tm: TokenMetadataM
             throw new Error("No Token metadata found when creating detailed pool");
         }
 
-        const poolTokenAAmount = new Decimal(withdrawPoolQuote.outAmountA.toString()).div(Decimal.pow(10, tokenAMetadata?.decimals || 6)).toNumber();
-        const poolTokenBAmount = new Decimal(withdrawPoolQuote.outAmountB.toString()).div(Decimal.pow(10, tokenBMetadata?.decimals || 6)).toNumber();
+        const poolTokenAAmount = new Decimal(withdrawPoolQuote.outAmountA.toString()).div(Decimal.pow(10, tokenAMetadata?.decimals || 6));
+        const poolTokenBAmount = new Decimal(withdrawPoolQuote.outAmountB.toString()).div(Decimal.pow(10, tokenBMetadata?.decimals || 6));
 
         const poolPrice = new Decimal(getPriceFromSqrtPrice(x.account.sqrtPrice, tokenAMetadata?.decimals || 6, tokenBMetadata?.decimals || 6));
 
         const poolTokenA = {
             ...tokenAMetadata,
             poolAmount: poolTokenAAmount,
-            totalFees: new Decimal(x.account.metrics.totalLpAFee.add(x.account.metrics.totalProtocolAFee).toString()).div(Decimal.pow(10, tokenAMetadata?.decimals || 6)).mul(tokenAMetadata?.price),
+            totalFeesUsd: new Decimal(x.account.metrics.totalLpAFee.add(x.account.metrics.totalProtocolAFee).toString()).div(Decimal.pow(10, tokenAMetadata?.decimals || 6)).mul(tokenAMetadata?.price),
+            totalFeesToken: new Decimal(x.account.metrics.totalLpAFee.add(x.account.metrics.totalProtocolAFee).toString()).div(Decimal.pow(10, tokenAMetadata?.decimals || 6)),
         }
 
         const poolTokenB = {
             ...tokenBMetadata,
             poolAmount: poolTokenBAmount,
-            totalFees: new Decimal(x.account.metrics.totalLpBFee.add(x.account.metrics.totalProtocolBFee).toString()).div(Decimal.pow(10, tokenBMetadata?.decimals)).mul(tokenBMetadata?.price),
-
+            totalFeesUsd: new Decimal(x.account.metrics.totalLpBFee.add(x.account.metrics.totalProtocolBFee).toString()).div(Decimal.pow(10, tokenBMetadata?.decimals)).mul(tokenBMetadata?.price),
+            totalFeesToken: new Decimal(x.account.metrics.totalLpBFee.add(x.account.metrics.totalProtocolBFee).toString()).div(Decimal.pow(10, tokenBMetadata?.decimals)),
         }
 
         const poolTokenAAmountLocked = new Decimal(lockedWithdrawPoolQuote.outAmountA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
@@ -185,11 +194,12 @@ export const getDetailedPools = (cpAmm: CpAmm, p: PoolInfo[], tm: TokenMetadataM
                 x.account.poolFees.dynamicFee
             )),
             price: new Decimal(getPriceFromSqrtPrice(x.account.sqrtPrice, poolTokenA.decimals, poolTokenB.decimals)),
-            TVL: (poolPrice.mul(new Decimal(poolTokenAAmount)).toNumber() * tokenBMetadata.price.toNumber() + poolTokenBAmount * tokenBMetadata.price.toNumber()),
-            TVLChange: 0,
+            TVLUsd: (poolPrice.mul(new Decimal(poolTokenAAmount)).toNumber() * tokenBMetadata.price.toNumber() + poolTokenBAmount.mul(tokenBMetadata.price).toNumber()),
+            TVLUsdChange:0,
+            LiquidityChange: { tokenAAmount: new Decimal(0), tokenBAmount: new Decimal(0) },
             lockedTVL: poolPrice.mul(new Decimal(poolTokenAAmountLocked)).toNumber() * tokenBMetadata.price.toNumber() + poolTokenBAmountLocked * tokenBMetadata.price.toNumber(),
-            totalFees: poolTokenA.totalFees.add(poolTokenB.totalFees),
-            totalFeesChange: new Decimal(0),
+            totalFeesUsd: poolTokenA.totalFeesUsd.add(poolTokenB.totalFeesUsd),
+            FeesLiquidityChange: { tokenAAmount: new Decimal(0), tokenBAmount: new Decimal(0) },
         });
     };
 
@@ -217,15 +227,15 @@ export const sortPools = (pools: PoolDetailedInfo[], sortType: PoolSortType, asc
                 break;
 
             case PoolSortType.PoolTokenAFees:
-                r = (x.tokenA.totalFees.sub(y.tokenA.totalFees).toNumber());
+                r = (x.tokenA.totalFeesUsd.sub(y.tokenA.totalFeesUsd).toNumber());
                 break;
 
             case PoolSortType.PoolTokenBFees:
-                r = (x.tokenB.totalFees.sub(y.tokenB.totalFees).toNumber());
+                r = (x.tokenB.totalFeesUsd.sub(y.tokenB.totalFeesUsd).toNumber());
                 break;
 
             case PoolSortType.PoolTotalFees:
-                r = (x.totalFees.sub(y.totalFees).toNumber());
+                r = (x.totalFeesUsd.sub(y.totalFeesUsd).toNumber());
                 break;
         }
 

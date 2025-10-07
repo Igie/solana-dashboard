@@ -294,8 +294,8 @@ export const TokenAccountsProvider: React.FC<{ children: React.ReactNode }> = ({
                 const tokenAMetadata = tm[x.account.tokenAMint.toBase58()];
                 const tokenBMetadata = tm[x.account.tokenBMint.toBase58()];
 
-                const poolTokenAAmount = new Decimal(withdrawPoolQuote.outAmountA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
-                const poolTokenBAmount = new Decimal(withdrawPoolQuote.outAmountB.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
+                const poolTokenAAmount = new Decimal(withdrawPoolQuote.outAmountA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals));
+                const poolTokenBAmount = new Decimal(withdrawPoolQuote.outAmountB.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals));
 
                 const poolTokenAAmountLocked = new Decimal(lockedWithdrawPoolQuote.outAmountA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
                 const poolTokenBAmountLocked = new Decimal(lockedWithdrawPoolQuote.outAmountB.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
@@ -305,13 +305,15 @@ export const TokenAccountsProvider: React.FC<{ children: React.ReactNode }> = ({
                 const poolTokenA = {
                     ...tokenAMetadata,
                     poolAmount: poolTokenAAmount,
-                    totalFees: new Decimal(x.account.metrics.totalLpAFee.add(x.account.metrics.totalProtocolAFee).toString()).div(Decimal.pow(10, tokenAMetadata?.decimals)).mul(tokenAMetadata?.price),
+                    totalFeesUsd: new Decimal(x.account.metrics.totalLpAFee.add(x.account.metrics.totalProtocolAFee).toString()).div(Decimal.pow(10, tokenAMetadata?.decimals)).mul(tokenAMetadata?.price),
+                    totalFeesToken: new Decimal(x.account.metrics.totalLpAFee.add(x.account.metrics.totalProtocolAFee).toString()).div(Decimal.pow(10, tokenAMetadata?.decimals)),
                 }
 
                 const poolTokenB = {
                     ...tokenBMetadata,
                     poolAmount: poolTokenBAmount,
-                    totalFees: new Decimal(x.account.metrics.totalLpBFee.add(x.account.metrics.totalProtocolBFee).toString()).div(Decimal.pow(10, tokenBMetadata?.decimals)).mul(tokenBMetadata?.price),
+                    totalFeesUsd: new Decimal(x.account.metrics.totalLpBFee.add(x.account.metrics.totalProtocolBFee).toString()).div(Decimal.pow(10, tokenBMetadata?.decimals)).mul(tokenBMetadata?.price),
+                    totalFeesToken: new Decimal(x.account.metrics.totalLpBFee.add(x.account.metrics.totalProtocolBFee).toString()).div(Decimal.pow(10, tokenBMetadata?.decimals)),
                 }
 
                 let activationTime = 0;
@@ -344,11 +346,12 @@ export const TokenAccountsProvider: React.FC<{ children: React.ReactNode }> = ({
                         x.account.poolFees.dynamicFee
                     )),
                     price: new Decimal(getPriceFromSqrtPrice(x.account.sqrtPrice, poolTokenA.decimals, poolTokenB.decimals)),
-                    TVL: poolPrice.mul(new Decimal(poolTokenAAmount)).toNumber() * tokenBMetadata.price.toNumber() + poolTokenBAmount * tokenBMetadata.price.toNumber(),
-                    TVLChange: 0,
+                    TVLUsd: poolPrice.mul(new Decimal(poolTokenAAmount)).toNumber() * tokenBMetadata.price.toNumber() + poolTokenBAmount.mul(tokenBMetadata.price).toNumber(),
+                    TVLUsdChange:0,
+                    LiquidityChange: { tokenAAmount: new Decimal(0), tokenBAmount: new Decimal(0) },
                     lockedTVL: poolPrice.mul(new Decimal(poolTokenAAmountLocked)).toNumber() * tokenBMetadata.price.toNumber() + poolTokenBAmountLocked * tokenBMetadata.price.toNumber(),
-                    totalFees: poolTokenA.totalFees.add(poolTokenB.totalFees),
-                    totalFeesChange: new Decimal(0),
+                    totalFeesUsd: poolTokenA.totalFeesUsd.add(poolTokenB.totalFeesUsd),
+                    FeesLiquidityChange: { tokenAAmount: new Decimal(0), tokenBAmount: new Decimal(0) },
                 });
             } catch (e) {
                 console.error(e)
