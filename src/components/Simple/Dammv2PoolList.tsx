@@ -578,7 +578,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
 
 
                     <div className="flex-grow space-y-2 divide-y-2 overflow-y-auto">
-                        {pools.slice(0, Math.min(100, pools.length)).map((pool, index) => (
+                        {pools.map((pool, index) => (
                             <div key={index} className="lg:hidden space-y-1">
                                 {/* Token Info */}
                                 <div className="flex justify-between items-start">
