@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { RefreshCw, Wallet, ExternalLink, Droplets, TrendingUp, ChevronDown, ChevronUp, Menu, ArrowDown, ArrowUp } from 'lucide-react'
+import { RefreshCw, Wallet, ExternalLink, Droplets, TrendingUp, ChevronDown, ChevronUp, Menu, ArrowDownWideNarrow, ArrowUpNarrowWide } from 'lucide-react'
 import { SortType, useDammUserPositions } from '../contexts/DammUserPositionsContext'
 import { useTransactionManager } from '../contexts/TransactionManagerContext'
 import { toast } from 'sonner'
@@ -816,14 +816,14 @@ const DammPositions: React.FC = () => {
                   className={`flex items-center justify-center px-2 py-1 text-white hover:bg-gray-700 rounded text-md ${sortedBy === SortType.PoolValue && sortedAscending === false ? 'bg-gray-700' : ''
                     }`}
                 >
-                  <ArrowDown className="w-4 h-4" />
+                  <ArrowDownWideNarrow className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => handleSort(SortType.PoolValue, true)}
                   className={`flex items-center justify-center px-2 py-1 text-white hover:bg-gray-700 rounded text-md ${sortedBy === SortType.PoolValue && sortedAscending === true ? 'bg-gray-700' : ''
                     }`}
                 >
-                  <ArrowUp className="w-4 h-4" />
+                  <ArrowUpNarrowWide className="w-4 h-4" />
                 </button>
               </div>
               <div className="grid grid-cols-5 gap-1">
@@ -833,14 +833,14 @@ const DammPositions: React.FC = () => {
                   className={`flex items-center justify-center px-2 py-1 text-white hover:bg-gray-700 rounded text-md ${sortedBy === SortType.PositionValue && sortedAscending === false ? 'bg-gray-700' : ''
                     }`}
                 >
-                  <ArrowDown className="w-4 h-4" />
+                  <ArrowDownWideNarrow className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => handleSort(SortType.PositionValue, true)}
                   className={`flex items-center justify-center px-2 py-1 text-white hover:bg-gray-700 rounded text-md ${sortedBy === SortType.PositionValue && sortedAscending === true ? 'bg-gray-700' : ''
                     }`}
                 >
-                  <ArrowUp className="w-4 h-4" />
+                  <ArrowUpNarrowWide className="w-4 h-4" />
                 </button>
               </div>
               <div className="grid grid-cols-5 gap-1">
@@ -850,14 +850,14 @@ const DammPositions: React.FC = () => {
                   className={`flex items-center justify-center px-2 py-1 text-white hover:bg-gray-700 rounded text-md ${sortedBy === SortType.PositionUnclaimedFee && sortedAscending === false ? 'bg-gray-700' : ''
                     }`}
                 >
-                  <ArrowDown className="w-4 h-4" />
+                  <ArrowDownWideNarrow className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => handleSort(SortType.PositionUnclaimedFee, true)}
                   className={`flex items-center justify-center px-2 py-1 text-white hover:bg-gray-700 rounded text-md ${sortedBy === SortType.PositionUnclaimedFee && sortedAscending === true ? 'bg-gray-700' : ''
                     }`}
                 >
-                  <ArrowUp className="w-4 h-4" />
+                  <ArrowUpNarrowWide className="w-4 h-4" />
                 </button>
               </div>
               <div className="grid grid-cols-5 gap-1">
@@ -867,14 +867,14 @@ const DammPositions: React.FC = () => {
                   className={`flex items-center justify-center px-2 py-1 text-white hover:bg-gray-700 rounded text-md ${sortedBy === SortType.PositionClaimedFee && sortedAscending === false ? 'bg-gray-700' : ''
                     }`}
                 >
-                  <ArrowDown className="w-4 h-4" />
+                  <ArrowDownWideNarrow className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => handleSort(SortType.PositionClaimedFee, true)}
                   className={`flex items-center justify-center px-2 py-1 text-white hover:bg-gray-700 rounded text-md ${sortedBy === SortType.PositionClaimedFee && sortedAscending === true ? 'bg-gray-700' : ''
                     }`}
                 >
-                  <ArrowUp className="w-4 h-4" />
+                  <ArrowUpNarrowWide className="w-4 h-4" />
                 </button>
               </div>
               <div className="grid grid-cols-5 gap-1">
@@ -884,14 +884,14 @@ const DammPositions: React.FC = () => {
                   className={`flex items-center justify-center px-2 py-1 text-white hover:bg-gray-700 rounded text-md ${sortedBy === SortType.PoolCurrentFee && sortedAscending === false ? 'bg-gray-700' : ''
                     }`}
                 >
-                  <ArrowDown className="w-4 h-4" />
+                  <ArrowDownWideNarrow className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => handleSort(SortType.PoolCurrentFee, true)}
                   className={`flex items-center justify-center px-2 py-1 text-white hover:bg-gray-700 rounded text-md ${sortedBy === SortType.PoolCurrentFee && sortedAscending === true ? 'bg-gray-700' : ''
                     }`}
                 >
-                  <ArrowUp className="w-4 h-4" />
+                  <ArrowUpNarrowWide className="w-4 h-4" />
                 </button>
               </div>
               <div className="grid grid-cols-5 gap-1">
@@ -901,14 +901,14 @@ const DammPositions: React.FC = () => {
                   className={`flex items-center justify-center px-2 py-1 text-white hover:bg-gray-700 rounded text-md ${sortedBy === SortType.PoolBaseFee && sortedAscending === false ? 'bg-gray-700' : ''
                     }`}
                 >
-                  <ArrowDown className="w-4 h-4" />
+                  <ArrowDownWideNarrow className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => handleSort(SortType.PoolBaseFee, true)}
                   className={`flex items-center justify-center px-2 py-1 text-white hover:bg-gray-700 rounded text-md ${sortedBy === SortType.PoolBaseFee && sortedAscending === true ? 'bg-gray-700' : ''
                     }`}
                 >
-                  <ArrowUp className="w-4 h-4" />
+                  <ArrowUpNarrowWide className="w-4 h-4" />
                 </button>
               </div>
             </div>
