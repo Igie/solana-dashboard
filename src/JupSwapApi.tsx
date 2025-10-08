@@ -10,6 +10,14 @@ import { toast } from "sonner";
 import Decimal from "decimal.js";
 
 
+interface JupiterUltraParams {
+  inputMint: string;
+  outputMint: string;
+  amount: Decimal;
+  taker: string;
+  excludeDexes?: string[];
+}
+
 interface JupiterQuoteParams {
   inputMint: string;
   outputMint: string;
@@ -94,7 +102,6 @@ export const getQuote = async (params: JupiterQuoteParams, notify: boolean = tru
 }
 
 export const getSwapTransactionVersioned = async (quoteResponse: JupiterQuoteResponse, publicKey: PublicKey): Promise<VersionedTransaction> => {
-
   const { swapTransaction } = await (
     await fetch('https://lite-api.jup.ag/swap/v1/swap', {
       method: 'POST',
@@ -156,8 +163,6 @@ export const getSwapInstructions = async (quoteResponse: JupiterQuoteResponse, p
   }
 }
 
-
-
 export const getSwapTransaction = async (quoteResponse: JupiterQuoteResponse, connection: Connection, pubKey: PublicKey): Promise<Transaction | VersionedTransaction> => {
   const instructions = await (
     await fetch(`https://lite-api.jup.ag/swap/v1/swap-instructions`, {
@@ -207,6 +212,40 @@ export const getSwapTransaction = async (quoteResponse: JupiterQuoteResponse, co
   const transaction = Transaction.populate(messageV0);
   return transaction;
 }
+interface JupiterUltraResponse {
+  transaction: string | null
+  requestId: string,
+}
+export const getUltraOrder = async (params: JupiterUltraParams, notify: boolean = true) => {
+  try {
+    const url = new URL(`https://lite-api.jup.ag/ultra/v1/order?`);
+    url.searchParams.append("inputMint", params.inputMint);
+    url.searchParams.append("outputMint", params.outputMint);
+    url.searchParams.append("amount", params.amount.toString());
+    url.searchParams.append("taker", params.taker.toString());
+    //url.searchParams.append("asLegacyTransaction", "true");
+
+    if (params.excludeDexes && params.excludeDexes.length > 0)
+      url.searchParams.append("excludeDexes", params.excludeDexes.join(","));
+
+    const response = await fetch(url.toString());
+    if (!response.ok) {
+      if (notify) {
+        toast.error("Failed to get quote!");
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data: JupiterUltraResponse = await response.json();
+    console.log("Ultra response", data);
+    return data;
+  } catch (error) {
+    console.error("Error fetching quote:", error);
+    throw error;
+  }
+}
+
+
 
 const deserializeInstruction = (instruction: Instruction) => {
   return new TransactionInstruction({

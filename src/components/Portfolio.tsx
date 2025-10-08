@@ -4,7 +4,7 @@ import { Coins, RefreshCw, Wallet, ExternalLink, CheckCircle, XCircle } from 'lu
 import { useTokenAccounts, type TokenAccount } from '../contexts/TokenAccountsContext'
 import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-adapter'
 import { toast } from 'sonner'
-import { getQuote, getSwapTransactionVersioned } from '../JupSwapApi'
+import { getQuote, getSwapTransactionVersioned, getUltraOrder } from '../JupSwapApi'
 import { useTransactionManager } from '../contexts/TransactionManagerContext'
 import { txToast } from './Simple/TxToast'
 import { createCloseAccountInstruction, getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID } from '@solana/spl-token'
@@ -15,7 +15,7 @@ import Dammv2PoolList from './Simple/Dammv2PoolList'
 import { useDammV2PoolsWebsocket } from '../contexts/Dammv2PoolContext'
 import type { AppInnerPassProps } from '../AppInner'
 import { GetTokenMetadataMap } from '../contexts/TokenMetadataContext'
-import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js'
+import { LAMPORTS_PER_SOL, Message, PublicKey, Transaction, VersionedTransaction } from '@solana/web3.js'
 
 const Portfolio: React.FC<AppInnerPassProps> = ({
   goToPoolPage,
@@ -52,9 +52,6 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
     setPopupIndex(popupIndex === index ? null : index)
   }
 
-
-
-
   const handleSwap = (ta: TokenAccount) => {
     setPopupIndex(null);
     window.Jupiter.init({
@@ -64,7 +61,6 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
         initialAmount: (ta.amount.mul(Decimal.pow(10, ta.decimals))).toFixed(0),
         swapMode: 'ExactIn',
       },
-
     });
 
     window.Jupiter.onSuccess = async () => {
@@ -73,20 +69,40 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
   }
 
   const getSwapToSolTx = async (ta: TokenAccount) => {
+
     try {
-      const quote = await getQuote({
+      const quote = await getUltraOrder({
         inputMint: ta.mint,
         outputMint: 'So11111111111111111111111111111111111111112',
         amount: ta.amount.mul(Decimal.pow(10, ta.decimals)),
-        slippageBps: jupSlippage ? jupSlippage * 100 : 200,
+        taker: publicKey!.toBase58(),
         excludeDexes: includeDammv2Route ? [] : ['Meteora DAMM v2'],
       }, false)
 
-      const txn = await getSwapTransactionVersioned(quote, publicKey!);
-      return txn;
+      const b = Buffer.from(quote.transaction!, 'base64')
+
+
+      let tx = VersionedTransaction.deserialize(new Uint8Array(b.buffer));
+      console.log(tx);
+      return tx;
     } catch {
       return null;
     }
+
+    // try {
+    //   const quote = await getQuote({
+    //     inputMint: ta.mint,
+    //     outputMint: 'So11111111111111111111111111111111111111112',
+    //     amount: ta.amount.mul(Decimal.pow(10, ta.decimals)),
+    //     slippageBps: jupSlippage ? jupSlippage * 100 : 200,
+    //     excludeDexes: includeDammv2Route ? [] : ['Meteora DAMM v2'],
+    //   }, false)
+
+    //   const txn = await getSwapTransactionVersioned(quote, publicKey!);
+    //   return txn;
+    // } catch {
+    //   return null;
+    // }
   }
 
   const handleSwapToSol = async (ta: TokenAccount) => {
@@ -230,7 +246,7 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
               }
               }
             >
-              Swap All to SOL ({selectedAccounts.size})
+              Swap All to SOL(Ultra) ({selectedAccounts.size})
             </button>
 
             <button
@@ -381,7 +397,7 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
                               onClick={() => handleSwapToSol(tokenAccount)}
                               className="block w-full text-left px-1 py-0.5 text-sm text-white hover:bg-purple-700 rounded"
                             >
-                              Swap all to SOL
+                              Swap to SOL (Swap API)
                             </button>
                             <button
                               onClick={async () => {
