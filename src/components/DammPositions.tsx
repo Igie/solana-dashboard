@@ -911,6 +911,23 @@ const DammPositions: React.FC = () => {
                   <ArrowUpNarrowWide className="w-4 h-4" />
                 </button>
               </div>
+              <div className="grid grid-cols-5 gap-1">
+                <div className="col-span-3 text-md text-gray-400 px-0.5 py-1 font-medium">Pool Age</div>
+                <button
+                  onClick={() => handleSort(SortType.PoolAge, false)}
+                  className={`flex items-center justify-center px-2 py-1 text-white hover:bg-gray-700 rounded text-md ${sortedBy === SortType.PoolAge && sortedAscending === false ? 'bg-gray-700' : ''
+                    }`}
+                >
+                  <ArrowDownWideNarrow className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleSort(SortType.PoolAge, true)}
+                  className={`flex items-center justify-center px-2 py-1 text-white hover:bg-gray-700 rounded text-md ${sortedBy === SortType.PoolAge && sortedAscending === true ? 'bg-gray-700' : ''
+                    }`}
+                >
+                  <ArrowUpNarrowWide className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           )}
         </div>

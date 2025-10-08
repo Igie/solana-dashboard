@@ -33,6 +33,7 @@ export enum SortType {
     PositionClaimedFee,
     PoolBaseFee,
     PoolCurrentFee,
+    PoolAge,
 }
 
 interface DammUserPositionsContextType {
@@ -343,6 +344,9 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                 case SortType.PoolCurrentFee:
                     r = (x.poolCurrentFeeBPS - y.poolCurrentFeeBPS);
                     break;
+                case SortType.PoolAge:
+                    r = (x.poolInfo.account.activationPoint.sub(y.poolInfo.account.activationPoint).toNumber());
+                    break;
             }
 
             if (!ascending)
@@ -383,6 +387,9 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                     break;
                 case SortType.PoolCurrentFee:
                     r = (x.poolCurrentFeeBPS - y.poolCurrentFeeBPS);
+                    break;
+                case SortType.PoolAge:
+                    r = (x.poolInfo.account.activationPoint.sub(y.poolInfo.account.activationPoint).toNumber());
                     break;
             }
 
@@ -437,7 +444,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
 
         const tokenAUnclaimedFees = new Decimal(unclaimedRewards.feeTokenA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
         const tokenBUnclaimedFees = new Decimal(unclaimedRewards.feeTokenB.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
-        
+
         const tokenAClaimedFees = new Decimal(position.positionState.metrics.totalClaimedAFee.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
         const tokenBClaimedFees = new Decimal(position.positionState.metrics.totalClaimedBFee.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
 
@@ -544,7 +551,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
 
             const tokenAUnclaimedFees = new Decimal(unclaimedRewards.feeTokenA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
             const tokenBUnclaimedFees = new Decimal(unclaimedRewards.feeTokenB.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
-            
+
             const tokenAClaimedFees = new Decimal(position.positionState.metrics.totalClaimedAFee.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
             const tokenBClaimedFees = new Decimal(position.positionState.metrics.totalClaimedBFee.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
 
@@ -674,10 +681,10 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
             });
         } return true;
     }
-      useEffect(() => {
+    useEffect(() => {
         refreshPositions();
         console.log("refreshing positions from context")
-      }, [connection, publicKey])
+    }, [connection, publicKey])
 
     useEffect(() => {
         if (updatedPools && updatedPools.length > 0) {
