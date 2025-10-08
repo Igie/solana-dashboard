@@ -52,19 +52,22 @@ export const GetTokenAccountMap = (tokenAccounts: TokenAccount[]): TokenAccountM
 }
 
 interface TokenAccountsContextType {
-    tokenAccounts: TokenAccount[]
+    allTokenAccounts: TokenAccount[]
+    fullTokenAccounts: TokenAccount[]
+    emptyTokenAccounts: TokenAccount[]
     tokenMetadata: TokenMetadata[]
     existingPools: PoolDetailedInfoMap
     solBalance: Decimal
     loading: boolean
     refreshTokenAccounts: () => Promise<{ tokenAccounts: TokenAccount[], tokenMetadata: TokenMetadata[] }>
-    getEmptyTokenAccounts: () => TokenAccount[]
     fetchPools: (mint: string) => Promise<void>
     updateTokenAccounts: (tokenAccounts: (TokenAccount | undefined)[]) => void
 }
 
 const TokenAccountsContext = createContext<TokenAccountsContextType>({
-    tokenAccounts: [],
+    allTokenAccounts: [],
+    fullTokenAccounts: [],
+    emptyTokenAccounts: [],
     tokenMetadata: [],
     existingPools: {},
     solBalance: new Decimal(0),
@@ -72,7 +75,6 @@ const TokenAccountsContext = createContext<TokenAccountsContextType>({
     refreshTokenAccounts: async () => {
         return { tokenAccounts: [], tokenMetadata: [] }
     },
-    getEmptyTokenAccounts: () => [],
     fetchPools: async (_: string) => { },
     updateTokenAccounts: () => { },
 })
@@ -87,7 +89,9 @@ export const TokenAccountsProvider: React.FC<{ children: React.ReactNode }> = ({
     const { updatedPools } = useDammV2PoolsWebsocket();
     const { getSlot } = useGetSlot();
 
-    const [tokenAccounts, setTokenAccounts] = useState<TokenAccount[]>([])
+    const [allTokenAccounts, setAllTokenAccounts] = useState<TokenAccount[]>([])
+    const [fullTokenAccounts, setFullTokenAccounts] = useState<TokenAccount[]>([])
+    const [emptyTokenAccounts, setEmptyTokenAccounts] = useState<TokenAccount[]>([])
     const [tokenMetadata, setTokenMetadata] = useState<TokenMetadata[]>([])
 
     const [existingPools, setExistingPools] = useState<PoolDetailedInfoMap>({});
@@ -103,14 +107,14 @@ export const TokenAccountsProvider: React.FC<{ children: React.ReactNode }> = ({
 
             const existing = GetPoolInfoMap(Object.entries(existingPools).map(x => x[1].poolInfo));
             for (const updated of updatedPools) {
-                if (updated.account.tokenAMint.toBase58() !== NATIVE_MINT.toBase58() && tokenAccounts.find(x => x.mint === updated.account.tokenAMint.toBase58())) {
+                if (updated.account.tokenAMint.toBase58() !== NATIVE_MINT.toBase58() && fullTokenAccounts.find(x => x.mint === updated.account.tokenAMint.toBase58())) {
                     existing[updated.publicKey.toBase58()] = updated;
                     update = true;
                     console.log(updated.account.tokenAMint.toBase58());
                 }
             }
             if (update) {
-                mapPools(Object.entries(existing).map(x => x[1]), GetTokenMetadataMap(tokenAccounts));
+                mapPools(Object.entries(existing).map(x => x[1]), GetTokenMetadataMap(fullTokenAccounts));
                 console.log("Found pools");
 
             }
@@ -234,13 +238,17 @@ export const TokenAccountsProvider: React.FC<{ children: React.ReactNode }> = ({
         try {
             const [tokenMetadata, tokenAccounts] = await fetchTokenAccounts();
             const sortedAccounts = tokenAccounts.sort((x, y) => (y.price.toNumber() * y.amount.toNumber()) - (x.price.toNumber() * x.amount.toNumber()))
-            setTokenAccounts(sortedAccounts);
+            setAllTokenAccounts(sortedAccounts);
+            setFullTokenAccounts(sortedAccounts.filter(x => x.amount.gt(0)));
+            setEmptyTokenAccounts(sortedAccounts.filter(x => x.amount.eq(0)));
             setTokenMetadata(tokenMetadata);
             setLoading(false);
             return { tokenAccounts, tokenMetadata }
         } catch (err) {
             console.error('Failed to fetch token accounts:', err)
-            setTokenAccounts([]);
+            setAllTokenAccounts([]);
+            setFullTokenAccounts([]);
+            setEmptyTokenAccounts([]);
             setTokenMetadata([]);
         }
         setLoading(false)
@@ -262,14 +270,10 @@ export const TokenAccountsProvider: React.FC<{ children: React.ReactNode }> = ({
             }])
             console.log(pools.length);
 
-            await mapPools(pools, GetTokenMetadataMap(tokenAccounts));
+            await mapPools(pools, GetTokenMetadataMap(fullTokenAccounts));
         } finally {
             setFetchingPools(false);
         }
-    }
-
-    const getEmptyTokenAccounts = () => {
-        return tokenAccounts.filter(x => x.amount.eq(0));
     }
 
     const mapPools = async (p: PoolInfo[], tm: TokenMetadataMap) => {
@@ -347,7 +351,7 @@ export const TokenAccountsProvider: React.FC<{ children: React.ReactNode }> = ({
                     )),
                     price: new Decimal(getPriceFromSqrtPrice(x.account.sqrtPrice, poolTokenA.decimals, poolTokenB.decimals)),
                     TVLUsd: poolPrice.mul(new Decimal(poolTokenAAmount)).toNumber() * tokenBMetadata.price.toNumber() + poolTokenBAmount.mul(tokenBMetadata.price).toNumber(),
-                    TVLUsdChange:0,
+                    TVLUsdChange: 0,
                     LiquidityChange: { tokenAAmount: new Decimal(0), tokenBAmount: new Decimal(0) },
                     lockedTVL: poolPrice.mul(new Decimal(poolTokenAAmountLocked)).toNumber() * tokenBMetadata.price.toNumber() + poolTokenBAmountLocked * tokenBMetadata.price.toNumber(),
                     totalFeesUsd: poolTokenA.totalFeesUsd.add(poolTokenB.totalFeesUsd),
@@ -364,7 +368,7 @@ export const TokenAccountsProvider: React.FC<{ children: React.ReactNode }> = ({
     };
 
     const updateTokenAccounts = (tas: (TokenAccount | undefined)[]) => {
-        const taTemp = GetTokenAccountMap(tokenAccounts);
+        const taTemp = GetTokenAccountMap(allTokenAccounts);
         const currentTime = Date.now();
         for (const ta of tas) {
             console.log(ta)
@@ -378,12 +382,14 @@ export const TokenAccountsProvider: React.FC<{ children: React.ReactNode }> = ({
             } else
                 taTemp[ta.mint] = ta;
         }
-
-        setTokenAccounts(Object.entries(taTemp).map(x => x[1]));
+        const allTokenAccountsTemp = Object.entries(taTemp).map(x => x[1]);
+        setAllTokenAccounts(allTokenAccountsTemp);
+        setFullTokenAccounts(allTokenAccountsTemp.filter(x => x.amount.gt(0)));
+        setEmptyTokenAccounts(allTokenAccountsTemp.filter(x => x.amount.eq(0)));
     }
 
     return (
-        <TokenAccountsContext.Provider value={{ tokenAccounts, tokenMetadata, existingPools, solBalance, loading, refreshTokenAccounts, getEmptyTokenAccounts, fetchPools, updateTokenAccounts }}>
+        <TokenAccountsContext.Provider value={{ allTokenAccounts, fullTokenAccounts, emptyTokenAccounts, tokenMetadata, existingPools, solBalance, loading, refreshTokenAccounts, fetchPools, updateTokenAccounts }}>
             {children}
         </TokenAccountsContext.Provider>
     )

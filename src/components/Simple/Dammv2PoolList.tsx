@@ -39,7 +39,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
     const { getSlot } = useGetSlot();
     const { cpAmm } = useCpAmm();
     const { publicKey, connected } = useWallet();
-    const { tokenAccounts, refreshTokenAccounts } = useTokenAccounts();
+    const { allTokenAccounts, refreshTokenAccounts } = useTokenAccounts();
     const { positions } = useDammUserPositions();
 
     const [tokenAccountMap, setTokenAccountMap] = useState<TokenAccountMap>({});
@@ -475,8 +475,8 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
     ]
 
     useEffect(() => {
-        setTokenAccountMap(GetTokenAccountMap(tokenAccounts));
-    }, [tokenAccounts]);
+        setTokenAccountMap(GetTokenAccountMap(allTokenAccounts));
+    }, [allTokenAccounts]);
 
     useEffect(() => {
         setUserPoolPositionInfoMap(getPoolPositionMap(positions));

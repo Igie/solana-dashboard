@@ -27,7 +27,7 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
   const { sendMultiTxn, sendVersionedTxn, sendMultiVersionedTxn } = useTransactionManager();
   const { setPoolSorting }
     = useDammV2PoolsWebsocket();
-  const { tokenAccounts, existingPools, refreshTokenAccounts, getEmptyTokenAccounts, fetchPools } = useTokenAccounts()
+  const { fullTokenAccounts, emptyTokenAccounts, existingPools, refreshTokenAccounts, fetchPools } = useTokenAccounts()
   const [loading, setLoading] = useState(false)
   const [popupIndex, setPopupIndex] = useState<number | null>(null)
   const popupRef = useRef<HTMLDivElement | null>(null)
@@ -163,7 +163,7 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
             <Coins className="w-5 h-5 text-blue-400" />
           </div>
           <div className="font-bold text-white">
-            {tokenAccounts.filter(x => x.amount.greaterThan(0)).length}
+            {fullTokenAccounts.length}
           </div>
         </div>
       </div>
@@ -186,7 +186,7 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
           </button>
           <button
             onClick={() => {
-              setSelectedAccounts(new Set([...tokenAccounts.filter(x => x.amount.greaterThan(0))]))
+              setSelectedAccounts(new Set([...fullTokenAccounts]))
             }}
             disabled={loading}
             className="flex items-center gap-1 px-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded text-md transition-colors w-auto justify-center"
@@ -236,7 +236,7 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
             <button
               className="bg-blue-600 hover:bg-blue-500 px-1 py-0.5 rounded text-white flex items-center sm:flex-none"
               onClick={async () => {
-                const accs = getEmptyTokenAccounts();
+                const accs = emptyTokenAccounts
 
                 const allIxs = accs.map(x => {
                   const tokenProgram = new PublicKey(x.tokenProgram)
@@ -268,7 +268,7 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
                 });
               }}
             >
-              Close Empty Accounts({getEmptyTokenAccounts().length})({getEmptyTokenAccounts().map(x => x.lamports).reduce((sum, cur) => sum + cur, 0) / LAMPORTS_PER_SOL} SOL)
+              Close Empty Accounts({emptyTokenAccounts.length})({emptyTokenAccounts.map(x => x.lamports).reduce((sum, cur) => sum + cur, 0) / LAMPORTS_PER_SOL} SOL)
             </button>
             <label className='bg-blue-600 hover:bg-blue-500 px-1 py-0.5 rounded text-white flex items-center gap-1 sm:flex-none'>
               <input type='checkbox'
@@ -282,7 +282,7 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
       </div>
       {/* Token Holdings */}
       <div className="flex flex-col bg-gray-900 border border-gray-700 rounded flex-1 min-h-0">
-        {tokenAccounts.length === 0 ? (
+        {fullTokenAccounts.length === 0 ? (
           <div className="p-8 text-center">
             <Coins className="w-12 h-12 mx-auto mb-4 text-gray-400" />
             <h3 className="text-lg font-semibold text-gray-300 mb-2">No Tokens Found</h3>
@@ -294,7 +294,7 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
           <div className="flex flex-col h-full overflow-hidden">
             <div className="flex-1 overflow-y-auto divide-y divide-gray-700">
               {/* Token Entries */}
-              {tokenAccounts.filter(x => x.amount.greaterThan(0)).map((tokenAccount, index) => (
+              {fullTokenAccounts.map((tokenAccount, index) => (
                 <div
                   key={index}
                   className="flex flex-col py-0.5 px-1 hover:bg-gray-800/50 transition-colors"
@@ -308,9 +308,9 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
                         checked={selectedAccounts.has(tokenAccount)}
                         onChange={(e) => {
                           if (lastSelectedAccount !== null && (e.nativeEvent as MouseEvent).shiftKey) {
-                            const index1 = tokenAccounts.indexOf(tokenAccount);
-                            const index2 = tokenAccounts.indexOf(lastSelectedAccount);
-                            const addedRange = tokenAccounts.slice(Math.min(index1, index2), Math.max(index1, index2) + 1);
+                            const index1 = fullTokenAccounts.indexOf(tokenAccount);
+                            const index2 = fullTokenAccounts.indexOf(lastSelectedAccount);
+                            const addedRange = fullTokenAccounts.slice(Math.min(index1, index2), Math.max(index1, index2) + 1);
                             setSelectedAccounts(new Set([...selectedAccounts, ...addedRange]));
                             setLastSelectedAccount(tokenAccount);
                             return;
@@ -450,7 +450,7 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
                     <div className="flex items-start">
                       <Dammv2PoolList
                         pools={Object.entries(existingPools).map(x => x[1]).filter(x => x.tokenA.mint === tokenAccount.mint)}
-                        tokenMetadataMap={GetTokenMetadataMap(tokenAccounts)}
+                        tokenMetadataMap={GetTokenMetadataMap(fullTokenAccounts)}
                         sortParamsCallback={(sortType, ascending) => {
                           setPoolSorting({ type: sortType, ascending })
                         }} />

@@ -23,7 +23,7 @@ export const MintSelectorInput: React.FC<Props> = ({
 
     const [dropdownOpen, setDropdownOpen] = useState(false)
 
-    const { loading, tokenAccounts } = useTokenAccounts();
+    const { loading, fullTokenAccounts } = useTokenAccounts();
 
     const inputRef = useRef<HTMLInputElement>(null)
     const dropdownRef = useRef<HTMLDivElement>(null)
@@ -34,7 +34,7 @@ export const MintSelectorInput: React.FC<Props> = ({
     }
 
     const handleMax = () => {
-        const selected = tokenAccounts.find(t => t.mint === mintInput)
+        const selected = fullTokenAccounts.find(t => t.mint === mintInput)
         if (selected) {
             const maxValue = new Decimal(selected.amount.toString())
             setAmountInternalInput(maxValue.toString());
@@ -43,7 +43,7 @@ export const MintSelectorInput: React.FC<Props> = ({
     }
 
     const handleCustom = () => {
-        const selected = tokenAccounts.find(t => t.mint === mintInput)
+        const selected = fullTokenAccounts.find(t => t.mint === mintInput)
         if (selected) {
             const customValue = new Decimal(selected.amount.toString()).div(2)
             setAmountInternalInput(customValue.toString());
@@ -97,7 +97,7 @@ export const MintSelectorInput: React.FC<Props> = ({
         document.addEventListener('mousedown', handleClickOutside)
         return () => document.removeEventListener('mousedown', handleClickOutside)
     }, [amountInternalInput, mintInput])
-    const selectedTokenAccount = tokenAccounts.find(x => x.mint === mintInput);
+    const selectedTokenAccount = fullTokenAccounts.find(x => x.mint === mintInput);
 
     return (
         <div className="relative w-full max-w-full p-1 bg-gray-900 rounded-md text-white space-y-1 border border-gray-700">
@@ -133,10 +133,10 @@ export const MintSelectorInput: React.FC<Props> = ({
 
                             {loading ? (
                                 <div className="p-2 text-sm text-center">Loading...</div>
-                            ) : tokenAccounts.length === 0 ? (
+                            ) : fullTokenAccounts.length === 0 ? (
                                 <div className="p-2 text-sm text-center">No tokens</div>
                             ) : (
-                                tokenAccounts
+                                fullTokenAccounts
                                     .sort((a, b) => b.amount.mul(b.price).sub(a.amount.mul(a.price)).toNumber())
                                     .map((account) => {
                                         if (!account) return null;
