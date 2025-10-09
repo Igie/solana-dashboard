@@ -1,4 +1,4 @@
-import { BaseFeeMode, CpAmm, feeNumeratorToBps, FeeScheduler, getAmountAFromLiquidityDelta, getAmountBFromLiquidityDelta, getBaseFeeNumerator, getMinBaseFeeNumerator, getPriceFromSqrtPrice, getUnClaimReward, parseFeeSchedulerSecondFactor, Rounding, type PoolState, type PositionState } from "@meteora-ag/cp-amm-sdk";
+import { BaseFeeMode, CpAmm, feeNumeratorToBps, FeeRateLimiter, FeeScheduler, getAmountAFromLiquidityDelta, getAmountBFromLiquidityDelta, getBaseFeeNumerator, getMinBaseFeeNumerator, getPriceFromSqrtPrice, getUnClaimReward, parseFeeSchedulerSecondFactor, Rounding, type PoolState, type PositionState } from "@meteora-ag/cp-amm-sdk";
 import { PublicKey } from "@solana/web3.js";
 
 import Decimal from 'decimal.js'
@@ -150,8 +150,6 @@ export const getDetailedPools = (p: PoolInfo[], tm: TokenMetadataMap, currentSlo
         const [tokenAAmount, tokenBAmount] = getWithdrawQuote(x.account.liquidity, x);
         const poolTokenAAmount = new Decimal(tokenAAmount.toString()).div(Decimal.pow(10, tokenAMetadata?.decimals || 6));
         const poolTokenBAmount = new Decimal(tokenBAmount.toString()).div(Decimal.pow(10, tokenBMetadata?.decimals || 6));
-
-        console.log("Pool:", x.publicKey.toBase58(), "Token A Amount:", poolTokenAAmount.toString(), "Token B Amount:", poolTokenBAmount.toString());
 
         const poolPrice = new Decimal(getPriceFromSqrtPrice(x.account.sqrtPrice, tokenAMetadata?.decimals || 6, tokenBMetadata?.decimals || 6));
 
@@ -419,7 +417,23 @@ export const getFeeScheduler = (baseFee: BaseFee) => {
 export const getMinAndCurrentFee = (p: PoolInfo, currentPoint: number) => {
     if (p.account.poolFees.baseFee.baseFeeMode === BaseFeeMode.RateLimiter) {
 
-        return [0, 0];
+        const maxLimiterDuration = Buffer.from(
+            p.account.poolFees.baseFee.secondFactor.slice(0, 4)
+        ).readUInt32LE(0);
+        const maxFeeBps = Buffer.from(p.account.poolFees.baseFee.secondFactor.slice(4, 8)).readUInt32LE(0);
+
+        const feeRateLimiter = new FeeRateLimiter(
+            p.account.poolFees.baseFee.cliffFeeNumerator,
+            p.account.poolFees.baseFee.firstFactor,
+            maxLimiterDuration,
+            maxFeeBps,
+            p.account.poolFees.baseFee.thirdFactor
+        );
+
+
+
+
+        return [feeNumeratorToBps(feeRateLimiter.cliffFeeNumerator), feeNumeratorToBps(feeRateLimiter.cliffFeeNumerator.addn(feeRateLimiter.feeIncrementBps))];
     }
 
     const feeScheduler = new FeeScheduler(

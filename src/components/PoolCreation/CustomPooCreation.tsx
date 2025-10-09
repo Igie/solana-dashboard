@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import Decimal from "decimal.js"
 import { Keypair, PublicKey } from "@solana/web3.js"
-import { ActivationType, BaseFeeMode, CollectFeeMode, deriveCustomizablePoolAddress, getBaseFeeParams, getDynamicFeeParams, getSqrtPriceFromPrice, MAX_SQRT_PRICE, MIN_SQRT_PRICE } from "@meteora-ag/cp-amm-sdk"
+import { ActivationType, BaseFeeMode, CollectFeeMode, deriveCustomizablePoolAddress, getDynamicFeeParams, getFeeSchedulerParams, getRateLimiterParams, getSqrtPriceFromPrice, MAX_SQRT_PRICE, MIN_SQRT_PRICE } from "@meteora-ag/cp-amm-sdk"
 import { DecimalInput } from "../Simple/DecimalInput"
 import { NumberInput } from "../Simple/NumberInput"
 import { formatDurationNumber } from "../../constants"
@@ -160,28 +160,14 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
             const minFee = minFeePercentage.toNumber() * 100;
             const totalDuration = new BN(totalSchedulerDuration);
             const reductionPeriod = new BN(schedulerReductionPeriod);
+
+            const baseFeeParams = selectedBaseFeeMode === BaseFeeMode.RateLimiter ?
+                getRateLimiterParams(minFee, maxFee, 0.001, 43200, 5000, tokenBMetadata.decimals, ActivationType.Timestamp) :
+                getFeeSchedulerParams(maxFee, minFee, selectedBaseFeeMode,
+                    totalDuration.div(reductionPeriod).toNumber(), totalDuration.toNumber());
+
             const poolFees = {
-                baseFee: getBaseFeeParams
-                    (
-                        {
-                            baseFeeMode: selectedBaseFeeMode,
-                            feeSchedulerParam: {
-                                startingFeeBps: maxFee,
-                                endingFeeBps: minFee,
-                                totalDuration: totalDuration.toNumber(),
-                                numberOfPeriod: totalDuration.div(reductionPeriod).toNumber(),
-                            },
-                            rateLimiterParam: selectedBaseFeeMode === BaseFeeMode.RateLimiter ? {
-                                baseFeeBps: minFee,
-                                feeIncrementBps: maxFee / 2,
-                                referenceAmount: 20000,
-                                maxFeeBps: maxFee,
-                                maxLimiterDuration: 43200,
-                            } : undefined,
-                        },
-                        tokenMetadata[tokenBMint].decimals,
-                        ActivationType.Timestamp,
-                    ),
+                baseFee: baseFeeParams,
                 padding: [],
                 dynamicFee: useDynamicFee ? getDynamicFeeParams(0, 1500) : null,
             };
