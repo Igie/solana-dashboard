@@ -15,7 +15,7 @@ import Dammv2PoolList from './Simple/Dammv2PoolList'
 import { useDammV2PoolsWebsocket } from '../contexts/Dammv2PoolContext'
 import type { AppInnerPassProps } from '../AppInner'
 import { GetTokenMetadataMap } from '../contexts/TokenMetadataContext'
-import { LAMPORTS_PER_SOL, Message, PublicKey, Transaction, VersionedTransaction } from '@solana/web3.js'
+import { LAMPORTS_PER_SOL,PublicKey, VersionedTransaction } from '@solana/web3.js'
 
 const Portfolio: React.FC<AppInnerPassProps> = ({
   goToPoolPage,

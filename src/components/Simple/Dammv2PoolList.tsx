@@ -354,7 +354,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                     <div >
                         {"$" + pool.TVLUsd.toFixed(2)}
                     </div>
-                    {!pool.LiquidityChange.tokenBAmount.eq(0) && pool.TVLUsdChange> 0 && (
+                    {!pool.LiquidityChange.tokenBAmount.eq(0) && pool.TVLUsdChange > 0 && (
                         <div className="text-green-700">{`+$${pool.TVLUsdChange.toFixed(2)}`}</div>
                     )}
                     {pool.LiquidityChange.tokenBAmount.eq(0) && (
@@ -364,6 +364,25 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                         <div className="text-red-700">{`-$${(pool.TVLUsdChange * -1).toFixed(2)}`}</div>
                     )}
                 </div>
+            )
+        },
+        {
+            header: <div className="flex items-center justify-center">
+                Fees Earned
+                {SortArrow<PoolSortType>(PoolSortType.PoolTotalFees, sortBy, sortAscending, handleSort)}
+            </div>,
+            render: (pool) => (
+                <div className="grid grid-cols-2 gap-0.5 text-center text-md min-w-35">
+                    <div >
+                        {"$" + pool.totalFeesUsd.toFixed(2)}
+                    </div>
+                    {(pool.FeesLiquidityChange.tokenAAmount.greaterThan(0) || pool.FeesLiquidityChange.tokenBAmount.greaterThan(0)) ? (
+                        <div className="text-green-700">{`+$${toUsd(pool.FeesLiquidityChange, pool).toFixed(2)}`}</div>
+                    ) : (
+                        <div />
+                    )}
+                </div>
+
             )
         },
         {
@@ -390,26 +409,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                 </div>
             )
         },
-        {
 
-            header: <div className="flex items-center justify-center">
-                Fees Earned
-                {SortArrow<PoolSortType>(PoolSortType.PoolTotalFees, sortBy, sortAscending, handleSort)}
-            </div>,
-            render: (pool) => (
-                <div className="grid grid-cols-2 gap-0.5 text-center text-md min-w-35">
-                    <div >
-                        {"$" + pool.totalFeesUsd.toFixed(2)}
-                    </div>
-                    {(pool.FeesLiquidityChange.tokenAAmount.greaterThan(0) || pool.FeesLiquidityChange.tokenBAmount.greaterThan(0)) ? (
-                        <div className="text-green-700">{`+$${toUsd(pool.FeesLiquidityChange, pool).toFixed(2)}`}</div>
-                    ) : (
-                        <div />
-                    )}
-                </div>
-
-            )
-        },
     ]
 
     const positionColumns: Column<{ owner: PublicKey, position: PoolPositionInfo }>[] = [
