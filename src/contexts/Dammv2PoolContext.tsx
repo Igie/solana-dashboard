@@ -1,10 +1,9 @@
 import React, { createContext, useContext, useEffect, useRef, useState, } from 'react'
 import { useConnection } from '@jup-ag/wallet-adapter'
-import { getDetailedPools, GetPoolDetailedInfoMap, PoolSortType, sortPools, type PoolDetailedInfo, type PoolInfo, type PoolInfoMap } from '../constants';
+import { getDetailedPools, getMinAndCurrentFee, GetPoolDetailedInfoMap, PoolSortType, sortPools, type PoolDetailedInfo, type PoolInfo, type PoolInfoMap } from '../constants';
 import { PublicKey, type GetProgramAccountsFilter, type KeyedAccountInfo } from '@solana/web3.js';
 import { useCpAmm } from './CpAmmContext';
 import { launchpads } from '../components/launchpads/Launchpads';
-import { feeNumeratorToBps, getFeeNumerator } from '@meteora-ag/cp-amm-sdk';
 import { BN } from '@coral-xyz/anchor';
 import { useGetSlot } from './GetSlotContext';
 import { useTokenMetadata, type TokenMetadataMap } from './TokenMetadataContext';
@@ -233,14 +232,14 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             tokenMetadataMap.current = await fetchTokenMetadata(mints);
         }
         try {
-            const newPools = getDetailedPools(cpAmm, filteredSimplePools.current, tokenMetadataMap.current, slotNow, startTime);
+            const newPools = getDetailedPools(filteredSimplePools.current, tokenMetadataMap.current, slotNow, startTime);
             const newPoolsMap = GetPoolDetailedInfoMap(newPools);
 
             for (const oldPool of detailedPools.current) {
                 const newPool = newPoolsMap[oldPool.poolInfo.publicKey.toBase58()];
                 if (newPool) {
 
-                    newPool.FeesLiquidityChange ={
+                    newPool.FeesLiquidityChange = {
                         tokenAAmount: newPool.tokenA.totalFeesToken.sub(oldPool.tokenA.totalFeesToken),
                         tokenBAmount: newPool.tokenB.totalFeesToken.sub(oldPool.tokenB.totalFeesToken)
                     }
@@ -354,17 +353,11 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
             if (mainPoolFilterRef.current !== "Include")
                 pools = pools.filter(x => {
-                    const currentFee = feeNumeratorToBps(getFeeNumerator(
-                        x.account.activationType === 0 ? slotNow :
-                            x.account.activationType === 1 ? startTime : 0,
-                        x.account.activationPoint,
-                        x.account.poolFees.baseFee.numberOfPeriod,
-                        x.account.poolFees.baseFee.periodFrequency,
-                        x.account.poolFees.baseFee.feeSchedulerMode,
-                        x.account.poolFees.baseFee.cliffFeeNumerator,
-                        x.account.poolFees.baseFee.reductionFactor,
-                        x.account.poolFees.dynamicFee
-                    ));
+
+                    const [_, currentFee] = getMinAndCurrentFee(x, x.account.activationType === 0 ? slotNow :
+                        x.account.activationType === 1 ? startTime : 0)
+
+
 
                     if (mainPoolFilterRef.current === "Exclude")
                         return currentFee > 1000;
@@ -432,17 +425,8 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             for (const x of pools) {
                 if (mintsSet.size > 0 && !mintsSet.has(x.account.tokenAMint.toBase58()))
                     continue;
-                const currentFee = feeNumeratorToBps(getFeeNumerator(
-                    x.account.activationType === 0 ? slotNow :
-                        x.account.activationType === 1 ? startTime : 0,
-                    x.account.activationPoint,
-                    x.account.poolFees.baseFee.numberOfPeriod,
-                    x.account.poolFees.baseFee.periodFrequency,
-                    x.account.poolFees.baseFee.feeSchedulerMode,
-                    x.account.poolFees.baseFee.cliffFeeNumerator,
-                    x.account.poolFees.baseFee.reductionFactor,
-                    x.account.poolFees.dynamicFee
-                ));
+                const [_, currentFee] = getMinAndCurrentFee(x, x.account.activationType === 0 ? slotNow :
+                    x.account.activationType === 1 ? startTime : 0)
 
                 if (currentFee <= 1000 && countMainPools < 40) {
                     simpleMainPoolsMap.current[x.publicKey.toBase58()] = x;
@@ -534,18 +518,8 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             //}
 
             if (updateRef.current === true) {
-
-                const currentFee = feeNumeratorToBps(getFeeNumerator(
-                    decoded.activationType === 0 ? getSlot() :
-                        decoded.activationType === 1 ? Date.now() / 1000 : 0,
-                    decoded.activationPoint,
-                    decoded.poolFees.baseFee.numberOfPeriod,
-                    decoded.poolFees.baseFee.periodFrequency,
-                    decoded.poolFees.baseFee.feeSchedulerMode,
-                    decoded.poolFees.baseFee.cliffFeeNumerator,
-                    decoded.poolFees.baseFee.reductionFactor,
-                    decoded.poolFees.dynamicFee
-                ));
+                const [_, currentFee] = getMinAndCurrentFee(accountInfo, decoded.activationType === 0 ? getSlot() :
+                    decoded.activationType === 1 ? Date.now() / 1000 : 0);
 
                 if (currentFee > 1000)
                     simpleNonMainPoolsMap.current[e.accountId.toBase58()] = accountInfo;

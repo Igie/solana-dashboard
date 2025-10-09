@@ -1405,7 +1405,7 @@ const DammPositions: React.FC = () => {
                   {/* Scheduler */}
                   <div className="col-span-1">
                     <div className="text-white text-sm">
-                      {getSchedulerType(position.poolInfo.account.poolFees.baseFee.feeSchedulerMode)}
+                      {getSchedulerType(position.poolInfo.account.poolFees.baseFee.baseFeeMode)}
                     </div>
                   </div>
 
@@ -1415,7 +1415,7 @@ const DammPositions: React.FC = () => {
                       {(position.poolCurrentFeeBPS / 100).toFixed(2)}%
                     </div>
                     <div className="text-xs text-gray-400">
-                      Base: {(position.poolBaseFeeBPS / 100).toFixed(2)}%
+                      Base: {(position.poolMinFeeBPS / 100).toFixed(2)}%
                     </div>
                   </div>
                 </div>
@@ -1511,7 +1511,7 @@ const DammPositions: React.FC = () => {
                       <div>
                         <div className="text-xs text-gray-400 mb-1">Fees</div>
                         <div className="text-white text-sm">{(position.poolCurrentFeeBPS / 100).toFixed(2)}%</div>
-                        <div className="text-xs text-gray-400">Base: {(position.poolBaseFeeBPS / 100).toFixed(2)}%</div>
+                        <div className="text-xs text-gray-400">Base: {(position.poolMinFeeBPS / 100).toFixed(2)}%</div>
                       </div>
                     </div>
 
@@ -1532,7 +1532,7 @@ const DammPositions: React.FC = () => {
                       <div>
                         <div className="text-xs text-gray-400 mb-1">Scheduler</div>
                         <div className="text-white text-sm">
-                          {getSchedulerType(position.poolInfo.account.poolFees.baseFee.feeSchedulerMode)}
+                          {getSchedulerType(position.poolInfo.account.poolFees.baseFee.baseFeeMode)}
                         </div>
                       </div>
                     </div>

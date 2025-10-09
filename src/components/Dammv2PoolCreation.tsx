@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useEffect } from 'react'
 import { RefreshCcw } from 'lucide-react'
-import { feeNumeratorToBps, getBaseFeeNumerator, getFeeNumerator, getPriceFromSqrtPrice } from '@meteora-ag/cp-amm-sdk'
+import { getPriceFromSqrtPrice } from '@meteora-ag/cp-amm-sdk'
 import { PublicKey } from '@solana/web3.js'
 import { BN } from '@coral-xyz/anchor'
 import { GetTokenMetadataMap, useTokenMetadata, type TokenMetadataMap } from '../contexts/TokenMetadataContext'
@@ -9,7 +9,7 @@ import Decimal from 'decimal.js'
 import { MintSelectorInput } from './Simple/MintSelectorInput'
 import { useTokenAccounts } from '../contexts/TokenAccountsContext'
 import Dammv2PoolList from './Simple/Dammv2PoolList'
-import { type PoolDetailedInfo, type PoolInfo } from '../constants'
+import { getMinAndCurrentFee, type PoolDetailedInfo, type PoolInfo } from '../constants'
 import { useConnection, useWallet } from '@jup-ag/wallet-adapter'
 import { useCpAmm } from '../contexts/CpAmmContext'
 import { useGetSlot } from '../contexts/GetSlotContext'
@@ -172,28 +172,16 @@ const Dammv2PoolCreation: React.FC<Dammv2PoolCreationProps> = ({
                 activationTime = currentTime - x.account.activationPoint.toNumber();
             }
 
+            const [minFee, currentFee] = getMinAndCurrentFee(x, x.account.activationType === 0 ? getSlot() :
+                x.account.activationType === 1 ? currentTime : 0);
+
             detailedPools.push({
                 poolInfo: x,
                 tokenA: poolTokenA,
                 tokenB: poolTokenB,
                 age: activationTime,
-                baseFeeBPS: feeNumeratorToBps(getBaseFeeNumerator(
-                    x.account.poolFees.baseFee.feeSchedulerMode,
-                    x.account.poolFees.baseFee.cliffFeeNumerator,
-                    new BN(x.account.poolFees.baseFee.numberOfPeriod),
-                    x.account.poolFees.baseFee.reductionFactor
-                )),
-                totalFeeBPS: feeNumeratorToBps(getFeeNumerator(
-                    x.account.activationType === 0 ? getSlot() :
-                        x.account.activationType === 1 ? currentTime : 0,
-                    x.account.activationPoint,
-                    x.account.poolFees.baseFee.numberOfPeriod,
-                    x.account.poolFees.baseFee.periodFrequency,
-                    x.account.poolFees.baseFee.feeSchedulerMode,
-                    x.account.poolFees.baseFee.cliffFeeNumerator,
-                    x.account.poolFees.baseFee.reductionFactor,
-                    x.account.poolFees.dynamicFee
-                )),
+                minFeeBPS: minFee,
+                currentFeeBPS: currentFee,
                 price: new Decimal(getPriceFromSqrtPrice(x.account.sqrtPrice, poolTokenA.decimals, poolTokenB.decimals)),
                 TVLUsd: poolPrice.mul(new Decimal(poolTokenAAmount)).toNumber() * tokenBMetadata.price.toNumber() + poolTokenBAmount.mul(tokenBMetadata.price).toNumber(),
                 TVLUsdChange: 0,

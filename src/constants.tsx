@@ -1,4 +1,4 @@
-import { CpAmm, feeNumeratorToBps, getBaseFeeNumerator, getFeeNumerator, getPriceFromSqrtPrice, getUnClaimReward, type PoolState, type PositionState } from "@meteora-ag/cp-amm-sdk";
+import { BaseFeeMode, CpAmm, feeNumeratorToBps, FeeScheduler, getAmountAFromLiquidityDelta, getAmountBFromLiquidityDelta, getBaseFeeNumerator, getMinBaseFeeNumerator, getPriceFromSqrtPrice, getUnClaimReward, parseFeeSchedulerSecondFactor, Rounding, type PoolState, type PositionState } from "@meteora-ag/cp-amm-sdk";
 import { PublicKey } from "@solana/web3.js";
 
 import Decimal from 'decimal.js'
@@ -35,7 +35,7 @@ export interface PoolPositionInfo {
     positionUnclaimedFee: number
     positionUnclaimedFeeChange: number
     positionClaimedFee: number
-    poolBaseFeeBPS: number
+    poolMinFeeBPS: number
     poolCurrentFeeBPS: number
 }
 
@@ -62,19 +62,18 @@ export interface PoolDetailedInfo {
     tokenA: PoolTokenInfo
     tokenB: PoolTokenInfo
     age: number
-    baseFeeBPS: number
-    totalFeeBPS: number
+    minFeeBPS: number
+    currentFeeBPS: number
     price: Decimal
     TVLUsd: number
-    TVLUsdChange:number
+    TVLUsdChange: number
     LiquidityChange: Liquidity
     lockedTVL: number
     totalFeesUsd: Decimal
     FeesLiquidityChange: Liquidity
 }
 
-export const toUsd = (l:Liquidity, pool:PoolDetailedInfo) =>
-{
+export const toUsd = (l: Liquidity, pool: PoolDetailedInfo) => {
     return l.tokenAAmount.mul(pool.tokenA.price).toNumber() + l.tokenBAmount.mul(pool.tokenB.price).toNumber();
 }
 
@@ -111,24 +110,30 @@ export enum PoolSortType {
     PoolTotalFees,
 }
 
-export const getDetailedPools = (cpAmm: CpAmm, p: PoolInfo[], tm: TokenMetadataMap, currentSlot: number, currentTime: number) => {
+const getWithdrawQuote = (liquidityDelta: BN, poolInfo: PoolInfo) => {
+    if (liquidityDelta.lte(new BN(0))) return [new BN(0), new BN(0)];
+    const amountA = getAmountAFromLiquidityDelta(
+        poolInfo.account.sqrtPrice,
+        poolInfo.account.sqrtMaxPrice,
+        liquidityDelta,
+        Rounding.Down
+    );
+    const amountB = getAmountBFromLiquidityDelta(
+        poolInfo.account.sqrtMinPrice,
+        poolInfo.account.sqrtPrice,
+        liquidityDelta,
+        Rounding.Down
+    );
+
+    return [
+        amountA,
+        amountB
+    ];
+}
+
+export const getDetailedPools = (p: PoolInfo[], tm: TokenMetadataMap, currentSlot: number, currentTime: number) => {
     let newDetailedPools: PoolDetailedInfo[] = []
     for (const x of p) {
-
-        const withdrawPoolQuote = cpAmm.getWithdrawQuote({
-            liquidityDelta: x.account.liquidity,
-            sqrtPrice: x.account.sqrtPrice,
-            minSqrtPrice: x.account.sqrtMinPrice,
-            maxSqrtPrice: x.account.sqrtMaxPrice,
-        })
-
-        const lockedWithdrawPoolQuote = cpAmm.getWithdrawQuote({
-            liquidityDelta: x.account.permanentLockLiquidity,
-            sqrtPrice: x.account.sqrtPrice,
-            minSqrtPrice: x.account.sqrtMinPrice,
-            maxSqrtPrice: x.account.sqrtMaxPrice,
-        })
-
         const tokenAMetadata = tm[x.account.tokenAMint.toBase58()];
         const tokenBMetadata = tm[x.account.tokenBMint.toBase58()];
 
@@ -142,8 +147,11 @@ export const getDetailedPools = (cpAmm: CpAmm, p: PoolInfo[], tm: TokenMetadataM
             throw new Error("No Token metadata found when creating detailed pool");
         }
 
-        const poolTokenAAmount = new Decimal(withdrawPoolQuote.outAmountA.toString()).div(Decimal.pow(10, tokenAMetadata?.decimals || 6));
-        const poolTokenBAmount = new Decimal(withdrawPoolQuote.outAmountB.toString()).div(Decimal.pow(10, tokenBMetadata?.decimals || 6));
+        const [tokenAAmount, tokenBAmount] = getWithdrawQuote(x.account.liquidity, x);
+        const poolTokenAAmount = new Decimal(tokenAAmount.toString()).div(Decimal.pow(10, tokenAMetadata?.decimals || 6));
+        const poolTokenBAmount = new Decimal(tokenBAmount.toString()).div(Decimal.pow(10, tokenBMetadata?.decimals || 6));
+
+        console.log("Pool:", x.publicKey.toBase58(), "Token A Amount:", poolTokenAAmount.toString(), "Token B Amount:", poolTokenBAmount.toString());
 
         const poolPrice = new Decimal(getPriceFromSqrtPrice(x.account.sqrtPrice, tokenAMetadata?.decimals || 6, tokenBMetadata?.decimals || 6));
 
@@ -161,8 +169,9 @@ export const getDetailedPools = (cpAmm: CpAmm, p: PoolInfo[], tm: TokenMetadataM
             totalFeesToken: new Decimal(x.account.metrics.totalLpBFee.add(x.account.metrics.totalProtocolBFee).toString()).div(Decimal.pow(10, tokenBMetadata?.decimals)),
         }
 
-        const poolTokenAAmountLocked = new Decimal(lockedWithdrawPoolQuote.outAmountA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
-        const poolTokenBAmountLocked = new Decimal(lockedWithdrawPoolQuote.outAmountB.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
+        const [tokenAAmountLocked, tokenBAmountLocked] = getWithdrawQuote(x.account.permanentLockLiquidity, x);
+        const poolTokenAAmountLocked = new Decimal(tokenAAmountLocked.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
+        const poolTokenBAmountLocked = new Decimal(tokenBAmountLocked.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
 
         let activationTime = 0;
         if (x.account.activationType === 0) {
@@ -170,32 +179,18 @@ export const getDetailedPools = (cpAmm: CpAmm, p: PoolInfo[], tm: TokenMetadataM
         } else {
             activationTime = currentTime - x.account.activationPoint.toNumber();
         }
-
+        const [minFee, currentFee] = getMinAndCurrentFee(x, x.account.activationType === 0 ? currentSlot :
+            x.account.activationType === 1 ? currentTime : 0);
         newDetailedPools.push({
             poolInfo: x,
             tokenA: poolTokenA,
             tokenB: poolTokenB,
             age: activationTime,
-            baseFeeBPS: feeNumeratorToBps(getBaseFeeNumerator(
-                x.account.poolFees.baseFee.feeSchedulerMode,
-                x.account.poolFees.baseFee.cliffFeeNumerator,
-                new BN(x.account.poolFees.baseFee.numberOfPeriod),
-                x.account.poolFees.baseFee.reductionFactor
-            )),
-            totalFeeBPS: feeNumeratorToBps(getFeeNumerator(
-                x.account.activationType === 0 ? currentSlot :
-                    x.account.activationType === 1 ? currentTime : 0,
-                x.account.activationPoint,
-                x.account.poolFees.baseFee.numberOfPeriod,
-                x.account.poolFees.baseFee.periodFrequency,
-                x.account.poolFees.baseFee.feeSchedulerMode,
-                x.account.poolFees.baseFee.cliffFeeNumerator,
-                x.account.poolFees.baseFee.reductionFactor,
-                x.account.poolFees.dynamicFee
-            )),
+            minFeeBPS: minFee,
+            currentFeeBPS: currentFee,
             price: new Decimal(getPriceFromSqrtPrice(x.account.sqrtPrice, poolTokenA.decimals, poolTokenB.decimals)),
             TVLUsd: (poolPrice.mul(new Decimal(poolTokenAAmount)).toNumber() * tokenBMetadata.price.toNumber() + poolTokenBAmount.mul(tokenBMetadata.price).toNumber()),
-            TVLUsdChange:0,
+            TVLUsdChange: 0,
             LiquidityChange: { tokenAAmount: new Decimal(0), tokenBAmount: new Decimal(0) },
             lockedTVL: poolPrice.mul(new Decimal(poolTokenAAmountLocked)).toNumber() * tokenBMetadata.price.toNumber() + poolTokenBAmountLocked * tokenBMetadata.price.toNumber(),
             totalFeesUsd: poolTokenA.totalFeesUsd.add(poolTokenB.totalFeesUsd),
@@ -219,11 +214,11 @@ export const sortPools = (pools: PoolDetailedInfo[], sortType: PoolSortType, asc
                 break;
 
             case PoolSortType.PoolBaseFee:
-                r = (x.baseFeeBPS - y.baseFeeBPS);
+                r = (x.minFeeBPS - y.minFeeBPS);
                 break;
 
             case PoolSortType.PoolCurrentFee:
-                r = (x.totalFeeBPS - y.totalFeeBPS);
+                r = (x.currentFeeBPS - y.currentFeeBPS);
                 break;
 
             case PoolSortType.PoolTokenAFees:
@@ -289,7 +284,7 @@ export const getAllPoolPositions = async (cpAmm: CpAmm, pool: PoolDetailedInfo, 
                 positionUnclaimedFee: 0,
                 positionClaimedFee: 0,
                 positionUnclaimedFeeChange: 0,
-                poolBaseFeeBPS: 0,
+                poolMinFeeBPS: 0,
                 poolCurrentFeeBPS: 0,
             })
 
@@ -379,23 +374,12 @@ export const getAllPoolPositions = async (cpAmm: CpAmm, pool: PoolDetailedInfo, 
                 tokenBClaimedFees * tokenBMetadata!.price.toNumber();
 
 
-            position.poolBaseFeeBPS = feeNumeratorToBps(getBaseFeeNumerator(
-                position.poolInfo.account.poolFees.baseFee.feeSchedulerMode,
-                position.poolInfo.account.poolFees.baseFee.cliffFeeNumerator,
-                new BN(position.poolInfo.account.poolFees.baseFee.numberOfPeriod),
-                position.poolInfo.account.poolFees.baseFee.reductionFactor));
+            const [minFee, currentFee] = getMinAndCurrentFee(position.poolInfo, position.poolInfo.account.activationType === 0 ? currentSlot :
+                position.poolInfo.account.activationType === 1 ? currentTime : 0);
 
-            position.poolCurrentFeeBPS = feeNumeratorToBps(getFeeNumerator(
-                position.poolInfo.account.activationType === 0 ? currentSlot :
-                    position.poolInfo.account.activationType === 1 ? currentTime : 0,
-                position.poolInfo.account.activationPoint,
-                position.poolInfo.account.poolFees.baseFee.numberOfPeriod,
-                position.poolInfo.account.poolFees.baseFee.periodFrequency,
-                position.poolInfo.account.poolFees.baseFee.feeSchedulerMode,
-                position.poolInfo.account.poolFees.baseFee.cliffFeeNumerator,
-                position.poolInfo.account.poolFees.baseFee.reductionFactor,
-                position.poolInfo.account.poolFees.dynamicFee
-            ));
+            position.poolMinFeeBPS = minFee;
+
+            position.poolCurrentFeeBPS = currentFee;
             positionsParsed.push(position)
         };
 
@@ -406,6 +390,70 @@ export const getAllPoolPositions = async (cpAmm: CpAmm, pool: PoolDetailedInfo, 
         console.log(e);
         return [];
     }
+}
+export interface BaseFee {
+    cliffFeeNumerator: BN;
+    baseFeeMode: number;
+    firstFactor: number;
+    secondFactor: number[];
+    thirdFactor: BN;
+}
+
+export const getFeeScheduler = (baseFee: BaseFee) => {
+    if (baseFee.baseFeeMode === BaseFeeMode.RateLimiter)
+        throw new Error("Pool is using Rate Limiter fee mode, no Fee Scheduler available");
+    const feeScheduler = new FeeScheduler(
+        baseFee.cliffFeeNumerator,
+        baseFee.firstFactor,
+        new BN(
+            Buffer.from(baseFee.secondFactor.slice(0, 8)),
+            "le"
+        ),
+        baseFee.thirdFactor,
+        baseFee.baseFeeMode
+    );
+
+    return feeScheduler;
+}
+
+export const getMinAndCurrentFee = (p: PoolInfo, currentPoint: number) => {
+    if (p.account.poolFees.baseFee.baseFeeMode === BaseFeeMode.RateLimiter) {
+
+        return [0, 0];
+    }
+
+    const feeScheduler = new FeeScheduler(
+        p.account.poolFees.baseFee.cliffFeeNumerator,
+        p.account.poolFees.baseFee.firstFactor,
+        new BN(
+            Buffer.from(p.account.poolFees.baseFee.secondFactor.slice(0, 8)),
+            "le"
+        ),
+        p.account.poolFees.baseFee.thirdFactor,
+        p.account.poolFees.baseFee.baseFeeMode
+    );
+
+
+
+    const minFeeNumerator = getMinBaseFeeNumerator(
+        feeScheduler.cliffFeeNumerator,
+        feeScheduler.numberOfPeriod,
+        feeScheduler.periodFrequency,
+        feeScheduler.reductionFactor,
+        p.account.poolFees.baseFee.baseFeeMode,
+    );
+
+    const currentFeeNumerator = getBaseFeeNumerator(
+        feeScheduler.cliffFeeNumerator,
+        p.account.poolFees.baseFee.firstFactor,
+        parseFeeSchedulerSecondFactor(p.account.poolFees.baseFee.secondFactor),
+        new BN(p.account.poolFees.baseFee.thirdFactor),
+        p.account.poolFees.baseFee.baseFeeMode,
+        new BN(currentPoint),
+        p.account.activationPoint // activationPoint
+    );
+
+    return [feeNumeratorToBps(minFeeNumerator), feeNumeratorToBps(currentFeeNumerator)];
 }
 
 export const getPoolPositionFromPublicKeys = (poolPositions: PoolPositionInfo[], publicKeys: string[]) => {
@@ -478,8 +526,9 @@ export const sleep = async (delay: number) => {
 
 export const getSchedulerType = (mode: number) => {
     switch (mode) {
-        case 0: return 'Linear';
-        case 1: return 'Exponential';
+        case BaseFeeMode.FeeSchedulerLinear: return 'Linear';
+        case BaseFeeMode.FeeSchedulerExponential: return 'Exponential';
+        case BaseFeeMode.RateLimiter: return 'Rate Limiter';
         default: return 'Unknown';
     }
 };

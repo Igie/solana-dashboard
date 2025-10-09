@@ -4,7 +4,7 @@ import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { DepositPopover } from "./Dammv2DepositPopover";
 import React, { useEffect, useState } from "react";
 import { GetTokenAccountMap, useTokenAccounts, type TokenAccountMap } from "../../contexts/TokenAccountsContext";
-import { formatDuration, formatDurationNumber, getAllPoolPositions, getShortMint, PoolSortType, sortPools, toUsd, type PoolDetailedInfo, type PoolPositionInfo, type PoolPositionInfoMap } from "../../constants";
+import { formatDuration, formatDurationNumber, getAllPoolPositions, getSchedulerType, getShortMint, PoolSortType, sortPools, toUsd, type PoolDetailedInfo, type PoolPositionInfo, type PoolPositionInfoMap } from "../../constants";
 import { useWallet } from "@jup-ag/wallet-adapter";
 import { getPoolPositionMap, useDammUserPositions } from "../../contexts/DammUserPositionsContext";
 import { DynamicTable, type Column } from "./DynamicTable";
@@ -12,6 +12,7 @@ import { launchpads } from "./../launchpads/Launchpads";
 import { useGetSlot } from "../../contexts/GetSlotContext";
 import { useCpAmm } from "../../contexts/CpAmmContext";
 import type { TokenMetadataMap } from "../../contexts/TokenMetadataContext";
+import { BaseFeeMode } from "@meteora-ag/cp-amm-sdk";
 interface Dammv2PoolListProps {
     pools: PoolDetailedInfo[]
     tokenMetadataMap: TokenMetadataMap,
@@ -319,8 +320,20 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
             header: 'Scheduler',
             render: (pool) => (
                 <div className="text-center">
-                    {pool.poolInfo.account.poolFees.baseFee.feeSchedulerMode === 0 ? "Linear" :
-                        pool.poolInfo.account.poolFees.baseFee.feeSchedulerMode === 1 ? "Exponential" : "Unknown"}
+                    {(() => {
+                        switch (pool.poolInfo.account.poolFees.baseFee.baseFeeMode) {
+                            case BaseFeeMode.FeeSchedulerLinear:
+                                return "Linear";
+                            case BaseFeeMode.FeeSchedulerExponential:
+                                return "Exponential";
+                            case BaseFeeMode.RateLimiter:
+                                return "Rate Limiter";
+                            default:
+                                return "Unknown";
+                        }
+                    })()}
+                    {/* {pool.poolInfo.account.poolFees.baseFee.baseFeeMode === BaseFeeMode.FeeSchedulerLinear ? "Linear" :
+                        pool.poolInfo.account.poolFees.baseFee.feeSchedulerMode === 1 ? "Exponential" : "Unknown"} */}
                 </div>
             )
         },
@@ -335,7 +348,6 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                 </div>
             )
         },
-
         {
             header: <div className="flex items-center justify-center">
                 First Pool Age
@@ -346,7 +358,30 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                 </div>
             )
         },
+        {
 
+            header: <div className="flex items-center justify-center">
+                Base Fee
+                {SortArrow<PoolSortType>(PoolSortType.PoolBaseFee, sortBy, sortAscending, handleSort)}
+            </div>,
+            render: (pool) => (
+                <div className="text-center">
+                    {pool.minFeeBPS / 100}%
+                </div>
+            )
+        },
+        {
+
+            header: <div className="flex items-center justify-center">
+                Current Fee
+                {SortArrow<PoolSortType>(PoolSortType.PoolCurrentFee, sortBy, sortAscending, handleSort)}
+            </div>,
+            render: (pool) => (
+                <div className="text-center">
+                    {pool.currentFeeBPS / 100}%
+                </div>
+            )
+        },
         {
             header: 'TVL',
             render: (pool) => (
@@ -383,30 +418,6 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                     )}
                 </div>
 
-            )
-        },
-        {
-
-            header: <div className="flex items-center justify-center">
-                Base Fee
-                {SortArrow<PoolSortType>(PoolSortType.PoolBaseFee, sortBy, sortAscending, handleSort)}
-            </div>,
-            render: (pool) => (
-                <div className="text-center">
-                    {pool.baseFeeBPS / 100}%
-                </div>
-            )
-        },
-        {
-
-            header: <div className="flex items-center justify-center">
-                Current Fee
-                {SortArrow<PoolSortType>(PoolSortType.PoolCurrentFee, sortBy, sortAscending, handleSort)}
-            </div>,
-            render: (pool) => (
-                <div className="text-center">
-                    {pool.totalFeeBPS / 100}%
-                </div>
             )
         },
 
@@ -634,14 +645,14 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                     </div>
                                     <div>
                                         <span className="text-gray-400">Base Fee: </span>
-                                        <span className="truncate">{pool.baseFeeBPS / 100}%</span>
+                                        <span className="truncate">{pool.minFeeBPS / 100}%</span>
                                     </div>
                                     <div className="min-w-0 flex gap-1 justify-end">
                                         <span className="text-gray-400">Current Fee: </span>
                                         <span className="truncate">
-                                            {(pool.totalFeeBPS / 100).toString().length > 6
-                                                ? (pool.totalFeeBPS / 100).toString().slice(0, 6) + '...'
-                                                : pool.totalFeeBPS / 100
+                                            {(pool.currentFeeBPS / 100).toString().length > 6
+                                                ? (pool.currentFeeBPS / 100).toString().slice(0, 6) + '...'
+                                                : pool.currentFeeBPS / 100
                                             }%
                                         </span>
                                     </div>
@@ -655,11 +666,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                     <div className="min-w-0 flex gap-1 justify-end">
                                         <span className="text-gray-400">Scheduler: </span>
                                         <span className="truncate">
-                                            {(() => {
-                                                const schedulerText = pool.poolInfo.account.poolFees.baseFee.feeSchedulerMode === 0 ? "Linear" :
-                                                    pool.poolInfo.account.poolFees.baseFee.feeSchedulerMode === 1 ? "Exponential" : "Unknown";
-                                                return schedulerText.length > 10 ? schedulerText.slice(0, 10) + '...' : schedulerText;
-                                            })()}
+                                            {getSchedulerType(pool.poolInfo.account.poolFees.baseFee.baseFeeMode)}
                                         </span>
                                     </div>
                                 </div>

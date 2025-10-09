@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import Decimal from "decimal.js"
 import { Keypair, PublicKey } from "@solana/web3.js"
-import { CollectFeeMode, deriveCustomizablePoolAddress, FeeSchedulerMode, getBaseFeeParams, getDynamicFeeParams, getSqrtPriceFromPrice, MAX_SQRT_PRICE, MIN_SQRT_PRICE } from "@meteora-ag/cp-amm-sdk"
+import { ActivationType, BaseFeeMode, CollectFeeMode, deriveCustomizablePoolAddress, getBaseFeeParams, getDynamicFeeParams, getSqrtPriceFromPrice, MAX_SQRT_PRICE, MIN_SQRT_PRICE } from "@meteora-ag/cp-amm-sdk"
 import { DecimalInput } from "../Simple/DecimalInput"
 import { NumberInput } from "../Simple/NumberInput"
 import { formatDurationNumber } from "../../constants"
@@ -37,7 +37,7 @@ interface Preset {
     maxFee: number,
     totalSchedulerDuration: number,
     schedulerReductionPeriod: number,
-    feeSchedulerMode: FeeSchedulerMode,
+    baseFeeMode: BaseFeeMode,
     collectFeeMode: CollectFeeMode,
 }
 
@@ -49,7 +49,7 @@ const Presets: Preset[] = [
         maxFee: 50,
         totalSchedulerDuration: 2880000000,
         schedulerReductionPeriod: 2880000000,
-        feeSchedulerMode: FeeSchedulerMode.Linear,
+        baseFeeMode: BaseFeeMode.FeeSchedulerLinear,
         collectFeeMode: CollectFeeMode.OnlyB,
     },
     {
@@ -59,7 +59,7 @@ const Presets: Preset[] = [
         maxFee: 40,
         totalSchedulerDuration: 2880000000,
         schedulerReductionPeriod: 2880000000,
-        feeSchedulerMode: FeeSchedulerMode.Linear,
+        baseFeeMode: BaseFeeMode.FeeSchedulerLinear,
         collectFeeMode: CollectFeeMode.OnlyB,
     },
 
@@ -70,7 +70,7 @@ const Presets: Preset[] = [
         maxFee: 30,
         totalSchedulerDuration: 2880000000,
         schedulerReductionPeriod: 2880000000,
-        feeSchedulerMode: FeeSchedulerMode.Linear,
+        baseFeeMode: BaseFeeMode.FeeSchedulerLinear,
         collectFeeMode: CollectFeeMode.OnlyB,
     },
 ]
@@ -111,15 +111,15 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
 
     const [useDynamicFee, setUseDynamicFee] = useState(true)
 
-    const [maxBaseFeePercentage, setMaxBaseFeePercentage] = useState(new Decimal(50))
+    const [maxFeePercentage, setMaxFeePercentage] = useState(new Decimal(50))
 
-    const [baseFeePercentage, setBaseFeePercentage] = useState(new Decimal(0.01))
+    const [minFeePercentage, setMinFeePercentage] = useState(new Decimal(0.01))
 
     const [totalSchedulerDuration, setTotalSchedulerDuration] = useState<number>(2880000000)
 
     const [schedulerReductionPeriod, setSchedulerReductionPeriod] = useState<number>(2880000000)
 
-    const [selectedFeeScheduler, setSelectedFeeScheduler] = useState<FeeSchedulerMode>(FeeSchedulerMode.Linear)
+    const [selectedBaseFeeMode, setSelectedBaseFeeMode] = useState<BaseFeeMode>(BaseFeeMode.FeeSchedulerLinear)
     const [feeSchedulerDropdownOpen, setFeeSchedulerDropdownOpen] = useState(false)
 
     const [selectedFeeMode, setSelectedFeeMode] = useState<CollectFeeMode>(CollectFeeMode.OnlyB)
@@ -156,12 +156,32 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
                     maxSqrtPrice: maxSqrtPrice,
                 });
 
-            const maxFee = maxBaseFeePercentage.toNumber();
-            const minFee = baseFeePercentage.toNumber();
+            const maxFee = maxFeePercentage.toNumber() * 100;
+            const minFee = minFeePercentage.toNumber() * 100;
             const totalDuration = new BN(totalSchedulerDuration);
             const reductionPeriod = new BN(schedulerReductionPeriod);
             const poolFees = {
-                baseFee: getBaseFeeParams(maxFee * 100, minFee * 100, selectedFeeScheduler, totalDuration.div(new BN(reductionPeriod)).toNumber(), totalDuration.toNumber()),
+                baseFee: getBaseFeeParams
+                    (
+                        {
+                            baseFeeMode: selectedBaseFeeMode,
+                            feeSchedulerParam: {
+                                startingFeeBps: maxFee,
+                                endingFeeBps: minFee,
+                                totalDuration: totalDuration.toNumber(),
+                                numberOfPeriod: totalDuration.div(reductionPeriod).toNumber(),
+                            },
+                            rateLimiterParam: selectedBaseFeeMode === BaseFeeMode.RateLimiter ? {
+                                baseFeeBps: minFee,
+                                feeIncrementBps: maxFee / 2,
+                                referenceAmount: 20000,
+                                maxFeeBps: maxFee,
+                                maxLimiterDuration: 43200,
+                            } : undefined,
+                        },
+                        tokenMetadata[tokenBMint].decimals,
+                        ActivationType.Timestamp,
+                    ),
                 padding: [],
                 dynamicFee: useDynamicFee ? getDynamicFeeParams(0, 1500) : null,
             };
@@ -336,9 +356,9 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
                                 key={i}
                                 onClick={async () => {
                                     setUseDynamicFee(x.useDynamicFee);
-                                    setMaxBaseFeePercentage(new Decimal(x.maxFee))
-                                    setBaseFeePercentage(new Decimal(x.baseFee));
-                                    setSelectedFeeScheduler(x.feeSchedulerMode);
+                                    setMaxFeePercentage(new Decimal(x.maxFee))
+                                    setMinFeePercentage(new Decimal(x.baseFee));
+                                    setSelectedBaseFeeMode(x.baseFeeMode);
                                     setTotalSchedulerDuration(x.totalSchedulerDuration);
                                     setSchedulerReductionPeriod(x.schedulerReductionPeriod);
                                     setSelectedFeeMode(x.collectFeeMode);
@@ -411,8 +431,8 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
                         <DecimalInput
                             className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 text-xs text-white placeholder-gray-500"
                             onChange={() => { }}
-                            value={maxBaseFeePercentage.toString()}
-                            onBlur={setMaxBaseFeePercentage}
+                            value={maxFeePercentage.toString()}
+                            onBlur={setMaxFeePercentage}
                         />
                     </div>
                 </div>
@@ -423,8 +443,8 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
                         <DecimalInput
                             className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 text-xs text-white placeholder-gray-500"
                             onChange={() => { }}
-                            value={baseFeePercentage.toString()}
-                            onBlur={setBaseFeePercentage}
+                            value={minFeePercentage.toString()}
+                            onBlur={setMinFeePercentage}
                         />
                     </div>
                 </div>
@@ -461,7 +481,7 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
                         onClick={() => setFeeSchedulerDropdownOpen(!feeSchedulerDropdownOpen)}
                         className="w-full bg-gray-800 border border-gray-700 rounded-md px-2 text-xs text-white text-left flex justify-between items-center"
                     >
-                        {FeeSchedulerMode[selectedFeeScheduler]} {/* Converts numeric value to string name */}
+                        {BaseFeeMode[selectedBaseFeeMode]} {/* Converts numeric value to string name */}
                         <svg className="w-4 h-4 text-gray-400 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
@@ -469,16 +489,16 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
 
                     {feeSchedulerDropdownOpen && (
                         <div className="absolute z-50 mt-1 w-full bg-gray-800 border border-gray-700 rounded-md shadow-lg">
-                            {Object.entries(FeeSchedulerMode)
+                            {Object.entries(BaseFeeMode)
                                 .filter(([, val]) => !isNaN(Number(val))) // Only numeric entries (skip reverse keys)
                                 .map(([key, val]) => (
                                     <div
                                         key={val}
                                         onClick={() => {
-                                            setSelectedFeeScheduler(Number(val))
+                                            setSelectedBaseFeeMode(Number(val))
                                             setFeeSchedulerDropdownOpen(false)
                                         }}
-                                        className={`px-2 cursor-pointer hover:bg-gray-700 text-white text-xs ${selectedFeeScheduler === Number(val) ? 'bg-gray-700' : ''
+                                        className={`px-2 cursor-pointer hover:bg-gray-700 text-white text-xs ${selectedBaseFeeMode === Number(val) ? 'bg-gray-700' : ''
                                             }`}
                                     >
                                         {key}
