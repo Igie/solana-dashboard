@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import Decimal from "decimal.js"
 import { Keypair, PublicKey } from "@solana/web3.js"
-import { ActivationType, BaseFeeMode, CollectFeeMode, derivePoolAddress, feeNumeratorToBps, getBaseFeeParams, getMinBaseFeeNumerator, getPriceFromSqrtPrice, getSqrtPriceFromPrice, MAX_SQRT_PRICE, MIN_SQRT_PRICE, type ConfigState } from "@meteora-ag/cp-amm-sdk"
+import { ActivationType, BaseFeeMode, CollectFeeMode, derivePoolAddress, feeNumeratorToBps, getBaseFeeNumeratorByPeriod, getBaseFeeParams, getMinBaseFeeNumerator, getPriceFromSqrtPrice, getSqrtPriceFromPrice, MAX_SQRT_PRICE, MIN_SQRT_PRICE, type ConfigState } from "@meteora-ag/cp-amm-sdk"
 import { DecimalInput } from "../Simple/DecimalInput"
 import { BN } from "@coral-xyz/anchor"
 import { useCpAmm } from "../../contexts/CpAmmContext"
@@ -129,6 +129,7 @@ const SimplePoolCreation: React.FC<SimplePoolCreationProps> = (
         poolConfig: PoolConfig,
         configType: number,
         baseFeeMode: BaseFeeMode,
+        schedulerDuration: number
         schedulerPeriod: number
         minFee: number,
         maxFee: number,
@@ -142,18 +143,22 @@ const SimplePoolCreation: React.FC<SimplePoolCreationProps> = (
         const poolFees = poolConfig.account.poolFees;
 
         const feeScheduler = getFeeScheduler(poolFees.baseFee);
-        const minFeeNumerator = feeNumeratorToBps(getMinBaseFeeNumerator(
-            feeScheduler.cliffFeeNumerator,
-            feeScheduler.numberOfPeriod,
-            feeScheduler.periodFrequency,
-            feeScheduler.reductionFactor,
-            feeScheduler.feeSchedulerMode,
-        ));
+
+        const minFeeNumerator = feeNumeratorToBps(
+            getBaseFeeNumeratorByPeriod(feeScheduler.cliffFeeNumerator,
+                feeScheduler.numberOfPeriod,
+                new BN(feeScheduler.numberOfPeriod),
+                feeScheduler.reductionFactor,
+                feeScheduler.feeSchedulerMode
+            )
+        )
+
         const detailedPolConfig: DetailedPoolConfig = {
             poolConfig: poolConfig,
             configType: poolConfig.account.configType,
             baseFeeMode: poolFees.baseFee.baseFeeMode,
-            schedulerPeriod: feeScheduler.periodFrequency.muln(feeScheduler.numberOfPeriod).toNumber(),
+            schedulerDuration: feeScheduler.periodFrequency.muln(feeScheduler.numberOfPeriod).toNumber(),
+            schedulerPeriod: feeScheduler.numberOfPeriod,
             minFee: minFeeNumerator / 100,
             maxFee: feeNumeratorToBps(poolFees.baseFee.cliffFeeNumerator) / 100,
             maxPrice: (poolConfig.account.sqrtMaxPrice.eq(MAX_SQRT_PRICE)) ?
@@ -295,11 +300,16 @@ const SimplePoolCreation: React.FC<SimplePoolCreationProps> = (
                 setNewPoolAddressExists(false);
             }
         }
-    }, [tokenAMint, tokenBMint]);
+    }, [tokenAMint, tokenBMint, selectedPoolConfig]);
 
     useEffect(() => {
-        if (!minFeePercentage) return;
+        if (!minFeePercentage || poolConfigs.length === 0) return;
 
+        setSelectedPoolConfig(undefined);
+        if (selectedBaseFeeMode === BaseFeeMode.RateLimiter) {
+            toast.error("Rate Limiter mode not supported in standard creation");
+            return;
+        };
         const startingFeeBps = useFeeScheduler ? 5000 : minFeePercentage.mul(100).toNumber();
         const endingFeeBps = minFeePercentage.mul(100).toNumber();
 
@@ -325,53 +335,83 @@ const SimplePoolCreation: React.FC<SimplePoolCreationProps> = (
         )
 
         const feeScheduler = getFeeScheduler(baseFeeParams);
-        const b = feeNumeratorToBps(getMinBaseFeeNumerator(
-            feeScheduler.cliffFeeNumerator,
-            feeScheduler.numberOfPeriod,
-            feeScheduler.periodFrequency,
-            feeScheduler.reductionFactor,
-            selectedBaseFeeMode,
-        ));
+        const b = feeNumeratorToBps(
+            getBaseFeeNumeratorByPeriod(feeScheduler.cliffFeeNumerator,
+                feeScheduler.numberOfPeriod,
+                new BN(feeScheduler.numberOfPeriod),
+                feeScheduler.reductionFactor,
+                feeScheduler.feeSchedulerMode
+            )
+        ) / 100;
 
         console.log(poolConfigs.length, " total configs");
-
-        for (const c of poolConfigs) {
-            console.log(c.minFee, c.maxFee, c.baseFeeMode, c.dynamicFee ? "Dynamic" : "Static", c.feeCollectionToken, c.schedulerPeriod);
-        }
-
         console.log("creation params")
         console.log(startingFeeBps, endingFeeBps)
 
         let pools = poolConfigs.filter(x =>
-            x.maxFee * 100 === startingFeeBps &&
-            x.minFee * 100 === endingFeeBps
+            x.baseFeeMode === selectedBaseFeeMode &&
+            x.dynamicFee === useDynamicFee &&
+            x.feeCollectionToken === selectedFeeMode
         );
+        console.log("Filtered pools(mode, dynamic, fee collection):", pools.length);
 
-        console.log("Filtered pools(staring ending fee):", pools.length);
-
-        pools = poolConfigs.filter(x => {
-            const confFeeScheduler = getFeeScheduler(x.poolConfig.account.poolFees.baseFee);
-            //useFeeScheduler === (x.schedulerPeriod > 0) &&
-            x.baseFeeMode === (useFeeScheduler ? selectedBaseFeeMode : BaseFeeMode.FeeSchedulerLinear) &&
-                x.dynamicFee === useDynamicFee &&
-                //(useDynamicFee ? x.poolConfig.account.poolFees.dynamicFee.maxVolatilityAccumulator === 14460000 : true) &&
-                confFeeScheduler.numberOfPeriod === feeScheduler.numberOfPeriod &&
-                confFeeScheduler.periodFrequency.eq(feeScheduler.periodFrequency) &&
-                x.feeCollectionToken === selectedFeeMode
+        for (const c of pools) {
+            console.log(c.minFee, c.maxFee, c.baseFeeMode, c.dynamicFee ? "Dynamic" : "Static", c.feeCollectionToken, c.schedulerPeriod);
         }
+
+        pools = pools.filter(x =>
+            x.schedulerPeriod === feeScheduler.numberOfPeriod &&
+            x.schedulerDuration === feeScheduler.periodFrequency.muln(feeScheduler.numberOfPeriod).toNumber()
         );
+        console.log("Filtered pools(period, duration):", pools.length);
 
-        console.log("Filtered pools:", pools.length, " looking for minFee ", b / 100);
+        for (const c of pools) {
+            console.log(c.minFee, c.maxFee, c.baseFeeMode, c.dynamicFee ? "Dynamic" : "Static", c.feeCollectionToken, c.schedulerPeriod);
+        }
 
-        pools = pools.filter(x => x.minFee >= b - 0.02 && x.minFee <= b + 0.02)
+
+        // pools = poolConfigs.filter(x => {
+        //     const confFeeScheduler = getFeeScheduler(x.poolConfig.account.poolFees.baseFee);
+        //     //useFeeScheduler === (x.schedulerPeriod > 0) &&
+        //     //x.baseFeeMode === (useFeeScheduler ? selectedBaseFeeMode : BaseFeeMode.FeeSchedulerLinear) &&
+        //     //x.dynamicFee === useDynamicFee &&
+        //     //(useDynamicFee ? x.poolConfig.account.poolFees.dynamicFee.maxVolatilityAccumulator === 14460000 : true) &&
+        //     //confFeeScheduler.numberOfPeriod === feeScheduler.numberOfPeriod &&
+        //     confFeeScheduler.periodFrequency.eq(feeScheduler.periodFrequency) &&
+        //         x.feeCollectionToken === selectedFeeMode
+        // }
+        // );
+        // console.log("Filtered pools(staring ending fee):", pools.length);
+
+
+        console.log("Filtered pools:", pools.length, " looking for minFee ", b);
+
+
+        pools = pools.filter(x => {
+            const c = Math.abs(b - x.minFee) < 0.02;
+            console.log(Math.abs(b - x.minFee), Math.abs(b - x.minFee) < 0.02);
+            return c;
+        });
+
+
+
+        console.log("Filtered pools:", pools.length);
+
         if (pools.length > 1) {
             setSelectedPoolConfig(undefined);
             toast.error("Multiple configs found!");
             return;
         }
-        console.log("Filtered pools:", pools.length, " looking for minFee ", b / 100);
-        if (pools.length == 0) return;
-        console.log(pools[0]);
+
+        if (pools.length === 0) {
+            setSelectedPoolConfig(undefined);
+            toast.error("No config found!");
+            return;
+        }
+
+
+
+        console.log("found config", pools[0]);
         setSelectedPoolConfig(pools[0]);
     }, [useDynamicFee, minFeePercentage, useFeeScheduler, selectedBaseFeeMode, selectedFeeMode, poolConfigs]);
 
@@ -595,7 +635,7 @@ const SimplePoolCreation: React.FC<SimplePoolCreationProps> = (
             {!newPoolAddressExists && connected ?
                 <button
                     className="bg-green-600 hover:bg-green-500 disabled:bg-red-600 px-2 rounded-xs text-white font-semibold text-xs"
-                    disabled={!tokenAMint || !tokenBMint}
+                    disabled={!tokenAMint || !tokenBMint || !selectedPoolConfig}
                     onClick={() => handleCreatePool()}
                 >
                     Create Pool

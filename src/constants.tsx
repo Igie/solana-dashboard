@@ -1,4 +1,4 @@
-import { BaseFeeMode, CpAmm, feeNumeratorToBps, FeeRateLimiter, FeeScheduler, getAmountAFromLiquidityDelta, getAmountBFromLiquidityDelta, getBaseFeeNumerator, getMinBaseFeeNumerator, getPriceFromSqrtPrice, getUnClaimReward, parseFeeSchedulerSecondFactor, Rounding, type PoolState, type PositionState } from "@meteora-ag/cp-amm-sdk";
+import { BaseFeeMode, CpAmm, feeNumeratorToBps, FeeRateLimiter, FeeScheduler, getAmountAFromLiquidityDelta, getAmountBFromLiquidityDelta, getBaseFeeNumerator, getBaseFeeNumeratorByPeriod, getMinBaseFeeNumerator, getPriceFromSqrtPrice, getUnClaimReward, parseFeeSchedulerSecondFactor, Rounding, type PoolState, type PositionState } from "@meteora-ag/cp-amm-sdk";
 import { PublicKey } from "@solana/web3.js";
 
 import Decimal from 'decimal.js'
@@ -447,15 +447,14 @@ export const getMinAndCurrentFee = (p: PoolInfo, currentPoint: number) => {
         p.account.poolFees.baseFee.baseFeeMode
     );
 
+    const minFeeNumerator =
+        getBaseFeeNumeratorByPeriod(feeScheduler.cliffFeeNumerator,
+            feeScheduler.numberOfPeriod,
+            new BN(feeScheduler.numberOfPeriod),
+            feeScheduler.reductionFactor,
+            feeScheduler.feeSchedulerMode
+        );
 
-
-    const minFeeNumerator = getMinBaseFeeNumerator(
-        feeScheduler.cliffFeeNumerator,
-        feeScheduler.numberOfPeriod,
-        feeScheduler.periodFrequency,
-        feeScheduler.reductionFactor,
-        p.account.poolFees.baseFee.baseFeeMode,
-    );
 
     const currentFeeNumerator = getBaseFeeNumerator(
         feeScheduler.cliffFeeNumerator,
