@@ -11,7 +11,7 @@ const MainPoolFilters = ["Include", "Exclude", "Only"];
 
 const Dammv2Browser: React.FC = () => {
     const {
-        setUpdate, fetchAllPools, fetchingPools,
+        setUpdate, update, fetchAllPools, fetchingPools,
         filteredDetailedPools, tokenMetadataMap,
         creatorAddressFilter, setCreatorAddressFilter,
         mainPoolFilter, setMainPoolFilter,
@@ -32,6 +32,10 @@ const Dammv2Browser: React.FC = () => {
     useEffect(() => {
         setUpdate(autoUpdate && !mouseOverList)
     }, [mouseOverList, autoUpdate])
+
+    useEffect(() => {
+        setAutoUpdate(update)
+    }, [])
 
     return (
         <div className="flex flex-col h-[calc(100vh-110px)] lg:h-[calc(100vh-55px)] space-y-1 px-2 md:px-0">

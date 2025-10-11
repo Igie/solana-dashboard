@@ -118,7 +118,7 @@ export const getSwapTransactionVersioned = async (quoteResponse: JupiterQuoteRes
         wrapAndUnwrapSol: true,
         dynamicComputeUnitLimit: true,
         // Optional, use if you want to charge a fee.  feeBps must have been passed in /quote API.
-        feeAccount: "4RRpiiuXCAofvsuqxFKVtyvR2bGUupUFL4nkWQZBHp4e"
+        feeAccount: quoteResponse.platformFee ? "4RRpiiuXCAofvsuqxFKVtyvR2bGUupUFL4nkWQZBHp4e" : undefined,
       })
     })
   ).json();
@@ -145,7 +145,7 @@ export const getSwapInstructions = async (quoteResponse: JupiterQuoteResponse, p
       body: JSON.stringify({
         quoteResponse,
         userPublicKey: pubKey.toBase58(),
-        feeAccount: "4RRpiiuXCAofvsuqxFKVtyvR2bGUupUFL4nkWQZBHp4e",
+        feeAccount: quoteResponse.platformFee ? "4RRpiiuXCAofvsuqxFKVtyvR2bGUupUFL4nkWQZBHp4e" : undefined,
       })
     })
   ).json();
@@ -179,7 +179,7 @@ export const getSwapTransaction = async (quoteResponse: JupiterQuoteResponse, co
         quoteResponse,
         userPublicKey: pubKey.toBase58(),
         dynamicComputeUnitLimit: true,
-        feeAccount: "4RRpiiuXCAofvsuqxFKVtyvR2bGUupUFL4nkWQZBHp4e",
+        feeAccount: quoteResponse.platformFee ? "4RRpiiuXCAofvsuqxFKVtyvR2bGUupUFL4nkWQZBHp4e" : undefined,
       })
     })
   ).json();
