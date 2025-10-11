@@ -23,7 +23,7 @@ export function DynamicTable<T>({
   hideHeaders,
 }: TableProps<T>) {
   return (
-    <div className="overflow-x-hidden">
+    <div className="">
       <table className={`border-collapse table-auto overflow-x-auto ${tableClassName}`}>
         {(hideHeaders === false || hideHeaders === undefined) && (
           <thead>

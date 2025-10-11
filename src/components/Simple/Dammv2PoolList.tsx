@@ -71,7 +71,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
         {
             header: 'Links',
             render: (pool, index) => (
-                <div className="flex w-full justify-center gap-1">
+                <div className="flex lg:flex-row flex-col w-full justify-center gap-1">
                     <div className="flex gap-1">
                         <div className="grid gap-1">
                             <button
@@ -145,7 +145,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                         </div>
                     </div>
                     <div className="flex gap-1">
-                        <div className="grid w-full min-w-40 gap-1">
+                        <div className="grid w-full lg:min-w-35  gap-1">
                             <button
                                 disabled={!connected}
                                 className={`${tokenAccountMap[pool.tokenA.mint] ? "bg-indigo-900 hover:bg-indigo-800" : "bg-blue-900 hover:bg-blue-800"} text-gray-100 text-xs py-0.5 px-1 rounded flex items-center justify-start gap-1`}
@@ -289,57 +289,53 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
             )
         },
         {
-            header: 'Fee Mode',
-            render: (pool) => (
-                <div className="flex items-center justify-center text-xs gap-1">
-                    <div className="text-center">
-                        {pool.poolInfo.account.collectFeeMode === 0 ? <div className="text-red-400">Both </div> :
-                            pool.poolInfo.account.collectFeeMode === 1 ? <div className="text-green-400">Quote </div> : "Unknown"}
-                    </div>
-                    <div className="flex justify-center -space-x-2">
-
-                        {pool.poolInfo.account.collectFeeMode === 0 && (
-                            <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-700 border border-gray-600">
-                                {pool.tokenA.image ? (
-                                    <img src={pool.tokenA.image} alt={pool.tokenA.symbol} className="w-full h-full object-cover" />
-                                ) : (
-                                    <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-gray-100 font-bold text-[10px]">
-                                        {pool.tokenA.symbol.slice(0, 2)}
-                                    </div>
-                                )}
-                            </div>)}
-                        <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-700 border border-gray-600">
-                            {pool.tokenB.image ? (
-                                <img src={pool.tokenB.image} alt={pool.tokenB.symbol} className="w-full h-full object-cover" />
-                            ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-gray-100 font-bold text-[10px]">
-                                    {pool.tokenB.symbol.slice(0, 2)}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-            )
-        },
-        {
             header: 'Scheduler',
             render: (pool) => (
-                <div className="text-center">
-                    {(() => {
-                        switch (pool.poolInfo.account.poolFees.baseFee.baseFeeMode) {
-                            case BaseFeeMode.FeeSchedulerLinear:
-                                return "Linear";
-                            case BaseFeeMode.FeeSchedulerExponential:
-                                return "Exponential";
-                            case BaseFeeMode.RateLimiter:
-                                return "Rate Limiter";
-                            default:
-                                return "Unknown";
-                        }
-                    })()}
-                    {/* {pool.poolInfo.account.poolFees.baseFee.baseFeeMode === BaseFeeMode.FeeSchedulerLinear ? "Linear" :
+                <div className="flex flex-col gap-0.5 items-center justify-center">
+                    <div className="text-center">
+                        {(() => {
+                            switch (pool.poolInfo.account.poolFees.baseFee.baseFeeMode) {
+                                case BaseFeeMode.FeeSchedulerLinear:
+                                    return "Linear";
+                                case BaseFeeMode.FeeSchedulerExponential:
+                                    return "Exponential";
+                                case BaseFeeMode.RateLimiter:
+                                    return "Rate Limiter";
+                                default:
+                                    return "Unknown";
+                            }
+                        })()}
+                        {/* {pool.poolInfo.account.poolFees.baseFee.baseFeeMode === BaseFeeMode.FeeSchedulerLinear ? "Linear" :
                         pool.poolInfo.account.poolFees.baseFee.feeSchedulerMode === 1 ? "Exponential" : "Unknown"} */}
+                    </div>
+                    <div className="flex items-center justify-center text-xs gap-1">
+                        <div className="text-center">
+                            {pool.poolInfo.account.collectFeeMode === 0 ? <div className="text-red-400">Both </div> :
+                                pool.poolInfo.account.collectFeeMode === 1 ? <div className="text-green-400">Quote </div> : "Unknown"}
+                        </div>
+                        <div className="flex justify-center -space-x-2">
+
+                            {pool.poolInfo.account.collectFeeMode === 0 && (
+                                <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-700 border border-gray-600">
+                                    {pool.tokenA.image ? (
+                                        <img src={pool.tokenA.image} alt={pool.tokenA.symbol} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-gray-100 font-bold text-[10px]">
+                                            {pool.tokenA.symbol.slice(0, 2)}
+                                        </div>
+                                    )}
+                                </div>)}
+                            <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-700 border border-gray-600">
+                                {pool.tokenB.image ? (
+                                    <img src={pool.tokenB.image} alt={pool.tokenB.symbol} className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="w-full h-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-gray-100 font-bold text-[10px]">
+                                        {pool.tokenB.symbol.slice(0, 2)}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )
         },
@@ -404,8 +400,8 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
         {
             header: 'TVL',
             render: (pool) => (
-                <div className="grid lg:grid-cols-2 grid-cols-1 gap-0.5 text-center lg:text-md text:xs lg:min-w-35">
-                    <div >
+                <div className="grid lg:grid-cols-2 grid-cols-1 gap-0.5 text-center lg:text-md text:xs lg:min-w-35 min-w-20">
+                    <div>
                         {"$" + pool.TVLUsd.toFixed(2)}
                     </div>
                     {!pool.LiquidityChange.tokenBAmount.eq(0) && pool.TVLUsdChange > 0 && (
@@ -426,7 +422,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                 {SortArrow<PoolSortType>(PoolSortType.PoolTotalFees, sortBy, sortAscending, handleSort)}
             </div>,
             render: (pool) => (
-                <div className="grid lg:grid-cols-2 grid-cols-1 gap-0.5 text-center lg:text-md text-xs lg:min-w-35">
+                <div className="grid lg:grid-cols-2 grid-cols-1 gap-0.5 text-center lg:text-md text-xs lg:min-w-35 min-w-20">
                     <div >
                         {"$" + pool.totalFeesUsd.toFixed(2)}
                     </div>
@@ -578,7 +574,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
             )}
 
             {pools.length > 0 && target.type === TargetType.None && (
-                <div className="flex md:flex-row flex-col h-full flex-grow overflow-y-auto relative bg-gray-900 border border-gray-700 rounded p-1 md:p-1 space-y-1">
+                <div className="flex md:flex-row justify-center-safe flex-col w-full h-full flex-grow overflow-auto relative bg-gray-900 border border-gray-700 rounded p-1 md:p-1 space-y-1">
                     {target.type === TargetType.None &&
                         (<DynamicTable tableClassName="hidden md:table sticky" data={pools} columns={poolColumns} hideHeaders={false} />
                         )}
