@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import Decimal from "decimal.js"
 import { Keypair, PublicKey } from "@solana/web3.js"
-import { ActivationType, BaseFeeMode, CollectFeeMode, derivePoolAddress, feeNumeratorToBps, getBaseFeeNumeratorByPeriod, getBaseFeeParams, getMinBaseFeeNumerator, getPriceFromSqrtPrice, getSqrtPriceFromPrice, MAX_SQRT_PRICE, MIN_SQRT_PRICE, type ConfigState } from "@meteora-ag/cp-amm-sdk"
+import { ActivationType, BaseFeeMode, CollectFeeMode, derivePoolAddress, feeNumeratorToBps, getBaseFeeNumeratorByPeriod, getBaseFeeParams, getPriceFromSqrtPrice, getSqrtPriceFromPrice, MAX_SQRT_PRICE, MIN_SQRT_PRICE, type ConfigState } from "@meteora-ag/cp-amm-sdk"
 import { DecimalInput } from "../Simple/DecimalInput"
 import { BN } from "@coral-xyz/anchor"
 import { useCpAmm } from "../../contexts/CpAmmContext"
@@ -393,8 +393,6 @@ const SimplePoolCreation: React.FC<SimplePoolCreationProps> = (
             return c;
         });
 
-
-
         console.log("Filtered pools:", pools.length);
 
         if (pools.length > 1) {
@@ -408,8 +406,6 @@ const SimplePoolCreation: React.FC<SimplePoolCreationProps> = (
             toast.error("No config found!");
             return;
         }
-
-
 
         console.log("found config", pools[0]);
         setSelectedPoolConfig(pools[0]);

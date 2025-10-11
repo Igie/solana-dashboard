@@ -358,6 +358,19 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                 </div>
             )
         },
+
+        {
+            header: <div className="flex items-center justify-center">
+                Last Updated
+                {SortArrow<PoolSortType>(PoolSortType.PoolLastUpdated, sortBy, sortAscending, handleSort)}
+            </div>,
+            render: (pool) => (
+                <div className="text-center">
+                    {pool.poolInfo.lastUpdated ? formatDurationNumber((Date.now() - pool.poolInfo.lastUpdated) / 1000) : "Never"}
+                </div>
+            )
+        },
+
         {
 
             header: <div className="flex items-center justify-center">

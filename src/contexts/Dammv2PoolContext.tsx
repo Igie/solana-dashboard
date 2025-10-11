@@ -510,7 +510,7 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                 }
             }
             if (!found || name !== 'pool') return;
-            const accountInfo = { publicKey: e.accountId, account: decoded };
+            const accountInfo: PoolInfo = { publicKey: e.accountId, account: decoded, lastUpdated: Date.now() };
             //console.log(positions.map(x => x.poolInfo.publicKey.toBase58()))
             //if (positions.find(x => x.poolInfo.publicKey.toBase58() === e.accountId.toBase58())) {
             updatedPoolMap.current[accountInfo.publicKey.toBase58()] = accountInfo;

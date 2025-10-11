@@ -1,4 +1,4 @@
-import { BaseFeeMode, CpAmm, feeNumeratorToBps, FeeRateLimiter, FeeScheduler, getAmountAFromLiquidityDelta, getAmountBFromLiquidityDelta, getBaseFeeNumerator, getBaseFeeNumeratorByPeriod, getMinBaseFeeNumerator, getPriceFromSqrtPrice, getUnClaimReward, parseFeeSchedulerSecondFactor, Rounding, type PoolState, type PositionState } from "@meteora-ag/cp-amm-sdk";
+import { BaseFeeMode, CpAmm, feeNumeratorToBps, FeeRateLimiter, FeeScheduler, getAmountAFromLiquidityDelta, getAmountBFromLiquidityDelta, getBaseFeeNumerator, getBaseFeeNumeratorByPeriod, getPriceFromSqrtPrice, getUnClaimReward, parseFeeSchedulerSecondFactor, Rounding, type PoolState, type PositionState } from "@meteora-ag/cp-amm-sdk";
 import { PublicKey } from "@solana/web3.js";
 
 import Decimal from 'decimal.js'
@@ -47,6 +47,7 @@ export interface PoolPositionInfoMap {
 export interface PoolInfo {
     publicKey: PublicKey;
     account: PoolState;
+    lastUpdated?: number;
 }
 
 export interface PoolTokenInfo extends TokenMetadata {
@@ -108,6 +109,7 @@ export enum PoolSortType {
     PoolTokenAFees,
     PoolTokenBFees,
     PoolTotalFees,
+    PoolLastUpdated
 }
 
 const getWithdrawQuote = (liquidityDelta: BN, poolInfo: PoolInfo) => {
@@ -229,6 +231,12 @@ export const sortPools = (pools: PoolDetailedInfo[], sortType: PoolSortType, asc
 
             case PoolSortType.PoolTotalFees:
                 r = (x.totalFeesUsd.sub(y.totalFeesUsd).toNumber());
+                break;
+
+            case PoolSortType.PoolLastUpdated:
+                if (!x.poolInfo.lastUpdated) return 1;
+                if (!y.poolInfo.lastUpdated) return 1;
+                r = (y.poolInfo.lastUpdated - x.poolInfo.lastUpdated);
                 break;
         }
 
