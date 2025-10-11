@@ -234,9 +234,9 @@ export const sortPools = (pools: PoolDetailedInfo[], sortType: PoolSortType, asc
                 break;
 
             case PoolSortType.PoolLastUpdated:
-                if (!x.poolInfo.lastUpdated) return 1;
-                if (!y.poolInfo.lastUpdated) return 1;
-                r = (y.poolInfo.lastUpdated - x.poolInfo.lastUpdated);
+
+                r = (y.poolInfo.lastUpdated === undefined ? Number.MIN_VALUE : y.poolInfo.lastUpdated) -
+                    (x.poolInfo.lastUpdated === undefined ? Number.MIN_VALUE : x.poolInfo.lastUpdated);
                 break;
         }
 
