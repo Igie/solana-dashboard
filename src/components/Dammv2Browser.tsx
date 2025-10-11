@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { ChevronDown, ChevronUp, Menu, RefreshCcw, RefreshCw } from 'lucide-react'
 
 
@@ -11,7 +11,7 @@ const MainPoolFilters = ["Include", "Exclude", "Only"];
 
 const Dammv2Browser: React.FC = () => {
     const {
-        update, setUpdate, fetchAllPools, fetchingPools,
+        setUpdate, fetchAllPools, fetchingPools,
         filteredDetailedPools, tokenMetadataMap,
         creatorAddressFilter, setCreatorAddressFilter,
         mainPoolFilter, setMainPoolFilter,
@@ -26,35 +26,52 @@ const Dammv2Browser: React.FC = () => {
 
     const [showlaunchpadSelector, setShowLaunchpadSelector] = useState(false);
 
+    const [mouseOverList, setMouseOverList] = useState(false);
+    const [autoUpdate, setAutoUpdate] = useState(false);
+
+    useEffect(() => {
+        setUpdate(autoUpdate && !mouseOverList)
+    }, [mouseOverList, autoUpdate])
+
     return (
         <div className="flex flex-col h-[calc(100vh-110px)] lg:h-[calc(100vh-55px)] space-y-1 px-2 md:px-0">
             {/* Header */}
-            <div className="flex md:grid justify-start items-stretch gap-1">
-                <button
-                    onClick={() => fetchAllPools(undefined)}
-                    disabled={fetchingPools}
-                    className="flex items-center gap-1 px-2 w-full lg:max-w-40 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded-md md:text-sm transition-colors"
-                >
-                    {fetchingPools ? (
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                    ) : (
-                        <RefreshCw className="w-4 h-4" />
-                    )}
-                    {fetchingPools ? (
-                        "Refreshing..."
-                    ) : (
-                        "Refresh"
-                    )}
-                </button>
-                <label className='flex items-center gap-1 px-2 w-full lg:max-w-40 bg-purple-600 hover:bg-purple-700 rounded-md md:text-sm transition-colors'>
-                    <input type='checkbox'
-                        checked={update}
-                        onChange={(e) => setUpdate(e.target.checked)}>
-                    </input>
-                    Auto Refresh
-                </label>
-            </div>
+            <div className="flex gap-0.5 items-start justify-start">
+                <div className="flex md:grid justify-start items-stretch gap-1">
 
+                    <button
+                        onClick={() => fetchAllPools(undefined)}
+                        disabled={fetchingPools}
+                        className="flex items-center gap-1 px-2 w-full lg:max-w-40 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 rounded-md md:text-sm transition-colors"
+                    >
+                        {fetchingPools ? (
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <RefreshCw className="w-4 h-4" />
+                        )}
+                        {fetchingPools ? (
+                            "Refreshing..."
+                        ) : (
+                            "Refresh"
+                        )}
+                    </button>
+                    <label className='flex items-center gap-1 px-2 w-full lg:max-w-40 bg-purple-600 hover:bg-purple-700 rounded-md md:text-sm transition-colors'>
+                        <input type='checkbox'
+                            checked={autoUpdate}
+                            onChange={(e) => setAutoUpdate(e.target.checked)}>
+                        </input>
+                        <div >
+                            <div>Auto Refresh</div>
+
+                        </div>
+                    </label>
+                </div>
+                {mouseOverList && (
+                    <div className="text-xs text-gray-400">
+                        {"paused"}
+                    </div>
+                )}
+            </div>
             <div className='grid grid-cols-2 gap-1'>
                 <div className="relative w-full">
                     <label className="block text-sm text-gray-400">Pool/mint address</label>
@@ -203,12 +220,17 @@ const Dammv2Browser: React.FC = () => {
             {/* {!fetchingPools && pools.length === 0 && (
                 <div className="text-sm text-gray-500">No DAMMv2 pools found.</div>
             )} */}
-            <Dammv2PoolList
-                pools={filteredDetailedPools}
-                tokenMetadataMap={tokenMetadataMap}
-                sortParamsCallback={(sortType, ascending) => {
-                    setPoolSorting({ type: sortType, ascending })
-                }} />
+            <div
+                onMouseEnter={() => setMouseOverList(true)}
+                onMouseLeave={() => setMouseOverList(false)}
+            >
+                <Dammv2PoolList
+                    pools={filteredDetailedPools}
+                    tokenMetadataMap={tokenMetadataMap}
+                    sortParamsCallback={(sortType, ascending) => {
+                        setPoolSorting({ type: sortType, ascending })
+                    }} />
+            </div>
         </div>
     )
 }

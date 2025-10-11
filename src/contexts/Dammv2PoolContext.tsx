@@ -148,7 +148,7 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const setUpdate = async (u: boolean) => {
         updateRef.current = u;
         if (u) {
-            updateLoop(true);
+            updateTimeout.current = setTimeout(updateLoop, 1000, true);
         } else {
             clearTimeout(updateTimeout.current)
         }
