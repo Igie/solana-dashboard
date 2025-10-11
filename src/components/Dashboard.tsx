@@ -92,7 +92,8 @@ const Dashboard: React.FC = () => {
                   onChange={() => { }}
                   onBlur={
                     (v) => {
-                      if (v.greaterThan(100)) v = new Decimal(100);
+                      if (v.greaterThan(2.55)) v = new Decimal(2.55);
+                      if (v.lessThan(0.5)) v = new Decimal(0);
                       setDevFee(parseFloat(v.toFixed(2)));
                     }}
                 />

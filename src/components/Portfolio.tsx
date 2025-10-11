@@ -15,13 +15,13 @@ import Dammv2PoolList from './Simple/Dammv2PoolList'
 import { useDammV2PoolsWebsocket } from '../contexts/Dammv2PoolContext'
 import type { AppInnerPassProps } from '../AppInner'
 import { GetTokenMetadataMap } from '../contexts/TokenMetadataContext'
-import { LAMPORTS_PER_SOL,PublicKey, VersionedTransaction } from '@solana/web3.js'
+import { LAMPORTS_PER_SOL, PublicKey, VersionedTransaction } from '@solana/web3.js'
 
 const Portfolio: React.FC<AppInnerPassProps> = ({
   goToPoolPage,
 }) => {
 
-  const { jupSlippage, includeDammv2Route } = useSettings();
+  const { jupSlippage, includeDammv2Route, devFee } = useSettings();
   const { connection } = useConnection()
   const { publicKey, connected } = useWallet()
   const { sendMultiTxn, sendVersionedTxn, sendMultiVersionedTxn } = useTransactionManager();
@@ -55,6 +55,7 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
   const handleSwap = (ta: TokenAccount) => {
     setPopupIndex(null);
     window.Jupiter.init({
+
       formProps: {
         initialInputMint: ta.mint,
         initialOutputMint: 'So11111111111111111111111111111111111111112',
@@ -77,6 +78,7 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
         amount: ta.amount.mul(Decimal.pow(10, ta.decimals)),
         taker: publicKey!.toBase58(),
         excludeDexes: includeDammv2Route ? [] : ['Meteora DAMM v2'],
+        devFee: devFee,
       }, false)
 
       const b = Buffer.from(quote.transaction!, 'base64')
@@ -112,6 +114,7 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
       amount: ta.amount.mul(Decimal.pow(10, ta.decimals)),
       slippageBps: jupSlippage ? jupSlippage * 100 : 200,
       excludeDexes: includeDammv2Route ? [] : ['Meteora DAMM v2'],
+      devFee: devFee,
     })
 
     const txn = await getSwapTransactionVersioned(quote, publicKey!);

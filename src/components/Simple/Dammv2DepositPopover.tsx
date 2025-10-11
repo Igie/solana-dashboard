@@ -36,7 +36,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
 }) => {
   const popupRef = useRef<HTMLDivElement>(null);
 
-  const { jupSlippage, includeDammv2Route, setIncludeDammv2Route, swapSolDefaultAmount } = useSettings();
+  const { jupSlippage, includeDammv2Route, setIncludeDammv2Route, swapSolDefaultAmount, devFee } = useSettings();
   const { publicKey } = useWallet();
   const { connection } = useConnection();
   const { cpAmm } = useCpAmm();
@@ -210,8 +210,6 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
   const swapSOLAndDeposit = async () => {
     if (!poolInfo) return;
     if (swapSolAmount.lessThanOrEqualTo(0)) return;
-
-    console.log(jupSlippage, includeDammv2Route);
     try {
       const quote = await getQuote({
         inputMint: NATIVE_MINT.toBase58(),
@@ -219,6 +217,7 @@ export const DepositPopover: React.FC<DepositPopoverProps> = ({
         amount: swapSolAmount.mul(LAMPORTS_PER_SOL),
         slippageBps: jupSlippage ? jupSlippage * 100 : 200,
         excludeDexes: includeDammv2Route ? [] : ['Meteora DAMM v2'],
+        devFee: devFee,
       });
 
       const transaction = await getSwapTransactionVersioned(quote, owner);

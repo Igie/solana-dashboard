@@ -16,6 +16,7 @@ interface JupiterUltraParams {
   amount: Decimal;
   taker: string;
   excludeDexes?: string[];
+  devFee?: number;
 }
 
 interface JupiterQuoteParams {
@@ -117,7 +118,7 @@ export const getSwapTransactionVersioned = async (quoteResponse: JupiterQuoteRes
         wrapAndUnwrapSol: true,
         dynamicComputeUnitLimit: true,
         // Optional, use if you want to charge a fee.  feeBps must have been passed in /quote API.
-        // feeAccount: "fee_account_public_key"
+        feeAccount: "4RRpiiuXCAofvsuqxFKVtyvR2bGUupUFL4nkWQZBHp4e"
       })
     })
   ).json();
@@ -144,6 +145,7 @@ export const getSwapInstructions = async (quoteResponse: JupiterQuoteResponse, p
       body: JSON.stringify({
         quoteResponse,
         userPublicKey: pubKey.toBase58(),
+        feeAccount: "4RRpiiuXCAofvsuqxFKVtyvR2bGUupUFL4nkWQZBHp4e",
       })
     })
   ).json();
@@ -177,6 +179,7 @@ export const getSwapTransaction = async (quoteResponse: JupiterQuoteResponse, co
         quoteResponse,
         userPublicKey: pubKey.toBase58(),
         dynamicComputeUnitLimit: true,
+        feeAccount: "4RRpiiuXCAofvsuqxFKVtyvR2bGUupUFL4nkWQZBHp4e",
       })
     })
   ).json();

@@ -9,7 +9,6 @@ import { useTokenAccounts } from './contexts/TokenAccountsContext'
 import type { Dammv2PoolCreationProps } from './components/Dammv2PoolCreation'
 import Decimal from "decimal.js"
 
-
 interface ComponentMap {
   [key: string]: React.FC | React.FC<AppInnerPassProps> | React.FC<Dammv2PoolCreationProps>
 }
@@ -20,7 +19,7 @@ interface AppInnerProps {
 }
 
 export interface AppInnerPassProps {
-  goToPoolPage:(tokenA:string, tokenAAMount:Decimal) => void,
+  goToPoolPage: (tokenA: string, tokenAAMount: Decimal) => void,
 }
 
 const AppInner: React.FC<AppInnerProps> = ({
@@ -32,16 +31,15 @@ const AppInner: React.FC<AppInnerProps> = ({
 
   const { solBalance } = useTokenAccounts()
 
-  const[tokenAMint, setTokenAMint] = useState<string | undefined>(undefined);
-  const[tokenAAmount, setTokenAAmount] = useState<Decimal | undefined>(undefined);
+  const [tokenAMint, setTokenAMint] = useState<string | undefined>(undefined);
+  const [tokenAAmount, setTokenAAmount] = useState<Decimal | undefined>(undefined);
   const ActiveComponent =
     components[activeTab] || (() => <div>Loading...</div>)
 
-  const goToPoolPage = (tokenA:string, tokenAAmount:Decimal) => {
+  const goToPoolPage = (tokenA: string, tokenAAmount: Decimal) => {
     setTokenAMint(tokenA);
     setTokenAAmount(tokenAAmount);
     setActiveTab("dammv2PoolCreation");
-    
   }
 
   useEffect(() => {

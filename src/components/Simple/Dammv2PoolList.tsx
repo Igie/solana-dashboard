@@ -13,6 +13,7 @@ import { useGetSlot } from "../../contexts/GetSlotContext";
 import { useCpAmm } from "../../contexts/CpAmmContext";
 import type { TokenMetadataMap } from "../../contexts/TokenMetadataContext";
 import { BaseFeeMode } from "@meteora-ag/cp-amm-sdk";
+import { useSettings } from "../../contexts/SettingsContext";
 interface Dammv2PoolListProps {
     onMouseEnter?: () => void,
     onMouseLeave?: () => void,
@@ -46,6 +47,8 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
     const { publicKey, connected } = useWallet();
     const { allTokenAccounts, refreshTokenAccounts } = useTokenAccounts();
     const { positions } = useDammUserPositions();
+
+    const { swapSolDefaultAmount } = useSettings();
 
     const [tokenAccountMap, setTokenAccountMap] = useState<TokenAccountMap>({});
     const [userPoolPositionInfoMap, setUserPoolPositionInfoMap] = useState<PoolPositionInfoMap>({});
@@ -154,7 +157,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                         formProps: {
                                             initialInputMint: pool.poolInfo.account.tokenBMint.toBase58(),
                                             initialOutputMint: pool.poolInfo.account.tokenAMint.toBase58(),
-                                            initialAmount: (0.01 * LAMPORTS_PER_SOL).toString(),
+                                            initialAmount: (swapSolDefaultAmount! * LAMPORTS_PER_SOL).toString(),
                                         },
                                         onSuccess: async () => {
                                             await refreshTokenAccounts();
@@ -735,7 +738,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                                     formProps: {
                                                         initialInputMint: pool.poolInfo.account.tokenBMint.toBase58(),
                                                         initialOutputMint: pool.poolInfo.account.tokenAMint.toBase58(),
-                                                        initialAmount: (0.01 * LAMPORTS_PER_SOL).toString(),
+                                                        initialAmount: (swapSolDefaultAmount! * LAMPORTS_PER_SOL).toString(),
                                                     },
                                                     onSuccess: async () => {
                                                         await refreshTokenAccounts();
