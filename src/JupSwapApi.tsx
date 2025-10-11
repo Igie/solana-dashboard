@@ -26,6 +26,7 @@ interface JupiterQuoteParams {
   maxAccounts?: number;
   onlyDirectRoutes?: boolean;
   excludeDexes?: string[];
+  devFee?: number;
 }
 
 export interface JupiterQuoteResponse {
@@ -84,7 +85,9 @@ export const getQuote = async (params: JupiterQuoteParams, notify: boolean = tru
       url.searchParams.append("onlyDirectRoutes", params.onlyDirectRoutes.toString());
     if (params.excludeDexes && params.excludeDexes.length > 0)
       url.searchParams.append("excludeDexes", params.excludeDexes.join(","));
-
+    if (params.devFee && params.devFee > 0) {
+      url.searchParams.append("platformFeeBps", (params.devFee * 100).toString());
+    }
     const response = await fetch(url.toString());
     if (!response.ok) {
       if (notify) {

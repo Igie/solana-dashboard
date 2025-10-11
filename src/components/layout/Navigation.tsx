@@ -11,7 +11,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   onTabChange,
 }) => {
   return (
-    <nav className="hidden md:flex space-x-1">
+    <nav className="hidden lg:flex space-x-1">
       {tabs.map((tab) => {
         const Icon = tab.icon
         return (
@@ -37,7 +37,7 @@ export const MobileNavigation: React.FC<NavigationProps> = ({
   onTabChange,
 }) => {
   return (
-    <nav className="md:hidden fixed bottom-0 w-full bg-gray-900 border-t border-gray-700 flex justify-around py-2">
+    <nav className="lg:hidden fixed bottom-0 w-full bg-gray-900 border-t border-gray-700 flex justify-around py-2">
       {tabs.map((tab) => {
         const Icon = tab.icon
         return (

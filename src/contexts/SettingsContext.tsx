@@ -13,6 +13,9 @@ interface SettingsContextType {
 
     swapSolDefaultAmount: number | undefined,
     setSwapSolDefaultAmount: (s: number) => void,
+
+    devFee: number | undefined,
+    setDevFee: (s: number) => void,
 }
 
 const SettingsContext = createContext<SettingsContextType>({
@@ -24,6 +27,8 @@ const SettingsContext = createContext<SettingsContextType>({
     setIncludeDammv2Route: () => { },
     swapSolDefaultAmount: undefined,
     setSwapSolDefaultAmount: () => { },
+    devFee: undefined,
+    setDevFee: () => { },
 });
 
 export const useSettings = () => useContext(SettingsContext)
@@ -34,6 +39,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const [jupZapOutSlippage, setJupZapOutSlippage] = useState<number | undefined>(Cookies.get("jup-zapout-slippage") ? parseFloat(Cookies.get("jup-zapout-slippage")!) : undefined);
     const [includeDammv2Route, setIncludeDammv2Route] = useState<boolean | undefined>(Cookies.get("include-dammv2-route") ? (Cookies.get("include-dammv2-route") === "true") : undefined);
     const [swapSolDefaultAmount, setSwapSolDefaultAmount] = useState<number | undefined>(Cookies.get("swap-sol-default-amount") ? parseFloat(Cookies.get("swap-sol-default-amount")!) : undefined);
+    const [devFee, setDevFee] = useState<number | undefined>(Cookies.get("dev-fee") ? parseFloat(Cookies.get("dev-fee")!) : undefined);
     useEffect(() => {
         if (jupSlippage !== undefined) {
             Cookies.set("jup-slippage", jupSlippage.toString(), { expires: new Date(Date.now() + 604800000) });
@@ -62,7 +68,12 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
     }, [swapSolDefaultAmount])
 
-
+    useEffect(() => {
+        if (devFee !== undefined) {
+            Cookies.set("dev-fee", devFee.toString(), { expires: new Date(Date.now() + 604800000) });
+            console.log("Set dev-fee cookie to ", devFee);
+        }
+    }, [devFee])
 
     useEffect(() => {
         if (jupSlippage === undefined) {
@@ -83,6 +94,10 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             setSwapSolDefaultAmount(0.01);
         } else
             setSwapSolDefaultAmount(swapSolDefaultAmount);
+        if (devFee === undefined) {
+            setDevFee(1);
+        } else
+            setDevFee(devFee);
     }, [])
 
     return (
@@ -91,6 +106,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             jupZapOutSlippage, setJupZapOutSlippage,
             includeDammv2Route, setIncludeDammv2Route,
             swapSolDefaultAmount, setSwapSolDefaultAmount,
+            devFee, setDevFee,
         }}>
             {children}
         </SettingsContext.Provider>

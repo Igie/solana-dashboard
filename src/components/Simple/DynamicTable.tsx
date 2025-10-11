@@ -23,15 +23,15 @@ export function DynamicTable<T>({
   hideHeaders,
 }: TableProps<T>) {
   return (
-    <div className="overflow-x-auto">
-      <table className={`border-collapse table-auto ${tableClassName}`}>
+    <div className="overflow-x-hidden">
+      <table className={`border-collapse table-auto overflow-x-auto ${tableClassName}`}>
         {(hideHeaders === false || hideHeaders === undefined) && (
           <thead>
             <tr>
               {columns.map((col, colIndex) => (
                 <th
                   key={colIndex}
-                  className={`px-5 py-0.5 border text-xs border-gray-700 font-semibold text-nowrap ${col.className ?? ""}`}
+                  className={`lg:px-4 px-1 py-0.5 border text-xs border-gray-700 lg:font-semibold font-normal text-nowrap ${col.className ?? ""}`}
                 >
                   {col.header}
                 </th>
@@ -48,7 +48,7 @@ export function DynamicTable<T>({
               {columns.map((col, colIndex) => (
                 <td
                   key={colIndex}
-                  className={`px-5 py-0.5 border border-gray-700 text-md text-nowrap ${col.className ?? ""}`}
+                  className={`lg:px-4 px-1 py-0.5 border border-gray-700 text-xs lg:text-md text-nowrap ${col.className ?? ""}`}
                 >
                   {col.render(row, rowIndex)}
                 </td>

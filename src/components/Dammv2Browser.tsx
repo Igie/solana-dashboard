@@ -220,17 +220,15 @@ const Dammv2Browser: React.FC = () => {
             {/* {!fetchingPools && pools.length === 0 && (
                 <div className="text-sm text-gray-500">No DAMMv2 pools found.</div>
             )} */}
-            <div
+
+            <Dammv2PoolList
                 onMouseEnter={() => setMouseOverList(true)}
                 onMouseLeave={() => setMouseOverList(false)}
-            >
-                <Dammv2PoolList
-                    pools={filteredDetailedPools}
-                    tokenMetadataMap={tokenMetadataMap}
-                    sortParamsCallback={(sortType, ascending) => {
-                        setPoolSorting({ type: sortType, ascending })
-                    }} />
-            </div>
+                pools={filteredDetailedPools}
+                tokenMetadataMap={tokenMetadataMap}
+                sortParamsCallback={(sortType, ascending) => {
+                    setPoolSorting({ type: sortType, ascending })
+                }} />
         </div>
     )
 }
