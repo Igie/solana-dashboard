@@ -9,7 +9,8 @@ const Dashboard: React.FC = () => {
     jupSlippage, setJupSlippage,
     includeDammv2Route, setIncludeDammv2Route,
     swapSolDefaultAmount, setSwapSolDefaultAmount,
-    devFee, setDevFee
+    devFee, setDevFee,
+    autoPauseBrowserListOnHover, setAutoPauseBrowserListOnHover
   } = useSettings()
   const { connected } = useWallet()
 
@@ -102,6 +103,27 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
 
+        </div>
+        <div className="bg-gray-900 border border-gray-700 rounded p-2">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">General Settings</h3>
+          </div>
+
+          <div className="space-y-2">
+
+            <div className="flex items-center gap-2">
+              <label className="w-28 text-green-100 md:text-xs">Auto Pause Browser List on Mouse Hover</label>
+              <input
+                type="checkbox"
+                checked={autoPauseBrowserListOnHover}
+                onChange={(e) => {
+                  setAutoPauseBrowserListOnHover(e.target.checked);
+                }}
+                className="h-4 w-4 accent-purple-600"
+              />
+            </div>
+
+          </div>
 
         </div>
       </div>

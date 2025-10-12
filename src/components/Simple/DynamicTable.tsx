@@ -28,7 +28,7 @@ export function DynamicTable<T>({
         <table className={`border-collapse table-auto ${tableClassName}`}>
           {(hideHeaders === false || hideHeaders === undefined) && (
             <thead
-              className="sticky top-0"
+              className="sticky -top-0.5"
             >
               <tr>
                 {columns.map((col, colIndex) => (

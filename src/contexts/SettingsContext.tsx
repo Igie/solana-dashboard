@@ -16,6 +16,9 @@ interface SettingsContextType {
 
     devFee: number | undefined,
     setDevFee: (s: number) => void,
+
+    autoPauseBrowserListOnHover: boolean | undefined,
+    setAutoPauseBrowserListOnHover: (s: boolean) => void,
 }
 
 const SettingsContext = createContext<SettingsContextType>({
@@ -29,6 +32,8 @@ const SettingsContext = createContext<SettingsContextType>({
     setSwapSolDefaultAmount: () => { },
     devFee: undefined,
     setDevFee: () => { },
+    autoPauseBrowserListOnHover: undefined,
+    setAutoPauseBrowserListOnHover: () => { },
 });
 
 export const useSettings = () => useContext(SettingsContext)
@@ -40,6 +45,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const [includeDammv2Route, setIncludeDammv2Route] = useState<boolean | undefined>(Cookies.get("include-dammv2-route") ? (Cookies.get("include-dammv2-route") === "true") : undefined);
     const [swapSolDefaultAmount, setSwapSolDefaultAmount] = useState<number | undefined>(Cookies.get("swap-sol-default-amount") ? parseFloat(Cookies.get("swap-sol-default-amount")!) : undefined);
     const [devFee, setDevFee] = useState<number | undefined>(Cookies.get("dev-fee") ? parseFloat(Cookies.get("dev-fee")!) : undefined);
+    const [autoPauseBrowserListOnHover, setAutoPauseBrowserListOnHover] = useState<boolean | undefined>(Cookies.get("pause-browser-refresh-on-hover") ? (Cookies.get("pause-browser-refresh-on-hover") === "true") : undefined);
     useEffect(() => {
         if (jupSlippage !== undefined) {
             Cookies.set("jup-slippage", jupSlippage.toString(), { expires: new Date(Date.now() + 604800000) });
@@ -76,6 +82,13 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }, [devFee])
 
     useEffect(() => {
+        if (autoPauseBrowserListOnHover !== undefined) {
+            Cookies.set("pause-browser-refresh-on-hover", autoPauseBrowserListOnHover ? "true" : "false", { expires: new Date(Date.now() + 604800000) });
+            console.log("Set pause-browser-refresh-on-hover cookie to ", autoPauseBrowserListOnHover);
+        }
+    }, [autoPauseBrowserListOnHover])
+
+    useEffect(() => {
         if (jupSlippage === undefined) {
             setJupSlippage(2);
         } else
@@ -98,6 +111,10 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             setDevFee(1);
         } else
             setDevFee(devFee);
+        if (autoPauseBrowserListOnHover === undefined) {
+            setAutoPauseBrowserListOnHover(true);
+        } else
+            setAutoPauseBrowserListOnHover(autoPauseBrowserListOnHover);
     }, [])
 
     return (
@@ -107,6 +124,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             includeDammv2Route, setIncludeDammv2Route,
             swapSolDefaultAmount, setSwapSolDefaultAmount,
             devFee, setDevFee,
+            autoPauseBrowserListOnHover, setAutoPauseBrowserListOnHover,
         }}>
             {children}
         </SettingsContext.Provider>

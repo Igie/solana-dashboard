@@ -6,10 +6,14 @@ import Dammv2PoolList from './Simple/Dammv2PoolList'
 
 import { launchpads } from './launchpads/Launchpads'
 import { useDammV2PoolsWebsocket } from '../contexts/Dammv2PoolContext'
+import { useSettings } from '../contexts/SettingsContext'
 
 const MainPoolFilters = ["Include", "Exclude", "Only"];
 
 const Dammv2Browser: React.FC = () => {
+
+    const { autoPauseBrowserListOnHover, setAutoPauseBrowserListOnHover } = useSettings();
+
     const {
         setUpdate, update, fetchAllPools, fetchingPools,
         filteredDetailedPools, tokenMetadataMap,
@@ -30,8 +34,11 @@ const Dammv2Browser: React.FC = () => {
     const [autoUpdate, setAutoUpdate] = useState(false);
 
     useEffect(() => {
-        setUpdate(autoUpdate && !mouseOverList)
-    }, [mouseOverList, autoUpdate])
+        if (autoPauseBrowserListOnHover === true)
+            setUpdate(autoUpdate && !mouseOverList)
+        else if (autoUpdate !== update)
+            setUpdate(autoUpdate)
+    }, [mouseOverList, autoUpdate, autoPauseBrowserListOnHover])
 
     useEffect(() => {
         setAutoUpdate(update)
@@ -70,11 +77,23 @@ const Dammv2Browser: React.FC = () => {
                         </div>
                     </label>
                 </div>
-                {mouseOverList && (
-                    <div className="text-xs text-gray-400">
-                        {"paused"}
-                    </div>
-                )}
+                <div>
+                    <label className='flex items-center justify-center gap-1 px-2 w-full text-nowrap lg:max-w-45 bg-purple-600 hover:bg-purple-700 rounded-md md:text-sm transition-colors'>
+                        <input type='checkbox'
+                            checked={autoPauseBrowserListOnHover}
+                            onChange={(e) => setAutoPauseBrowserListOnHover(e.target.checked)}>
+                        </input>
+                        <div>
+                            <div>Auto Pause on Hover</div>
+
+                        </div>
+                    </label>
+                    {mouseOverList && autoPauseBrowserListOnHover === true && (
+                        <div className="text-xs flex items-center gap-1 px-2 py-1 w-full text-gray-400">
+                            {"paused"}
+                        </div>
+                    )}
+                </div>
             </div>
             <div className='grid grid-cols-2 gap-1'>
                 <div className="relative w-full">
