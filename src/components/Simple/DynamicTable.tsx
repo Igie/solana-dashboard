@@ -24,7 +24,7 @@ export function DynamicTable<T>({
 }: TableProps<T>) {
   return (
     <div className="flex justify-center">
-      <div className="flex-grow overflow-auto max-h-screen w-full">
+      <div className="flex-grow overflow-auto max-h-[calc(100vh)] max-w-[calc(95vw)]">
         <table className={`border-collapse table-auto ${tableClassName}`}>
           {(hideHeaders === false || hideHeaders === undefined) && (
             <thead
