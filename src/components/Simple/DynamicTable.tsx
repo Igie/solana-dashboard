@@ -23,40 +23,44 @@ export function DynamicTable<T>({
   hideHeaders,
 }: TableProps<T>) {
   return (
-    <div className="">
-      <table className={`border-collapse table-auto overflow-x-auto ${tableClassName}`}>
-        {(hideHeaders === false || hideHeaders === undefined) && (
-          <thead>
-            <tr>
-              {columns.map((col, colIndex) => (
-                <th
-                  key={colIndex}
-                  className={`lg:px-4 px-1 py-0.5 border text-xs border-gray-700 lg:font-semibold font-normal text-nowrap ${col.className ?? ""}`}
-                >
-                  {col.header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-        )}
-        <tbody>
-          {data.map((row, rowIndex) => (
-            <tr
-              key={rowIndex}
-              className={rowClassName ? rowClassName(row, rowIndex) : "" + " hover:bg-gray-800/50"}
+    <div className="flex justify-center">
+      <div className="flex-grow overflow-auto max-h-screen w-full">
+        <table className={`border-collapse table-auto ${tableClassName}`}>
+          {(hideHeaders === false || hideHeaders === undefined) && (
+            <thead
+              className="sticky top-0"
             >
-              {columns.map((col, colIndex) => (
-                <td
-                  key={colIndex}
-                  className={`lg:px-4 px-1 py-0.5 border border-gray-700 text-xs lg:text-md text-nowrap ${col.className ?? ""}`}
-                >
-                  {col.render(row, rowIndex)}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+              <tr>
+                {columns.map((col, colIndex) => (
+                  <th
+                    key={colIndex}
+                    className={`lg:px-4 px-1 py-0.5 border text-xs border-gray-700 bg-gray-800 lg:font-semibold font-normal text-nowrap ${col.className ?? ""}`}
+                  >
+                    {col.header}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+          )}
+          <tbody>
+            {data.map((row, rowIndex) => (
+              <tr
+                key={rowIndex}
+                className={rowClassName ? rowClassName(row, rowIndex) : "" + " hover:bg-gray-800/50"}
+              >
+                {columns.map((col, colIndex) => (
+                  <td
+                    key={colIndex}
+                    className={`lg:px-4 px-1 py-0.5 border border-gray-700 text-xs lg:text-md text-nowrap ${col.className ?? ""}`}
+                  >
+                    {col.render(row, rowIndex)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

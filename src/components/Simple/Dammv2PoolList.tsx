@@ -569,7 +569,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                 </div>
             )}
             {target.type === TargetType.PoolInfo && (
-                <div className="overflow-y-auto items-center justify-center bg-gray-900 border border-gray-700 rounded p-3 md:p-3 space-y-2">
+                <div className="relative flex w-full flex-col h-screen items-center justify-center bg-gray-900 border border-gray-700 rounded p-3 md:p-3 space-y-2">
 
                     <DynamicTable tableClassName="hidden lg:table sticky" data={poolPositions} columns={positionColumns} hideHeaders={false} />
                 </div>
@@ -577,7 +577,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
             )}
 
             {pools.length > 0 && target.type === TargetType.None && (
-                <div className="flex md:flex-row justify-center-safe flex-col w-full h-full flex-grow overflow-auto relative bg-gray-900 border border-gray-700 rounded p-1 md:p-1 space-y-1">
+                <div className="flex md:flex-row justify-center-safe flex-col w-full h-full flex-grow relative bg-gray-900 border border-gray-700 rounded p-1 md:p-1 space-y-1">
                     {target.type === TargetType.None &&
                         (<DynamicTable tableClassName="hidden md:table sticky" data={pools} columns={poolColumns} hideHeaders={false} />
                         )}
