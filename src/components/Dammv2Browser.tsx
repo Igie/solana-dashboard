@@ -171,14 +171,29 @@ const Dammv2Browser: React.FC = () => {
                                 {showlaunchpadSelector ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                             </button>
                             {showlaunchpadSelector &&
-                                <div className="overflow-y-auto max-h-[40vh] lg:max-h-[70vh] absolute top-6 bg-gray-800 border border-gray-600 rounded-lg p-2 z-10 shadow-lg">
-
+                                <div className="flex flex-col items-start justify-start gap-0.5 overflow-y-auto overflow-x-hidden max-h-[45vh] lg:max-h-[75vh] absolute top-6 bg-gray-800 border border-gray-600 rounded-lg p-2 z-10 shadow-lg">
+                                    <button
+                                        onClick={() => {
+                                            setLaunchpadFilter(new Set([...Object.entries(launchpads).map(x => x[0])]))
+                                        }}
+                                        className="flex items-center gap-1 px-1 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-800 rounded-sm text-sm transition-colors w-auto justify-center"
+                                    >
+                                        Select All
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setLaunchpadFilter(new Set())
+                                        }}
+                                        className="flex items-center gap-1 px-1 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-800 rounded-sm text-sm transition-colors w-auto justify-center"
+                                    >
+                                        Deselect All
+                                    </button>
                                     {Object.entries(launchpads).map((x, i) => (
                                         <div key={i} className='flex'>
 
                                             <label
                                                 onClick={() => { }}
-                                                className={`flex w-full text-left px-2 py-1 gap-1 text-white hover:bg-gray-700 rounded text-sm`}
+                                                className={`flex w-full text-left px-1 py-1 gap-y-0.5 gap-x-0.5 text-white hover:bg-gray-700 rounded text-sm`}
                                             >
                                                 <input
                                                     type='checkbox'
@@ -198,7 +213,7 @@ const Dammv2Browser: React.FC = () => {
                                                     }}
                                                 >
                                                 </input>
-                                                <div className="max-w-4 max-h-4 object-scale-down">
+                                                <div className="flex">
                                                     {
                                                         (() => {
                                                             const Launchpad = x[1].logo;

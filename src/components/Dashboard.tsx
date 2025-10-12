@@ -85,7 +85,7 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <label className="w-28 text-white md:text-xs">Developer Fee</label>
+              <label className="w-28 text-white md:text-xs">Platform Fee</label>
               <div>
                 <DecimalInput className="w-14 bg-gray-800 border border-gray-700 rounded-md px-2 text-white md:text-xs placeholder-gray-500"
                   value={devFee?.toFixed(2) || ""}
