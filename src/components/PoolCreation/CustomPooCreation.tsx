@@ -115,7 +115,10 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
 
     const [minFeePercentage, setMinFeePercentage] = useState(new Decimal(0.01))
 
+    const [rateLimiterReferenceAmount, setRateLimiterReferenceAmount] = useState<number>(0.0001)
+
     const [totalSchedulerDuration, setTotalSchedulerDuration] = useState<number>(2880000000)
+    const [totalRateLimiterDuration, setTotalRateLimiterDuration] = useState<number>(43200)
 
     const [schedulerReductionPeriod, setSchedulerReductionPeriod] = useState<number>(2880000000)
 
@@ -162,7 +165,7 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
             const reductionPeriod = new BN(schedulerReductionPeriod);
 
             const baseFeeParams = selectedBaseFeeMode === BaseFeeMode.RateLimiter ?
-                getRateLimiterParams(minFee, maxFee, 0.001, 43200, 50000, tokenBMetadata.decimals, ActivationType.Timestamp) :
+                getRateLimiterParams(minFee, maxFee, rateLimiterReferenceAmount, totalRateLimiterDuration, 50000, tokenBMetadata.decimals, ActivationType.Timestamp) :
                 getFeeSchedulerParams(maxFee, minFee, selectedBaseFeeMode,
                     totalDuration.div(reductionPeriod).toNumber(), totalDuration.toNumber());
 
@@ -412,7 +415,13 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
             </div>
             <div className='grid grid-cols-2 gap-1'>
                 <div className="relative w-full">
-                    <label className="block text-xs text-gray-400">Starting Fee</label>
+                    {selectedBaseFeeMode === BaseFeeMode.RateLimiter &&
+                        <label className="block text-xs text-gray-400">Fee Increment</label>
+                    }
+
+                    {selectedBaseFeeMode !== BaseFeeMode.RateLimiter &&
+                        <label className="block text-xs text-gray-400">Starting Fee</label>
+                    }
                     <div className="flex">
                         <DecimalInput
                             className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 text-xs text-white placeholder-gray-500"
@@ -435,29 +444,61 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
                     </div>
                 </div>
             </div>
-            <div className="relative w-full">
-                <label className="block text-xs text-gray-400">Scheduler Duration({formatDurationNumber(totalSchedulerDuration)})</label>
-                <div className="flex">
-                    <NumberInput
-                        className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 text-xs text-white placeholder-gray-500"
-                        value={totalSchedulerDuration.toString()}
-                        onChange={() => { }}
-                        onBlur={setTotalSchedulerDuration}
-                    />
+            {selectedBaseFeeMode === BaseFeeMode.RateLimiter &&
+                <div className="relative w-full">
+                    <label className="block text-xs text-gray-400">{`Reference Amount (${tokenMetadata[tokenBMint].symbol})`}</label>
+                    <div className="flex">
+                        <DecimalInput
+                            className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 text-xs text-white placeholder-gray-500"
+                            value={rateLimiterReferenceAmount.toString()}
+                            onChange={() => { }}
+                            onBlur={val => setRateLimiterReferenceAmount(val.toNumber())}
+                        />
+                    </div>
                 </div>
-            </div>
-            <div className="relative w-full">
-                <label className="block text-xs text-gray-400">Scheduler Reduction Period({formatDurationNumber(schedulerReductionPeriod)})</label>
-                <div className="flex">
-                    <NumberInput
-                        className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 text-xs text-white placeholder-gray-500"
-                        placeholder="2"
-                        value={schedulerReductionPeriod.toString()}
-                        onChange={() => { }}
-                        onBlur={setSchedulerReductionPeriod}
-                    />
+            }
+            {selectedBaseFeeMode !== BaseFeeMode.RateLimiter &&
+                <div className="relative w-full">
+                    <label className="block text-xs text-gray-400">Scheduler Duration({formatDurationNumber(totalSchedulerDuration)})</label>
+                    <div className="flex">
+                        <DecimalInput
+                            className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 text-xs text-white placeholder-gray-500"
+                            value={totalSchedulerDuration.toString()}
+                            onChange={() => { }}
+                            onBlur={val => setTotalSchedulerDuration(val.toNumber())}
+                        />
+                    </div>
                 </div>
-            </div>
+            }
+            {selectedBaseFeeMode === BaseFeeMode.RateLimiter &&
+                <div className="relative w-full">
+                    <label className="block text-xs text-gray-400">Rate Limiter Duration({formatDurationNumber(totalRateLimiterDuration)})</label>
+                    <div className="flex">
+                        <DecimalInput
+                            className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 text-xs text-white placeholder-gray-500"
+                            value={totalRateLimiterDuration.toString()}
+                            onChange={() => { }}
+                            onBlur={(val) => 
+                                setTotalRateLimiterDuration(Math.min(43200, val.toNumber()))
+                            }
+                        />
+                    </div>
+                </div>
+            }
+            {selectedBaseFeeMode !== BaseFeeMode.RateLimiter &&
+                <div className="relative w-full">
+                    <label className="block text-xs text-gray-400">Scheduler Reduction Period({formatDurationNumber(schedulerReductionPeriod)})</label>
+                    <div className="flex">
+                        <NumberInput
+                            className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 text-xs text-white placeholder-gray-500"
+                            placeholder="2"
+                            value={schedulerReductionPeriod.toString()}
+                            onChange={() => { }}
+                            onBlur={setSchedulerReductionPeriod}
+                        />
+                    </div>
+                </div>
+            }
             <div className='grid grid-cols-2 gap-1'>
                 <div className="relative w-full">
                     <label className="block text-xs text-gray-400">Fee Schedule Mode</label>

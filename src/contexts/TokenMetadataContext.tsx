@@ -33,7 +33,7 @@ export interface JupTokenMetadata {
     mintAuthority?: string
     freezeAuthority?: string
 
-    firstPool: {
+    firstPool?: {
         createdAt?: Date
     }
 }
@@ -110,7 +110,7 @@ export const TokenMetadataProvider: React.FC<{ children: React.ReactNode }> = ({
                         supply: tm.totalSupply,
                         mintAuthority: tm.mintAuthority,
                         freezeAuthority: tm.freezeAuthority,
-                        createdAt: new Date(tm.firstPool.createdAt!),
+                        createdAt: tm.firstPool?.createdAt ? new Date(tm.firstPool.createdAt) : undefined,
                         lastUpdated: currentTime,
                     }
                     tokenMetadataMap.current[tm.id] = tmItem;
