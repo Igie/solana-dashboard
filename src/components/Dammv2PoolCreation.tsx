@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useEffect } from 'react'
 import { RefreshCcw } from 'lucide-react'
-import { getPriceFromSqrtPrice } from '@meteora-ag/cp-amm-sdk'
+import { BaseFeeMode, getPriceFromSqrtPrice } from '@meteora-ag/cp-amm-sdk'
 import { PublicKey } from '@solana/web3.js'
 import { BN } from '@coral-xyz/anchor'
 import { GetTokenMetadataMap, useTokenMetadata, type TokenMetadataMap } from '../contexts/TokenMetadataContext'
@@ -9,7 +9,7 @@ import Decimal from 'decimal.js'
 import { MintSelectorInput } from './Simple/MintSelectorInput'
 import { useTokenAccounts } from '../contexts/TokenAccountsContext'
 import Dammv2PoolList from './Simple/Dammv2PoolList'
-import { getMinAndCurrentFee, type PoolDetailedInfo, type PoolInfo } from '../constants'
+import { getMinAndCurrentFee, getRateLimiter, type PoolDetailedInfo, type PoolInfo } from '../constants'
 import { useConnection, useWallet } from '@jup-ag/wallet-adapter'
 import { useCpAmm } from '../contexts/CpAmmContext'
 import { useGetSlot } from '../contexts/GetSlotContext'
@@ -71,7 +71,7 @@ const Dammv2PoolCreation: React.FC<Dammv2PoolCreationProps> = ({
         if (searchMint === '') {
             const pools = await cpAmm.getAllPools();
             pools.sort((x, y) => y.account.activationPoint.sub(x.account.activationPoint).toNumber())
-            const allPools:PoolInfo[] = (pools).slice(0, 100);
+            const allPools: PoolInfo[] = (pools).slice(0, 100);
 
 
             mints.push(...allPools.map(p => p.account.tokenAMint.toBase58()));
@@ -173,8 +173,10 @@ const Dammv2PoolCreation: React.FC<Dammv2PoolCreationProps> = ({
                 activationTime = currentTime - x.account.activationPoint.toNumber();
             }
 
-            const [minFee, currentFee] = getMinAndCurrentFee(x, x.account.activationType === 0 ? getSlot() :
-                x.account.activationType === 1 ? currentTime : 0);
+            const currentTimeInActivation = x.account.activationType === 0 ? getSlot() :
+                x.account.activationType === 1 ? currentTime : 0;
+
+            const [minFee, currentFee] = getMinAndCurrentFee(x, currentTimeInActivation);
 
             detailedPools.push({
                 poolInfo: x,
@@ -190,6 +192,9 @@ const Dammv2PoolCreation: React.FC<Dammv2PoolCreationProps> = ({
                 lockedTVL: poolPrice.mul(new Decimal(poolTokenAAmountLocked)).toNumber() * tokenBMetadata.price.toNumber() + poolTokenBAmountLocked * tokenBMetadata.price.toNumber(),
                 totalFeesUsd: poolTokenA.totalFeesUsd.add(poolTokenB.totalFeesUsd),
                 FeesLiquidityChange: { tokenAAmount: new Decimal(0), tokenBAmount: new Decimal(0) },
+                rateLimiter: x.account.poolFees.baseFee.baseFeeMode === BaseFeeMode.RateLimiter ?
+                    getRateLimiter(x, tokenBMetadata.decimals, currentTimeInActivation)
+                    : null
             });
         };
         setDetailedPools(detailedPools);

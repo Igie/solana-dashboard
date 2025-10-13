@@ -383,8 +383,15 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                 {SortArrow<PoolSortType>(PoolSortType.PoolBaseFee, sortBy, sortAscending, handleSort)}
             </div>,
             render: (pool) => (
-                <div className="text-center">
-                    {pool.minFeeBPS / 100}%
+                <div>
+                    <div className="text-center">
+                        {pool.minFeeBPS / 100}%
+                    </div>
+                    {pool.rateLimiter !== null && (
+                        <div className="text-center text-xs">
+                            {`Max: ${(pool.rateLimiter.maxFeeBPS / 100).toFixed(2)}% for ${formatDurationNumber(pool.rateLimiter.durationLeft)}`}
+                        </div>
+                    )}
                 </div>
             )
         },
@@ -395,8 +402,15 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                 {SortArrow<PoolSortType>(PoolSortType.PoolCurrentFee, sortBy, sortAscending, handleSort)}
             </div>,
             render: (pool) => (
-                <div className="text-center">
-                    {pool.currentFeeBPS / 100}%
+                <div>
+                    <div className="text-center">
+                        {`${pool.currentFeeBPS / 100}%`}
+                    </div>
+                    {pool.rateLimiter !== null && (
+                        <div className="text-center text-xs">
+                            {`+${(pool.rateLimiter.feeIncreaseBPS / 100).toFixed(2)}% per ${pool.rateLimiter.referenceAmount.toFixed(4)} ${pool.tokenB.symbol}`}
+                        </div>
+                    )}
                 </div>
             )
         },

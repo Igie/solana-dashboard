@@ -3,8 +3,8 @@ import { useConnection, useWallet } from '@jup-ag/wallet-adapter'
 import Decimal from "decimal.js"
 import { LAMPORTS_PER_SOL } from '@solana/web3.js'
 import { BN } from '@coral-xyz/anchor'
-import { getMinAndCurrentFee, GetPoolInfoMap, type PoolDetailedInfo, type PoolDetailedInfoMap, type PoolInfo } from '../constants'
-import { getPriceFromSqrtPrice } from '@meteora-ag/cp-amm-sdk'
+import { getMinAndCurrentFee, GetPoolInfoMap, getRateLimiter, type PoolDetailedInfo, type PoolDetailedInfoMap, type PoolInfo } from '../constants'
+import { BaseFeeMode, getPriceFromSqrtPrice } from '@meteora-ag/cp-amm-sdk'
 import { useCpAmm } from '../contexts/CpAmmContext'
 import { useGetSlot } from '../contexts/GetSlotContext'
 import { useDammV2PoolsWebsocket } from './Dammv2PoolContext'
@@ -323,8 +323,10 @@ export const TokenAccountsProvider: React.FC<{ children: React.ReactNode }> = ({
                     activationTime = currentTime - x.account.activationPoint.toNumber();
                 }
 
-                const [minFee, currentFee] = getMinAndCurrentFee(x, x.account.activationType === 0 ? getSlot() :
-                    x.account.activationType === 1 ? currentTime : 0);
+                const currentTimeInActivation = x.account.activationType === 0 ? getSlot() :
+                    x.account.activationType === 1 ? currentTime : 0;
+
+                const [minFee, currentFee] = getMinAndCurrentFee(x, currentTimeInActivation);
 
                 detailedPools.push({
                     poolInfo: x,
@@ -340,6 +342,10 @@ export const TokenAccountsProvider: React.FC<{ children: React.ReactNode }> = ({
                     lockedTVL: poolPrice.mul(new Decimal(poolTokenAAmountLocked)).toNumber() * tokenBMetadata.price.toNumber() + poolTokenBAmountLocked * tokenBMetadata.price.toNumber(),
                     totalFeesUsd: poolTokenA.totalFeesUsd.add(poolTokenB.totalFeesUsd),
                     FeesLiquidityChange: { tokenAAmount: new Decimal(0), tokenBAmount: new Decimal(0) },
+                    rateLimiter: x.account.poolFees.baseFee.baseFeeMode === BaseFeeMode.RateLimiter ?
+                        getRateLimiter(x, tokenBMetadata.decimals, currentTimeInActivation)
+                        : null
+
                 });
             } catch (e) {
                 console.error(e)

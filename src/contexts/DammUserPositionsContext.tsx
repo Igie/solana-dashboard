@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { PublicKey, Transaction } from '@solana/web3.js'
-import { getPriceFromSqrtPrice, getUnClaimReward } from '@meteora-ag/cp-amm-sdk'
+import { BaseFeeMode, getPriceFromSqrtPrice, getUnClaimReward } from '@meteora-ag/cp-amm-sdk'
 import Decimal from 'decimal.js'
 import { BN } from '@coral-xyz/anchor'
 import { useConnection, useWallet } from '@jup-ag/wallet-adapter'
@@ -10,7 +10,7 @@ import { getQuote, getSwapTransactionVersioned } from '../JupSwapApi'
 import { useTokenAccounts } from './TokenAccountsContext'
 import { useCpAmm } from './CpAmmContext'
 //import { useSettings } from './SettingsContext'
-import { getMinAndCurrentFee, type PoolPositionInfo, type PoolPositionInfoMap } from '../constants'
+import { getMinAndCurrentFee, getRateLimiter, type PoolPositionInfo, type PoolPositionInfoMap } from '../constants'
 import { useGetSlot } from './GetSlotContext'
 import { useDammV2PoolsWebsocket } from './Dammv2PoolContext'
 import { useTokenMetadata } from './TokenMetadataContext'
@@ -183,6 +183,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                         positionUnclaimedFeeChange: 0,
                         poolMinFeeBPS: 0,
                         poolCurrentFeeBPS: 0,
+                        rateLimiter: null
                     })
 
                     allMints.add(pool.tokenAMint.toString())
@@ -284,10 +285,14 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                     tokenAClaimedFeesAmount * tokenAMetadata!.price.toNumber() +
                     tokenBClaimedFeesAmount * tokenBMetadata!.price.toNumber();
 
-                const [minFee, currentFee] = getMinAndCurrentFee(position.poolInfo, position.poolInfo.account.activationType === 0 ? getSlot() :
-                    position.poolInfo.account.activationType === 1 ? currentTime : 0);
+                const currentTimeInActivation = position.poolInfo.account.activationType === 0 ? getSlot() :
+                    position.poolInfo.account.activationType === 1 ? currentTime : 0;
+                const [minFee, currentFee] = getMinAndCurrentFee(position.poolInfo, currentTimeInActivation);
                 position.poolMinFeeBPS = minFee;
                 position.poolCurrentFeeBPS = currentFee;
+                if (position.poolInfo.account.poolFees.baseFee.baseFeeMode === BaseFeeMode.RateLimiter) {
+                    position.rateLimiter = getRateLimiter(position.poolInfo, tokenBMetadata.decimals, currentTimeInActivation);
+                }
                 positionsParsed.push(position)
             };
             sortPositionsByInternal(positionsParsed, sortedBy, sortedAscending);
@@ -503,11 +508,14 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
             tokenAClaimedFeesAmount * tokenAMetadata!.price.toNumber() +
             tokenBClaimedFeesAmount * tokenBMetadata!.price.toNumber();
 
-        const [minFee, currentFee] = getMinAndCurrentFee(position.poolInfo, position.poolInfo.account.activationType === 0 ? getSlot() :
-            position.poolInfo.account.activationType === 1 ? currentTime : 0);
+        const currentTimeInActivation = position.poolInfo.account.activationType === 0 ? getSlot() :
+            position.poolInfo.account.activationType === 1 ? currentTime : 0;
+        const [minFee, currentFee] = getMinAndCurrentFee(position.poolInfo, currentTimeInActivation);
         position.poolMinFeeBPS = minFee;
         position.poolCurrentFeeBPS = currentFee;
-
+        if (position.poolInfo.account.poolFees.baseFee.baseFeeMode === BaseFeeMode.RateLimiter) {
+            position.rateLimiter = getRateLimiter(position.poolInfo, tokenBMetadata.decimals, currentTimeInActivation);
+        }
         sortPositionsByInternal(newPositions, sortedBy, sortedAscending);
         updateLiquidity(newPositions);
         setPositions(newPositions);
@@ -605,11 +613,16 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                 tokenAClaimedFeesAmount * tokenAMetadata!.price.toNumber() +
                 tokenBClaimedFeesAmount * tokenBMetadata!.price.toNumber();
 
-            const [minFee, currentFee] = getMinAndCurrentFee(position.poolInfo, position.poolInfo.account.activationType === 0 ? getSlot() :
-                position.poolInfo.account.activationType === 1 ? currentTime : 0);
+            const currentTimeInActivation = position.poolInfo.account.activationType === 0 ? getSlot() :
+                position.poolInfo.account.activationType === 1 ? currentTime : 0;
+
+                position.poolInfo.account.poolFees.baseFee.cliffFeeNumerator
+            const [minFee, currentFee] = getMinAndCurrentFee(position.poolInfo, currentTimeInActivation);
             position.poolMinFeeBPS = minFee;
             position.poolCurrentFeeBPS = currentFee;
-
+            if (position.poolInfo.account.poolFees.baseFee.baseFeeMode === BaseFeeMode.RateLimiter) {
+                position.rateLimiter = getRateLimiter(position.poolInfo, tokenBMetadata.decimals, currentTimeInActivation);
+            }
             sortPositionsByInternal(positions, sortedBy, sortedAscending);
             updateLiquidity(positions);
             setPositions(positions);

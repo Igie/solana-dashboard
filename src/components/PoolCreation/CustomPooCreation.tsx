@@ -162,7 +162,7 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
             const reductionPeriod = new BN(schedulerReductionPeriod);
 
             const baseFeeParams = selectedBaseFeeMode === BaseFeeMode.RateLimiter ?
-                getRateLimiterParams(minFee, maxFee, 0.001, 43200, 5000, tokenBMetadata.decimals, ActivationType.Timestamp) :
+                getRateLimiterParams(minFee, maxFee, 0.001, 43200, 50000, tokenBMetadata.decimals, ActivationType.Timestamp) :
                 getFeeSchedulerParams(maxFee, minFee, selectedBaseFeeMode,
                     totalDuration.div(reductionPeriod).toNumber(), totalDuration.toNumber());
 

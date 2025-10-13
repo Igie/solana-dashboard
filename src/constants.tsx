@@ -1,4 +1,4 @@
-import { BaseFeeMode, CpAmm, feeNumeratorToBps, FeeRateLimiter, FeeScheduler, getAmountAFromLiquidityDelta, getAmountBFromLiquidityDelta, getBaseFeeNumerator, getBaseFeeNumeratorByPeriod, getPriceFromSqrtPrice, getUnClaimReward, parseFeeSchedulerSecondFactor, Rounding, type PoolState, type PositionState } from "@meteora-ag/cp-amm-sdk";
+import { ActivationType, BaseFeeMode, CpAmm, feeNumeratorToBps, FeeRateLimiter, FeeScheduler, getAmountAFromLiquidityDelta, getAmountBFromLiquidityDelta, getBaseFeeNumerator, getBaseFeeNumeratorByPeriod, getPriceFromSqrtPrice, getUnClaimReward, parseFeeSchedulerSecondFactor, parseRateLimiterSecondFactor, Rounding, type PoolState, type PositionState } from "@meteora-ag/cp-amm-sdk";
 import { PublicKey } from "@solana/web3.js";
 
 import Decimal from 'decimal.js'
@@ -40,6 +40,7 @@ export interface PoolPositionInfo {
     positionClaimedFee: number
     poolMinFeeBPS: number
     poolCurrentFeeBPS: number
+    rateLimiter: RateLimiter | null
 }
 
 
@@ -61,6 +62,12 @@ export interface PoolTokenInfo extends TokenMetadata {
 
 export interface Liquidity { tokenAAmount: Decimal, tokenBAmount: Decimal }
 
+export interface RateLimiter {
+    feeIncreaseBPS: number,
+    maxFeeBPS: number,
+    referenceAmount: Decimal,
+    durationLeft: number
+}
 export interface PoolDetailedInfo {
     poolInfo: PoolInfo
     tokenA: PoolTokenInfo
@@ -75,6 +82,7 @@ export interface PoolDetailedInfo {
     lockedTVL: number
     totalFeesUsd: Decimal
     FeesLiquidityChange: Liquidity
+    rateLimiter: RateLimiter | null
 }
 
 export const toUsd = (l: Liquidity, pool: PoolDetailedInfo) => {
@@ -181,9 +189,13 @@ export const getDetailedPools = (p: PoolInfo[], tm: TokenMetadataMap, currentSlo
             activationTime = ((currentSlot - x.account.activationPoint.toNumber()) * 400 / 1000);
         } else {
             activationTime = currentTime - x.account.activationPoint.toNumber();
+        
         }
-        const [minFee, currentFee] = getMinAndCurrentFee(x, x.account.activationType === 0 ? currentSlot :
-            x.account.activationType === 1 ? currentTime : 0);
+
+        const currentTimeInActivation = x.account.activationType === 0 ? currentSlot :
+                x.account.activationType === 1 ? currentTime : 0;
+
+        const [minFee, currentFee] = getMinAndCurrentFee(x, currentTimeInActivation);
         newDetailedPools.push({
             poolInfo: x,
             tokenA: poolTokenA,
@@ -198,6 +210,9 @@ export const getDetailedPools = (p: PoolInfo[], tm: TokenMetadataMap, currentSlo
             lockedTVL: poolPrice.mul(new Decimal(poolTokenAAmountLocked)).toNumber() * tokenBMetadata.price.toNumber() + poolTokenBAmountLocked * tokenBMetadata.price.toNumber(),
             totalFeesUsd: poolTokenA.totalFeesUsd.add(poolTokenB.totalFeesUsd),
             FeesLiquidityChange: { tokenAAmount: new Decimal(0), tokenBAmount: new Decimal(0) },
+            rateLimiter: x.account.poolFees.baseFee.baseFeeMode === BaseFeeMode.RateLimiter ?
+                getRateLimiter(x, tokenBMetadata.decimals, currentTimeInActivation)
+                : null
         });
     };
 
@@ -301,6 +316,7 @@ export const getAllPoolPositions = async (cpAmm: CpAmm, pool: PoolDetailedInfo, 
                 positionUnclaimedFeeChange: 0,
                 poolMinFeeBPS: 0,
                 poolCurrentFeeBPS: 0,
+                rateLimiter: null,
             })
 
         };
@@ -394,19 +410,18 @@ export const getAllPoolPositions = async (cpAmm: CpAmm, pool: PoolDetailedInfo, 
                 tokenAClaimedFeesAmount * tokenAMetadata!.price.toNumber() +
                 tokenBClaimedFeesAmount * tokenBMetadata!.price.toNumber();
 
-
-            const [minFee, currentFee] = getMinAndCurrentFee(position.poolInfo, position.poolInfo.account.activationType === 0 ? currentSlot :
-                position.poolInfo.account.activationType === 1 ? currentTime : 0);
-
+            const currentTimeInActivation = position.poolInfo.account.activationType === 0 ? currentSlot :
+                position.poolInfo.account.activationType === 1 ? currentTime : 0;
+            const [minFee, currentFee] = getMinAndCurrentFee(position.poolInfo, currentTimeInActivation);
             position.poolMinFeeBPS = minFee;
-
             position.poolCurrentFeeBPS = currentFee;
+            if (position.poolInfo.account.poolFees.baseFee.baseFeeMode === BaseFeeMode.RateLimiter) {
+                position.rateLimiter = getRateLimiter(position.poolInfo, tokenBMetadata.decimals, currentTimeInActivation);
+            }
             positionsParsed.push(position)
         };
 
         return positionsParsed.map(x => { return { owner: new PublicKey(0), position: x } });
-
-
     } catch (e) {
         console.log(e);
         return [];
@@ -435,6 +450,22 @@ export const getFeeScheduler = (baseFee: BaseFee) => {
     );
 
     return feeScheduler;
+}
+
+export const getRateLimiter = (poolInfo: PoolInfo, decimals: number, currentTime: number) => {
+    const { maxLimiterDuration, maxFeeBps } = parseRateLimiterSecondFactor(poolInfo.account.poolFees.baseFee.secondFactor)
+    const rateLimiter = {
+        feeIncreaseBPS: poolInfo.account.poolFees.baseFee.firstFactor,
+        maxFeeBPS: maxFeeBps,
+        referenceAmount: new Decimal(poolInfo.account.poolFees.baseFee.thirdFactor.toString())
+            .div(Decimal.pow(10, decimals)),
+        durationLeft: poolInfo.account.activationPoint.toNumber() + maxLimiterDuration - currentTime,
+    }
+    if (poolInfo.account.activationType === ActivationType.Slot)
+        rateLimiter.durationLeft = rateLimiter.durationLeft * 1000 / 400;
+    if (rateLimiter.durationLeft < 0)
+        rateLimiter.durationLeft = 0;
+    return rateLimiter;
 }
 
 export const getMinAndCurrentFee = (p: PoolInfo, currentPoint: number) => {
@@ -486,7 +517,7 @@ export const getMinAndCurrentFee = (p: PoolInfo, currentPoint: number) => {
         new BN(p.account.poolFees.baseFee.thirdFactor),
         p.account.poolFees.baseFee.baseFeeMode,
         new BN(currentPoint),
-        p.account.activationPoint // activationPoint
+        p.account.activationPoint
     );
 
     return [feeNumeratorToBps(minFeeNumerator), feeNumeratorToBps(currentFeeNumerator)];

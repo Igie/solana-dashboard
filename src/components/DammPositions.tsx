@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 import { BN, } from '@coral-xyz/anchor'
 import { UnifiedWalletButton, useConnection, useWallet } from '@jup-ag/wallet-adapter'
 import { PublicKey, Transaction, TransactionInstruction, TransactionMessage, type AccountMeta } from '@solana/web3.js'
-import { copyToClipboard, getPoolPositionFromPublicKeys, getSchedulerType, getShortMintS, renderFeeTokenImages, type PoolPositionInfo } from '../constants'
+import { copyToClipboard, formatDurationNumber, getPoolPositionFromPublicKeys, getSchedulerType, getShortMintS, renderFeeTokenImages, type PoolPositionInfo } from '../constants'
 import { useCpAmm } from '../contexts/CpAmmContext'
 import { AuthorityType, createSetAuthorityInstruction, getMint, NATIVE_MINT, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token'
 import { unwrapSOLInstruction } from '@meteora-ag/cp-amm-sdk'
@@ -1406,17 +1406,32 @@ const DammPositions: React.FC = () => {
                   <div className="col-span-1">
                     <div className="text-white text-sm">
                       {getSchedulerType(position.poolInfo.account.poolFees.baseFee.baseFeeMode)}
+
                     </div>
                   </div>
 
                   {/* Current/Base Fees */}
+
                   <div className="col-span-2">
-                    <div className="text-white text-sm">
-                      {(position.poolCurrentFeeBPS / 100).toFixed(2)}%
+                    <div className="text-white flex items-center gap-x-0.5">
+                      <div className="text-sm">{`Current: ${(position.poolCurrentFeeBPS / 100).toFixed(2)}%`}</div>
+                      {position.rateLimiter !== null &&
+                        <div className="text-xs flex gap-x-0.5 text-gray-400">
+                          {`+${(position.rateLimiter.feeIncreaseBPS / 100).toFixed(2)}% Fee per ${position.rateLimiter.referenceAmount.toFixed(4)} ${position.tokenB.symbol}`}
+                        </div>
+                      }
                     </div>
-                    <div className="text-xs text-gray-400">
-                      Base: {(position.poolMinFeeBPS / 100).toFixed(2)}%
-                    </div>
+                    {position.rateLimiter === null &&
+                      <div className="text-xs text-gray-400">
+                        Base: {(position.poolMinFeeBPS / 100).toFixed(2)}%
+                      </div>
+                    }
+                    {position.rateLimiter !== null &&
+                      <div className="text-xs flex gap-x-0.5 text-gray-400">
+                        <div>{`Max: ${(position.rateLimiter.maxFeeBPS / 100).toFixed(2)}%`}</div>
+                        <div>{`Duration Left: ${formatDurationNumber(position.rateLimiter.durationLeft)}`}</div>
+                      </div>
+                    }
                   </div>
                 </div>
 
