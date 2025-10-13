@@ -16,8 +16,11 @@ export const copyToClipboard = (text: string) => {
 export interface PoolPositionTokenInfo extends TokenMetadata {
     poolAmount: number
     positionAmount: number
-    unclaimedFee: number
-    claimedFee: number
+    poolValue: number,
+    positionValue: number,
+    unclaimedFeeAmount: number,
+    unclaimedFeeUsd: number,
+    claimedFeeAmount: number,
 }
 
 export interface PoolPositionInfo {
@@ -270,17 +273,23 @@ export const getAllPoolPositions = async (cpAmm: CpAmm, pool: PoolDetailedInfo, 
                     ...pool.tokenA,
                     poolAmount: 0,
                     positionAmount: 0,
+                    poolValue: 0,
+                    positionValue: 0,
                     decimals: 1,
-                    unclaimedFee: 0,
-                    claimedFee: 0,
+                    unclaimedFeeAmount: 0,
+                    unclaimedFeeUsd: 0,
+                    claimedFeeAmount: 0,
                 },
                 tokenB: {
                     ...pool.tokenB,
                     poolAmount: 0,
                     positionAmount: 0,
+                    poolValue: 0,
+                    positionValue: 0,
                     decimals: 1,
-                    unclaimedFee: 0,
-                    claimedFee: 0,
+                    unclaimedFeeAmount: 0,
+                    unclaimedFeeUsd: 0,
+                    claimedFeeAmount: 0,
                 },
                 shareOfPoolPercentage: 0.5,
                 poolValue: 0,
@@ -334,10 +343,10 @@ export const getAllPoolPositions = async (cpAmm: CpAmm, pool: PoolDetailedInfo, 
 
             const unclaimedRewards = getUnClaimReward(position.poolInfo.account, position.positionState);
 
-            const tokenAUnclaimedFees = new Decimal(unclaimedRewards.feeTokenA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
-            const tokenBUnclaimedFees = new Decimal(unclaimedRewards.feeTokenB.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
-            const tokenAClaimedFees = new Decimal(position.positionState.metrics.totalClaimedAFee.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
-            const tokenBClaimedFees = new Decimal(position.positionState.metrics.totalClaimedBFee.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
+            const tokenAUnclaimedFeesAmount = new Decimal(unclaimedRewards.feeTokenA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
+            const tokenBUnclaimedFeesAmount = new Decimal(unclaimedRewards.feeTokenB.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
+            const tokenAClaimedFeesAmount = new Decimal(position.positionState.metrics.totalClaimedAFee.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
+            const tokenBClaimedFeesAmount = new Decimal(position.positionState.metrics.totalClaimedBFee.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
 
             const poolPrice = getPriceFromSqrtPrice(position.poolInfo.account.sqrtPrice, tokenAMetadata!.decimals, tokenBMetadata!.decimals).toNumber();
 
@@ -349,9 +358,12 @@ export const getAllPoolPositions = async (cpAmm: CpAmm, pool: PoolDetailedInfo, 
             position.tokenA.image = tokenAMetadata?.image;
             position.tokenA.decimals = tokenAMetadata?.decimals;
             position.tokenA.poolAmount = poolTokenAAmount;
+            position.tokenA.poolValue = position.tokenA.price.mul(poolTokenAAmount).toNumber();
             position.tokenA.positionAmount = positionTokenAAmount;
-            position.tokenA.unclaimedFee = tokenAUnclaimedFees;
-            position.tokenA.claimedFee = tokenAClaimedFees;
+            position.tokenA.positionValue = poolPrice * positionTokenAAmount * tokenBMetadata.price.toNumber();
+            position.tokenA.unclaimedFeeAmount = tokenAUnclaimedFeesAmount
+            position.tokenA.unclaimedFeeUsd = poolPrice * tokenAUnclaimedFeesAmount * tokenBMetadata.price.toNumber();
+            position.tokenA.claimedFeeAmount = tokenAClaimedFeesAmount;
 
             position.tokenB.tokenProgram = tokenBMetadata?.tokenProgram;
             position.tokenB.name = tokenBMetadata?.name || 'Unknown Token';
@@ -359,9 +371,12 @@ export const getAllPoolPositions = async (cpAmm: CpAmm, pool: PoolDetailedInfo, 
             position.tokenB.image = tokenBMetadata?.image;
             position.tokenB.decimals = tokenBMetadata?.decimals;
             position.tokenB.poolAmount = poolTokenBAmount;
+            position.tokenB.poolValue = position.tokenB.price.mul(poolTokenBAmount).toNumber();
             position.tokenB.positionAmount = positionTokenBAmount;
-            position.tokenB.unclaimedFee = tokenBUnclaimedFees;
-            position.tokenB.claimedFee = tokenBClaimedFees;
+            position.tokenB.positionValue = positionTokenBAmount * tokenBMetadata.price.toNumber();
+            position.tokenB.unclaimedFeeAmount = tokenBUnclaimedFeesAmount
+            position.tokenB.unclaimedFeeUsd = tokenBUnclaimedFeesAmount * tokenBMetadata.price.toNumber();
+            position.tokenB.claimedFeeAmount = tokenBClaimedFeesAmount;
 
             position.poolValue = (poolTokenAAmount * poolPrice +
                 poolTokenBAmount) * tokenBMetadata!.price.toNumber();
@@ -372,12 +387,12 @@ export const getAllPoolPositions = async (cpAmm: CpAmm, pool: PoolDetailedInfo, 
             position.shareOfPoolPercentage = shareOfPool;
 
             position.positionUnclaimedFee =
-                tokenAUnclaimedFees * tokenAMetadata!.price.toNumber() +
-                tokenBUnclaimedFees * tokenBMetadata!.price.toNumber();
+                tokenAUnclaimedFeesAmount * tokenAMetadata!.price.toNumber() +
+                tokenBUnclaimedFeesAmount * tokenBMetadata!.price.toNumber();
 
             position.positionClaimedFee =
-                tokenAClaimedFees * tokenAMetadata!.price.toNumber() +
-                tokenBClaimedFees * tokenBMetadata!.price.toNumber();
+                tokenAClaimedFeesAmount * tokenAMetadata!.price.toNumber() +
+                tokenBClaimedFeesAmount * tokenBMetadata!.price.toNumber();
 
 
             const [minFee, currentFee] = getMinAndCurrentFee(position.poolInfo, position.poolInfo.account.activationType === 0 ? currentSlot :

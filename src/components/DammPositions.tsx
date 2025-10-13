@@ -48,7 +48,7 @@ const DammPositions: React.FC = () => {
   const { publicKey, connected } = useWallet();
   const { sendTxn, sendMultiTxn } = useTransactionManager();
   const { cpAmm, coder } = useCpAmm();
-  const { positions, totalLiquidityValue, loading, refreshPositions, updatePosition, removePosition, sortPositionsBy, removeLiquidityAndSwapToQuote, sortedBy, sortedAscending } = useDammUserPositions();
+  const { positions, userLiquidity, userUnclaimedFees, loading, refreshPositions, updatePosition, removePosition, sortPositionsBy, removeLiquidityAndSwapToQuote, sortedBy, sortedAscending } = useDammUserPositions();
   const [selectedPositions, setSelectedPositions] = useState<Set<string>>(new Set());
   const [lastSelectedPosition, setLastSelectedPosition] = useState<PoolPositionInfo | null>(null);
 
@@ -662,10 +662,10 @@ const DammPositions: React.FC = () => {
         }
       }
 
-      pnlInfo.pnlAPercent = (pnlInfo.tokenARemoved + position.tokenA.positionAmount + position.tokenA.unclaimedFee) / pnlInfo.tokenAAdded * 100 - 100;
-      pnlInfo.pnlBPercent = (pnlInfo.tokenBRemoved + position.tokenB.positionAmount + position.tokenB.unclaimedFee) / pnlInfo.tokenBAdded * 100 - 100;
-      pnlInfo.pnlA = (pnlInfo.tokenARemoved + position.tokenA.positionAmount + position.tokenA.unclaimedFee) - pnlInfo.tokenAAdded
-      pnlInfo.pnlB = (pnlInfo.tokenBRemoved + position.tokenB.positionAmount + position.tokenB.unclaimedFee) - pnlInfo.tokenBAdded
+      pnlInfo.pnlAPercent = (pnlInfo.tokenARemoved + position.tokenA.positionAmount + position.tokenA.unclaimedFeeAmount) / pnlInfo.tokenAAdded * 100 - 100;
+      pnlInfo.pnlBPercent = (pnlInfo.tokenBRemoved + position.tokenB.positionAmount + position.tokenB.unclaimedFeeAmount) / pnlInfo.tokenBAdded * 100 - 100;
+      pnlInfo.pnlA = (pnlInfo.tokenARemoved + position.tokenA.positionAmount + position.tokenA.unclaimedFeeAmount) - pnlInfo.tokenAAdded;
+      pnlInfo.pnlB = (pnlInfo.tokenBRemoved + position.tokenB.positionAmount + position.tokenB.unclaimedFeeAmount) - pnlInfo.tokenBAdded;
       //pnlInfo.transactionPnl.push(instructionsPnl);
     }
     //const metdata = await fetchTokenMetadataJup([NATIVE_MINT.toBase58()]);
@@ -733,7 +733,7 @@ const DammPositions: React.FC = () => {
             <Droplets className="w-5 h-5 text-blue-400" />
           </div>
           <div className="font-bold text-white">
-            ${totalLiquidityValue.toFixed(2)}
+            ${`${userLiquidity?.totalUsdValue.toFixed(2)} (${userLiquidity?.solAmount.toFixed(4)} SOL + $${userLiquidity?.otherUsdValue.toFixed(2)} other)`}
           </div>
         </div>
 
@@ -940,7 +940,7 @@ const DammPositions: React.FC = () => {
           <div className="sm:flex-row items-start sm:items-center justify-between gap-1">
             <div className="px-2 text-green-300">
               <span className="text-sm font-semibold">
-                Total Fees: ${positions.reduce((sum, pos) => sum + pos.positionUnclaimedFee, 0).toFixed(2)}
+                {`Total Fees: $${userUnclaimedFees?.totalUsdValue.toFixed(2)} (${userUnclaimedFees?.solAmount.toFixed(4)} SOL + $${userUnclaimedFees?.otherUsdValue.toFixed(2)} other)`}
               </span>
             </div>
             <div className="flex justify-between px-2 w-full sm:w-auto">
@@ -1291,8 +1291,8 @@ const DammPositions: React.FC = () => {
 
                         } arrow={false} on={["hover"]} mouseEnterDelay={50} position="bottom center" >
                           <div className="flex flex-col">
-                            {position.tokenA.unclaimedFee > 0 && (<div>{position.tokenA.symbol}: {position.tokenA.unclaimedFee.toFixed(4)}</div>)}
-                            {position.tokenB.unclaimedFee > 0 && (<div>{position.tokenB.symbol}: {position.tokenB.unclaimedFee.toFixed(4)}</div>)}
+                            {position.tokenA.unclaimedFeeAmount > 0 && (<div>{position.tokenA.symbol}: {position.tokenA.unclaimedFeeAmount.toFixed(4)}</div>)}
+                            {position.tokenB.unclaimedFeeAmount > 0 && (<div>{position.tokenB.symbol}: {position.tokenB.unclaimedFeeAmount.toFixed(4)}</div>)}
                           </div>
                         </Popup>
                         {/* Unclaimed */}
@@ -1375,10 +1375,10 @@ const DammPositions: React.FC = () => {
                                   {"Received " + position.tokenB.symbol + ": " + pnlInfo.tokenBRemoved.toFixed(4)}
                                 </div>
                                 <div className="text-green-600">
-                                  {"Claimable " + position.tokenA.symbol + ": " + position.tokenA.unclaimedFee.toFixed(4)}
+                                  {"Claimable " + position.tokenA.symbol + ": " + position.tokenA.unclaimedFeeUsd.toFixed(4)}
                                 </div>
                                 <div className="text-green-600 border-b border-b-gray-700">
-                                  {"Claimable " + position.tokenB.symbol + ": " + position.tokenB.unclaimedFee.toFixed(4)}
+                                  {"Claimable " + position.tokenB.symbol + ": " + position.tokenB.unclaimedFeeUsd.toFixed(4)}
                                 </div>
                                 <div className="text-blue-600">
                                   {"Position " + position.tokenA.symbol + ": " + pnlInfo.positionValueA.toFixed(4)}
