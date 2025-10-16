@@ -423,6 +423,7 @@ const DammPositions: React.FC = () => {
                 data: decode(inner!.instructions[inner!.instructions.length - 3].data),
                 programId: tx.transaction.message.staticAccountKeys[inner!.instructions[inner!.instructions.length - 3].programIdIndex],
               })
+              if (transactionA.programId === undefined) transactionA.programId = TOKEN_2022_PROGRAM_ID;
               console.log("token A program:", transactionA.programId.toBase58())
 
               const transactionB = new TransactionInstruction({
@@ -430,6 +431,7 @@ const DammPositions: React.FC = () => {
                 data: decode(inner!.instructions[inner!.instructions.length - 2].data),
                 programId: tx.transaction.message.staticAccountKeys[inner!.instructions[inner!.instructions.length - 2].programIdIndex],
               })
+              if (transactionB.programId === undefined) transactionB.programId = TOKEN_2022_PROGRAM_ID;
               console.log("token B program:", transactionB.programId.toBase58())
 
               const tokenAIx = splToken.decodeTransferCheckedInstruction(transactionA, transactionA.programId);
@@ -1375,10 +1377,10 @@ const DammPositions: React.FC = () => {
                                   {"Received " + position.tokenB.symbol + ": " + pnlInfo.tokenBRemoved.toFixed(4)}
                                 </div>
                                 <div className="text-green-600">
-                                  {"Claimable " + position.tokenA.symbol + ": " + position.tokenA.unclaimedFeeUsd.toFixed(4)}
+                                  {"Claimable " + position.tokenA.symbol + ": " + position.tokenA.unclaimedFeeAmount.toFixed(4)}
                                 </div>
                                 <div className="text-green-600 border-b border-b-gray-700">
-                                  {"Claimable " + position.tokenB.symbol + ": " + position.tokenB.unclaimedFeeUsd.toFixed(4)}
+                                  {"Claimable " + position.tokenB.symbol + ": " + position.tokenB.unclaimedFeeAmount.toFixed(4)}
                                 </div>
                                 <div className="text-blue-600">
                                   {"Position " + position.tokenA.symbol + ": " + pnlInfo.positionValueA.toFixed(4)}
