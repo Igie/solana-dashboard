@@ -24,7 +24,7 @@ export function DynamicTable<T>({
 }: TableProps<T>) {
   return (
     <div className="flex justify-center">
-      <div className="flex-grow overflow-auto max-h-[calc(100vh)] max-w-[calc(95vw)]">
+      <div className="grow overflow-auto max-h-[calc(100vh)] max-w-[calc(95vw)]">
         <table className={`border-collapse table-auto ${tableClassName}`}>
           {(hideHeaders === false || hideHeaders === undefined) && (
             <thead
@@ -34,7 +34,7 @@ export function DynamicTable<T>({
                 {columns.map((col, colIndex) => (
                   <th
                     key={colIndex}
-                    className={`lg:px-4 px-1 py-0.5 border text-xs border-gray-700 bg-gray-800 lg:font-semibold font-normal text-nowrap ${col.className ?? ""}`}
+                    className={`lg:px-1 px-1 py-0.5 border text-xs border-gray-700 bg-gray-800 lg:font-semibold font-normal text-nowrap ${col.className ?? ""}`}
                   >
                     {col.header}
                   </th>
@@ -51,7 +51,7 @@ export function DynamicTable<T>({
                 {columns.map((col, colIndex) => (
                   <td
                     key={colIndex}
-                    className={`lg:px-4 px-1 py-0.5 border border-gray-700 text-xs lg:text-md text-nowrap ${col.className ?? ""}`}
+                    className={`lg:px-1 px-1 py-0.5 border border-gray-700 text-xs lg:text-md text-nowrap ${col.className ?? ""}`}
                   >
                     {col.render(row, rowIndex)}
                   </td>

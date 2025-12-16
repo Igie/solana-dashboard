@@ -417,7 +417,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
         {
             header: 'TVL',
             render: (pool) => (
-                <div className="grid lg:grid-cols-2 grid-cols-1 gap-0.5 text-center lg:text-md text:xs lg:min-w-35 min-w-20">
+                <div className="flex-col lg:grid-cols-2 grid-cols-1 gap-0.5 text-center lg:text-md text:xs lg:min-w-20 min-w-10">
                     <div>
                         {"$" + pool.TVLUsd.toFixed(2)}
                     </div>
@@ -439,7 +439,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                 {SortArrow<PoolSortType>(PoolSortType.PoolTotalFees, sortBy, sortAscending, handleSort)}
             </div>,
             render: (pool) => (
-                <div className="grid lg:grid-cols-2 grid-cols-1 gap-0.5 text-center lg:text-md text-xs lg:min-w-35 min-w-20">
+                <div className="flex-col lg:grid-cols-2 grid-cols-1 gap-0.5 text-center lg:text-md text-xs lg:min-w-20 min-w-10">
                     <div >
                         {"$" + pool.totalFeesUsd.toFixed(2)}
                     </div>
