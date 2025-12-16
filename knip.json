@@ -6,5 +6,6 @@
   },
   "tags": [
     "-lintignore"
-  ]
+  ],
+  "ignore": ["src/types.tsx", "src/**.d.ts"]
 }
