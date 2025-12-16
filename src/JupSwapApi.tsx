@@ -1,10 +1,6 @@
 import {
   VersionedTransaction,
-  Connection,
-  TransactionInstruction,
   PublicKey,
-  TransactionMessage,
-  Transaction,
 } from "@solana/web3.js";
 import { toast } from "sonner";
 import Decimal from "decimal.js";
@@ -57,18 +53,6 @@ export interface JupiterRoutePlan {
   swapInfo: any;
   percent: number;
   bps: number;
-}
-
-interface InstructionAccount {
-  pubkey: string;
-  isSigner: boolean;
-  isWritable: boolean;
-}
-
-interface Instruction {
-  programId: string;
-  accounts: InstructionAccount[];
-  data: string;
 }
 
 export const getQuote = async (params: JupiterQuoteParams, notify: boolean = true): Promise<JupiterQuoteResponse> => {
@@ -128,96 +112,6 @@ export const getSwapTransactionVersioned = async (quoteResponse: JupiterQuoteRes
   return transaction;
 }
 
-interface SwapInstructions {
-  setupInstrutions: TransactionInstruction[],
-  swapInstruction: TransactionInstruction,
-  cleanupInstruction: TransactionInstruction,
-}
-
-export const getSwapInstructions = async (quoteResponse: JupiterQuoteResponse, pubKey: PublicKey): Promise<SwapInstructions> => {
-  console.log(quoteResponse);
-  const instructions = await (
-    await fetch(`https://lite-api.jup.ag/swap/v1/swap-instructions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        quoteResponse,
-        userPublicKey: pubKey.toBase58(),
-        feeAccount: quoteResponse.platformFee ? "4RRpiiuXCAofvsuqxFKVtyvR2bGUupUFL4nkWQZBHp4e" : undefined,
-      })
-    })
-  ).json();
-  console.log(instructions);
-  if (instructions.error) {
-    throw new Error("Failed to get swap instructions: " + instructions.error);
-  }
-
-  const {
-    setupInstructions, // Setup missing ATA for the users.
-    swapInstruction: swapInstructionPayload, // The actual swap instruction.
-    cleanupInstruction, // The lookup table addresses that you can use if you are using versioned transaction.
-  } = instructions;
-
-
-  return {
-    setupInstrutions: [setupInstructions.map(deserializeInstruction)],
-    swapInstruction: deserializeInstruction(swapInstructionPayload),
-    cleanupInstruction: deserializeInstruction(cleanupInstruction),
-  }
-}
-
-export const getSwapTransaction = async (quoteResponse: JupiterQuoteResponse, connection: Connection, pubKey: PublicKey): Promise<Transaction | VersionedTransaction> => {
-  const instructions = await (
-    await fetch(`https://lite-api.jup.ag/swap/v1/swap-instructions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        quoteResponse,
-        userPublicKey: pubKey.toBase58(),
-        dynamicComputeUnitLimit: true,
-        feeAccount: quoteResponse.platformFee ? "4RRpiiuXCAofvsuqxFKVtyvR2bGUupUFL4nkWQZBHp4e" : undefined,
-      })
-    })
-  ).json();
-  console.log(instructions);
-  if (instructions.error) {
-    throw new Error("Failed to get swap instructions: " + instructions.error);
-  }
-
-  const {
-    setupInstructions, // Setup missing ATA for the users.
-    swapInstruction: swapInstructionPayload, // The actual swap instruction.
-    cleanupInstruction, // The lookup table addresses that you can use if you are using versioned transaction.
-  } = instructions;
-
-
-
-  // const addressLookupTableAccounts: AddressLookupTableAccount[] = [];
-
-  // addressLookupTableAccounts.push(
-  //   ...(await getAddressLookupTableAccounts(connection, addressLookupTableAddresses))
-  // );
-
-
-
-  const blockhash = (await connection.getLatestBlockhash()).blockhash;
-  const messageV0 = new TransactionMessage({
-    payerKey: pubKey,
-    recentBlockhash: blockhash,
-    instructions: [
-      ...setupInstructions.map(deserializeInstruction),
-      deserializeInstruction(swapInstructionPayload),
-      deserializeInstruction(cleanupInstruction),
-    ],
-  }).compileToLegacyMessage();
-
-  const transaction = Transaction.populate(messageV0);
-  return transaction;
-}
 interface JupiterUltraResponse {
   transaction: string | null
   requestId: string,
@@ -252,16 +146,4 @@ export const getUltraOrder = async (params: JupiterUltraParams, notify: boolean 
 }
 
 
-
-const deserializeInstruction = (instruction: Instruction) => {
-  return new TransactionInstruction({
-    programId: new PublicKey(instruction.programId),
-    keys: instruction.accounts.map((key) => ({
-      pubkey: new PublicKey(key.pubkey),
-      isSigner: key.isSigner,
-      isWritable: key.isWritable,
-    })),
-    data: Buffer.from(instruction.data, "base64"),
-  });
-};
 

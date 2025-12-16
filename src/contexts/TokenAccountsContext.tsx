@@ -30,15 +30,6 @@ export interface TokenAccount {
     lastUpdated: number,
 }
 
-export const metadataToAccounts = (tm: TokenMetadata[]): TokenAccount[] => {
-    return tm.map(x => ({
-        ...x,
-        amount: new Decimal(0),
-        value: new Decimal(0),
-        lamports: 0,
-    }));
-}
-
 export interface TokenAccountMap {
     [key: string]: TokenAccount
 }
