@@ -67,7 +67,7 @@ const AppInner: React.FC<AppInnerProps> = ({
                   displayMode: 'modal',
                 })
               }}
-              className="flex items-center md:text-md text-xs px-2 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-md"
+              className="flex items-center md:text-md text-xs px-2 py-1.5 bg-linear-to-r from-purple-600 to-indigo-600 rounded-md"
             >
               <ArrowLeftRight className="w-4 h-4 mr-2" />
               Swap
