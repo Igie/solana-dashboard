@@ -9,13 +9,17 @@ import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfil
 // Vite config
 export default defineConfig({
   server: {
-    host: '0.0.0.0',
+    watch: {
+      usePolling: true,
+    },
+    hmr: true,
   },
   plugins: [
     nodePolyfills({}),
     react(),
     tailwindcss()
   ],
+  
   define: {
     global: 'globalThis',
     'process.env': {},

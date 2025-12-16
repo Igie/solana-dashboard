@@ -53,8 +53,8 @@ const AppInner: React.FC<AppInnerProps> = ({
   return (
     <div className="flex flex-col h-full bg-black text-white">
       <header className="bg-gray-900 border-b border-gray-700">
-        <div className="max-w-screen-xl mx-auto px-2 flex items-center justify-between h-10">
-          <div className="font-bold md:text-lg text-xs text-nowrap">DAMMv2 Dashboard</div>
+        <div className="max-w-7xl mx-auto px-2 flex items-center justify-between h-10">
+          <div className="font-bold md:text-lg text-xs text-nowrap">DAMMv2</div>
           <div className="font-medium md:text-lg text-xs text-green-500 text-nowrap">
             SOL: {(solBalance).toFixed(4)}
           </div>

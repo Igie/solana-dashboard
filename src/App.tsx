@@ -63,7 +63,7 @@ const App: React.FC = () => {
           autoConnect: true,
           env: network,
           metadata: {
-            name: 'DAMMv2 Dashboard',
+            name: 'DAMMv2',
             description: 'Tool to help with your DAMMv2 life on Meteora',
             url: 'https://www.dammv2.me/',
             iconUrls: ['http://dammv2.me/favicon.ico'],

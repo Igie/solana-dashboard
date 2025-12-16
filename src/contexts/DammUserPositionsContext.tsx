@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { PublicKey, Transaction } from '@solana/web3.js'
-import { BaseFeeMode, getPriceFromSqrtPrice, getUnClaimReward } from '@meteora-ag/cp-amm-sdk'
+import { BaseFeeMode, getPriceFromSqrtPrice, getUnClaimLpFee } from '@meteora-ag/cp-amm-sdk'
 import Decimal from 'decimal.js'
 import { BN } from '@coral-xyz/anchor'
 import { useConnection, useWallet } from '@jup-ag/wallet-adapter'
@@ -238,7 +238,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
 
                 const positionTokenAAmount = new Decimal(withdrawPositionQuote.outAmountA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
                 const positionTokenBAmount = new Decimal(withdrawPositionQuote.outAmountB.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
-                const unclaimedRewards = getUnClaimReward(position.poolInfo.account, position.positionState);
+                const unclaimedRewards = getUnClaimLpFee(position.poolInfo.account, position.positionState);
 
                 const tokenAUnclaimedFeesAmount = new Decimal(unclaimedRewards.feeTokenA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
                 const tokenBUnclaimedFeesAmount = new Decimal(unclaimedRewards.feeTokenB.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
@@ -466,7 +466,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
         const positionTokenAAmount = new Decimal(withdrawPositionQuote.outAmountA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
         const positionTokenBAmount = new Decimal(withdrawPositionQuote.outAmountB.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
 
-        const unclaimedRewards = getUnClaimReward(position.poolInfo.account, position.positionState);
+        const unclaimedRewards = getUnClaimLpFee(position.poolInfo.account, position.positionState);
 
         const tokenAUnclaimedFeesAmount = new Decimal(unclaimedRewards.feeTokenA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
         const tokenBUnclaimedFeesAmount = new Decimal(unclaimedRewards.feeTokenB.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
@@ -566,7 +566,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
             const positionTokenAAmount = new Decimal(withdrawPositionQuote.outAmountA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
             const positionTokenBAmount = new Decimal(withdrawPositionQuote.outAmountB.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
 
-            const unclaimedRewards = getUnClaimReward(position.poolInfo.account, position.positionState);
+            const unclaimedRewards = getUnClaimLpFee(position.poolInfo.account, position.positionState);
 
             const tokenAUnclaimedFeesAmount = new Decimal(unclaimedRewards.feeTokenA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
             const tokenBUnclaimedFeesAmount = new Decimal(unclaimedRewards.feeTokenB.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();

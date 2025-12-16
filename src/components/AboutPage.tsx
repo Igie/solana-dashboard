@@ -2,7 +2,7 @@ import { ExternalLink, Copy, Info, Users, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 
 const AboutPage: React.FC = () => {
-  const wallet = "CDsSZvpGNYmmMVhjMTsqtS4j9iFfu9G9R8sJLRT4zZfx";
+  const wallet = "Fe1uxWjWFCDq6RLYmiP5K2ZEcQVkCiUKSnaD7kgEX99R";
   const token = "83YPDRtSkNv79ctSn2iWcs5JeD86YNi3UZYxVxubbREV";
   const copyToClipboard = async (text: string) => {
     try {
@@ -26,7 +26,7 @@ const AboutPage: React.FC = () => {
           to find/create pools easier.
         </p>
         <p>
-          It uses the <span className="font-semibold">Helius Pro plan</span> for
+          It uses the <span className="font-semibold">Helius Dev plan</span> for
           reliable on-chain data, with future plans to upgrade for higher rate
           limits, more credits, and richer data support.
         </p>

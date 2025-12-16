@@ -1,4 +1,4 @@
-import { ActivationType, BaseFeeMode, CpAmm, feeNumeratorToBps, FeeRateLimiter, FeeScheduler, getAmountAFromLiquidityDelta, getAmountBFromLiquidityDelta, getBaseFeeNumerator, getBaseFeeNumeratorByPeriod, getPriceFromSqrtPrice, getUnClaimReward, parseFeeSchedulerSecondFactor, parseRateLimiterSecondFactor, Rounding, type PoolState, type PositionState } from "@meteora-ag/cp-amm-sdk";
+import { ActivationType, BaseFeeMode, CpAmm, feeNumeratorToBps, FeeRateLimiter, FeeScheduler, getAmountAFromLiquidityDelta, getAmountBFromLiquidityDelta, getBaseFeeNumerator, getBaseFeeNumeratorByPeriod, getPriceFromSqrtPrice, getUnClaimLpFee, parseFeeSchedulerSecondFactor, parseRateLimiterSecondFactor, Rounding, type PoolState, type PositionState } from "@meteora-ag/cp-amm-sdk";
 import { PublicKey } from "@solana/web3.js";
 
 import Decimal from 'decimal.js'
@@ -357,7 +357,7 @@ export const getAllPoolPositions = async (cpAmm: CpAmm, pool: PoolDetailedInfo, 
             const positionTokenAAmount = new Decimal(withdrawPositionQuote.outAmountA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
             const positionTokenBAmount = new Decimal(withdrawPositionQuote.outAmountB.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
 
-            const unclaimedRewards = getUnClaimReward(position.poolInfo.account, position.positionState);
+            const unclaimedRewards = getUnClaimLpFee(position.poolInfo.account, position.positionState);
 
             const tokenAUnclaimedFeesAmount = new Decimal(unclaimedRewards.feeTokenA.toString()).div(Decimal.pow(10, tokenAMetadata!.decimals)).toNumber();
             const tokenBUnclaimedFeesAmount = new Decimal(unclaimedRewards.feeTokenB.toString()).div(Decimal.pow(10, tokenBMetadata!.decimals)).toNumber();
