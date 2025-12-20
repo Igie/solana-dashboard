@@ -8,11 +8,13 @@ import { BaseFeeMode, getPriceFromSqrtPrice } from '@meteora-ag/cp-amm-sdk'
 import { useCpAmm } from '../contexts/CpAmmContext'
 import { useGetSlot } from '../contexts/GetSlotContext'
 import { useDammV2PoolsWebsocket } from './Dammv2PoolContext'
-import { NATIVE_MINT, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from '@solana/spl-token'
+import { getAssociatedTokenAddressSync, NATIVE_MINT, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from '@solana/spl-token'
 import { GetTokenMetadataMap, useTokenMetadata, type TokenMetadata, type TokenMetadataMap } from './TokenMetadataContext'
 
 export interface TokenAccount {
+    pubkey:string
     mint: string
+    owner: string
     tokenProgram: string
     name: string
     symbol: string
@@ -150,7 +152,9 @@ export const TokenAccountsProvider: React.FC<{ children: React.ReactNode }> = ({
         const currentTime = Date.now();
 
         accounts.push({
+            pubkey: getAssociatedTokenAddressSync(NATIVE_MINT, publicKey!, false, TOKEN_PROGRAM_ID).toBase58(),
             mint: "So11111111111111111111111111111111111111112",
+            owner: publicKey!.toBase58(),
             tokenProgram: "",
             amount: new Decimal(await connection.getBalance(publicKey)).div(LAMPORTS_PER_SOL),
             decimals: 9,
@@ -172,7 +176,9 @@ export const TokenAccountsProvider: React.FC<{ children: React.ReactNode }> = ({
             if (decimals > 0) {
                 mintAddresses.push(mintAddress)
                 accounts.push({
+                    pubkey: account.pubkey.toBase58(),
                     mint: mintAddress,
+                    owner: parsedInfo.owner,
                     tokenProgram: "",
                     amount,
                     decimals,

@@ -21,8 +21,6 @@ export const CpAmmProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const { connection } = useConnection();
     let cpAmm = new CpAmm(connection);
     let coder = new BorshCoder(cpAmm._program.idl);
-    //let zap = new Zap(connection);
-    console.log("really?")
 
     useEffect(() => {
         cpAmm = new CpAmm(connection);

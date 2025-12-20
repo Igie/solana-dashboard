@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 import { getQuote, getSwapTransactionVersioned, getUltraOrder } from '../JupSwapApi'
 import { useTransactionManager } from '../contexts/TransactionManagerContext'
 import { txToast } from './Simple/TxToast'
-import { createCloseAccountInstruction, getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID } from '@solana/spl-token'
+import { createCloseAccountInstruction, TOKEN_PROGRAM_ID } from '@solana/spl-token'
 import Decimal from "decimal.js"
 import { useSettings } from '../contexts/SettingsContext'
 
@@ -176,7 +176,7 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
     <div className="flex flex-col h-[calc(100vh-110px)] lg:h-[calc(100vh-55px)] space-y-1 px-2 md:px-0">
       {/* Portfolio Overview */}
       <div className="grid grid-cols-1 gap-0.5">
-        <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-700/50 rounded px-3">
+        <div className="bg-linear-to-br from-blue-900/30 to-blue-800/20 border border-blue-700/50 rounded px-3">
           <div className="flex items-center justify-between">
             <h4 className="font-semibold text-blue-300">Token Types</h4>
             <Coins className="w-5 h-5 text-blue-400" />
@@ -260,7 +260,7 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
                 const allIxs = accs.map(x => {
                   const tokenProgram = new PublicKey(x.tokenProgram)
                   return createCloseAccountInstruction(
-                    getAssociatedTokenAddressSync(new PublicKey(x.mint), publicKey!, false, tokenProgram), // token account to close
+                    new PublicKey(x.pubkey), // token account to close
                     publicKey!, // destination to receive SOL
                     publicKey!, // owner of token account
                     [], // multiSigners
@@ -283,7 +283,11 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
                   notify: true,
                   onSuccess: async () => {
                     await refreshTokenAccounts();
-                  }
+                  },
+                  onError: async (err) => {
+                    console.log(accs)
+                    console.log(err)
+                  },
                 });
               }}
             >
@@ -320,7 +324,7 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
                 >
                   <div className="flex items-center">
                     {/* Left Side */}
-                    <div className="flex items-center space-x-1 min-w-[10rem] flex-shrink-0">
+                    <div className="flex items-center space-x-1 min-w-40 shrink-0">
                       <input
                         type="checkbox"
                         className="scale-125 accent-purple-600"
@@ -364,7 +368,7 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
 
                           {/* Fallback symbol circle */}
                           <div
-                            className={`w-full h-full bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center ${tokenAccount.image ? "hidden" : ""
+                            className={`w-full h-full bg-linear-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center ${tokenAccount.image ? "hidden" : ""
                               }`}
                           >
                             <span className="text-white font-bold text-xs">
@@ -373,7 +377,7 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
                           </div>
 
                           {/* Verification badge */}
-                          <div className="absolute -bottom-1 -right-1 bg-gray-900 rounded-full p-[2px] shadow-md">
+                          <div className="absolute -bottom-1 -right-1 bg-gray-900 rounded-full p-0.5 shadow-md">
                             {tokenAccount.isVerified ? (
                               <CheckCircle className="w-3 h-3 text-blue-500" />
                             ) : (
@@ -442,7 +446,7 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
                     </div>
 
                     {/* Right Side */}
-                    <div className="flex flex-col items-end justify-center ml-auto min-w-[6rem]">
+                    <div className="flex flex-col items-end justify-center ml-auto min-w-24">
                       <div className="flex items-center justify-stretch gap-x-1">
                         <div className="text-sm font-semibold text-white">
                           {tokenAccount.amount.lessThan(1)
