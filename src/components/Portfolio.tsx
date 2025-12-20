@@ -260,7 +260,7 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
                 const allIxs = accs.map(x => {
                   const tokenProgram = new PublicKey(x.tokenProgram)
                   return createCloseAccountInstruction(
-                    new PublicKey(x.pubkey), // token account to close
+                    new PublicKey(x.pubkey!), // token account to close
                     publicKey!, // destination to receive SOL
                     publicKey!, // owner of token account
                     [], // multiSigners

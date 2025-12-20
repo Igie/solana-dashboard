@@ -12,9 +12,9 @@ import { getAssociatedTokenAddressSync, NATIVE_MINT, TOKEN_2022_PROGRAM_ID, TOKE
 import { GetTokenMetadataMap, useTokenMetadata, type TokenMetadata, type TokenMetadataMap } from './TokenMetadataContext'
 
 export interface TokenAccount {
-    pubkey:string
+    pubkey?:string
     mint: string
-    owner: string
+    owner?: string
     tokenProgram: string
     name: string
     symbol: string
