@@ -729,7 +729,7 @@ const DammPositions: React.FC = () => {
     <div className="flex flex-col h-[calc(100vh-110px)] lg:h-[calc(100vh-55px)] space-y-1 px-2 md:px-0">
       {/* Pool Overview Stats */}
       <div className="grid grid-cols-2 gap-0.5">
-        <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-700/50 rounded px-3">
+        <div className="bg-linear-to-br from-blue-900/30 to-blue-800/20 border border-blue-700/50 rounded px-3">
           <div className="flex items-center justify-between">
             <h4 className="font-semibold text-blue-300">Liquidity</h4>
             <Droplets className="w-5 h-5 text-blue-400" />
@@ -739,7 +739,7 @@ const DammPositions: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-900/30 to-purple-800/20 border border-purple-700/50 rounded px-3">
+        <div className="bg-linear-to-br from-purple-900/30 to-purple-800/20 border border-purple-700/50 rounded px-3">
           <div className="flex items-center justify-between">
             <h4 className="font-semibold text-purple-300">Pools</h4>
             <TrendingUp className="w-5 h-5 text-purple-400" />
@@ -1095,7 +1095,7 @@ const DammPositions: React.FC = () => {
             </div>
           </div>
           {/* Scrollable Content */}
-          <div className="flex-grow overflow-y-auto">
+          <div className="grow overflow-y-auto">
             {positions.filter((x) => poolContainsString(x, searchString)).map((position, index) => (
               <div key={index}>
                 {/* Desktop Table Row */}
@@ -1158,7 +1158,7 @@ const DammPositions: React.FC = () => {
                           {position.tokenA.image ? (
                             <img src={position.tokenA.image} alt={position.tokenA.symbol} className="w-full h-full object-cover" />
                           ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-[10px]">
+                            <div className="w-full h-full bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-[10px]">
                               {position.tokenA.symbol.slice(0, 2)}
                             </div>
                           )}
@@ -1167,7 +1167,7 @@ const DammPositions: React.FC = () => {
                           {position.tokenB.image ? (
                             <img src={position.tokenB.image} alt={position.tokenB.symbol} className="w-full h-full object-cover" />
                           ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold text-[10px]">
+                            <div className="w-full h-full bg-linear-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold text-[10px]">
                               {position.tokenB.symbol.slice(0, 2)}
                             </div>
                           )}
@@ -1270,12 +1270,12 @@ const DammPositions: React.FC = () => {
                       {renderFeeTokenImages(position)}
 
                       {/* Fees row */}
-                      <div className="grid grid-cols-3 gap-2 text-sm min-w-[120px]">
+                      <div className="grid grid-cols-3 gap-2 text-sm min-w-30">
                         <Popup key={index} trigger={() => {
                           return (
                             <div className="flex gap-x-0.5">
                               {position.positionUnclaimedFee > 0 ? (
-                                <div className="flex min-w-[120px] font-medium">
+                                <div className="flex min-w-30 font-medium">
                                   <div className="text-green-400">${position.positionUnclaimedFee.toFixed(2)}</div>
                                   {position.positionUnclaimedFeeChange > 0 ? (
                                     <div className="text-green-500">{`+$${position.positionUnclaimedFeeChange.toFixed(2)}`}</div>
@@ -1285,7 +1285,7 @@ const DammPositions: React.FC = () => {
 
                                 </div>
                               ) : (
-                                <div className="text-gray-500 min-w-[120px]">-</div>
+                                <div className="text-gray-500 min-w-30">-</div>
                               )}
                             </div>
                           );
@@ -1301,11 +1301,11 @@ const DammPositions: React.FC = () => {
 
                         {/* Claimed */}
                         {position.positionClaimedFee > 0 ? (
-                          <span className="text-green-700 min-w-[60px] font-medium">
+                          <span className="text-green-700 min-w-15 font-medium">
                             ${position.positionClaimedFee.toFixed(2)}
                           </span>
                         ) : (
-                          <span className="text-gray-500 min-w-[60px]">-</span>
+                          <span className="text-gray-500 min-w-15">-</span>
                         )}
 
                         {/* PnL */}
@@ -1407,7 +1407,7 @@ const DammPositions: React.FC = () => {
                   {/* Scheduler */}
                   <div className="col-span-1">
                     <div className="text-white text-sm">
-                      {getSchedulerType(position.poolInfo.account.poolFees.baseFee.baseFeeMode)}
+                      {getSchedulerType(position.poolInfo.account.poolFees.baseFee.baseFeeInfo.data[8])}
 
                     </div>
                   </div>
@@ -1471,7 +1471,7 @@ const DammPositions: React.FC = () => {
                               {position.tokenA.image ? (
                                 <img src={position.tokenA.image} alt={position.tokenA.symbol} className="w-full h-full object-cover" />
                               ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-xs">
+                                <div className="w-full h-full bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-xs">
                                   {position.tokenA.symbol.slice(0, 2)}
                                 </div>
                               )}
@@ -1480,7 +1480,7 @@ const DammPositions: React.FC = () => {
                               {position.tokenB.image ? (
                                 <img src={position.tokenB.image} alt={position.tokenB.symbol} className="w-full h-full object-cover" />
                               ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold text-xs">
+                                <div className="w-full h-full bg-linear-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold text-xs">
                                   {position.tokenB.symbol.slice(0, 2)}
                                 </div>
                               )}
@@ -1549,7 +1549,7 @@ const DammPositions: React.FC = () => {
                       <div>
                         <div className="text-xs text-gray-400 mb-1">Scheduler</div>
                         <div className="text-white text-sm">
-                          {getSchedulerType(position.poolInfo.account.poolFees.baseFee.baseFeeMode)}
+                          {getSchedulerType(position.poolInfo.account.poolFees.baseFee.baseFeeInfo.data[8])}
                         </div>
                       </div>
                     </div>

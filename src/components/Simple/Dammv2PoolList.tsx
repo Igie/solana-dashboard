@@ -12,7 +12,6 @@ import { launchpads } from "./../launchpads/Launchpads";
 import { useGetSlot } from "../../contexts/GetSlotContext";
 import { useCpAmm } from "../../contexts/CpAmmContext";
 import type { TokenMetadataMap } from "../../contexts/TokenMetadataContext";
-import { BaseFeeMode } from "@meteora-ag/cp-amm-sdk";
 import { useSettings } from "../../contexts/SettingsContext";
 interface Dammv2PoolListProps {
     onMouseEnter?: () => void,
@@ -231,7 +230,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                         }
                                     </div>
                                 </div>)}
-                            <div className="flex flex-grow items-center justify-center text-xs">
+                            <div className="flex grow items-center justify-center text-xs">
                                 {pool.tokenA.symbol.slice(0, 10) + (pool.tokenA.symbol.length > 10 ? "..." : "")}/
                                 {pool.tokenB.symbol.slice(0, 10) + (pool.tokenB.symbol.length > 10 ? "..." : "")}
                             </div>
@@ -296,20 +295,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
             render: (pool) => (
                 <div className="flex flex-col gap-0.5 items-center justify-center">
                     <div className="text-center">
-                        {(() => {
-                            switch (pool.poolInfo.account.poolFees.baseFee.baseFeeMode) {
-                                case BaseFeeMode.FeeSchedulerLinear:
-                                    return "Linear";
-                                case BaseFeeMode.FeeSchedulerExponential:
-                                    return "Exponential";
-                                case BaseFeeMode.RateLimiter:
-                                    return "Rate Limiter";
-                                default:
-                                    return "Unknown";
-                            }
-                        })()}
-                        {/* {pool.poolInfo.account.poolFees.baseFee.baseFeeMode === BaseFeeMode.FeeSchedulerLinear ? "Linear" :
-                        pool.poolInfo.account.poolFees.baseFee.feeSchedulerMode === 1 ? "Exponential" : "Unknown"} */}
+                        {getSchedulerType(pool.poolInfo.account.poolFees.baseFee.baseFeeInfo.data[8])}
                     </div>
                     <div className="flex items-center justify-center text-xs gap-1">
                         <div className="text-center">
@@ -323,7 +309,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                     {pool.tokenA.image ? (
                                         <img src={pool.tokenA.image} alt={pool.tokenA.symbol} className="w-full h-full object-cover" />
                                     ) : (
-                                        <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-gray-100 font-bold text-[10px]">
+                                        <div className="w-full h-full bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center text-gray-100 font-bold text-[10px]">
                                             {pool.tokenA.symbol.slice(0, 2)}
                                         </div>
                                     )}
@@ -332,7 +318,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                 {pool.tokenB.image ? (
                                     <img src={pool.tokenB.image} alt={pool.tokenB.symbol} className="w-full h-full object-cover" />
                                 ) : (
-                                    <div className="w-full h-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-gray-100 font-bold text-[10px]">
+                                    <div className="w-full h-full bg-linear-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-gray-100 font-bold text-[10px]">
                                         {pool.tokenB.symbol.slice(0, 2)}
                                     </div>
                                 )}
@@ -549,7 +535,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                     </button>
                     {target.type == TargetType.PoolInfo && (
                         <div className="flex gap-1">
-                            <div className="flex flex-grow items-center justify-center text-xs">
+                            <div className="flex grow items-center justify-center text-xs">
                                 {(target.target as PoolDetailedInfo).tokenA.symbol.slice(0, 10) + ((target.target as PoolDetailedInfo).tokenA.symbol.length > 10 ? "..." : "")}/
                                 {(target.target as PoolDetailedInfo).tokenB.symbol.slice(0, 10) + ((target.target as PoolDetailedInfo).tokenB.symbol.length > 10 ? "..." : "")}
                             </div>
@@ -591,7 +577,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
             )}
 
             {pools.length > 0 && target.type === TargetType.None && (
-                <div className="flex md:flex-row justify-center-safe flex-col w-full h-full flex-grow relative bg-gray-900 border border-gray-700 rounded p-1 md:p-1 space-y-1">
+                <div className="flex md:flex-row justify-center-safe flex-col w-full h-full grow relative bg-gray-900 border border-gray-700 rounded p-1 md:p-1 space-y-1">
                     {target.type === TargetType.None &&
                         (<DynamicTable tableClassName="hidden md:table sticky" data={pools} columns={poolColumns} hideHeaders={false} />
                         )}
@@ -622,7 +608,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
 
 
 
-                    <div className="md:hidden flex-grow space-y-2 divide-y-2 overflow-y-auto">
+                    <div className="md:hidden grow space-y-2 divide-y-2 overflow-y-auto">
                         {pools.map((pool, index) => (
                             <div key={index} className="space-y-1">
                                 {/* Token Info */}
@@ -639,7 +625,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                                 }
                                             </span>
                                             <button
-                                                className="bg-gray-600 hover:bg-gray-500 px-1 py-0.5 rounded text-xs flex-shrink-0"
+                                                className="bg-gray-600 hover:bg-gray-500 px-1 py-0.5 rounded text-xs shrink-0"
                                                 onClick={() => navigator.clipboard.writeText(pool.poolInfo.account.tokenAMint.toBase58())}
                                             >
                                                 {getShortMint(pool.poolInfo.account.tokenAMint)}
@@ -656,7 +642,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                                 }
                                             </span>
                                             <button
-                                                className="bg-gray-600 hover:bg-gray-500 px-1 py-0.5 rounded text-xs flex-shrink-0"
+                                                className="bg-gray-600 hover:bg-gray-500 px-1 py-0.5 rounded text-xs shrink-0"
                                                 onClick={() => navigator.clipboard.writeText(pool.poolInfo.account.tokenBMint.toBase58())}
                                             >
                                                 {getShortMint(pool.poolInfo.account.tokenBMint)}
@@ -700,7 +686,7 @@ const Dammv2PoolList: React.FC<Dammv2PoolListProps> = (
                                     <div className="min-w-0 flex gap-1 justify-end">
                                         <span className="text-gray-400">Scheduler: </span>
                                         <span className="truncate">
-                                            {getSchedulerType(pool.poolInfo.account.poolFees.baseFee.baseFeeMode)}
+                                            {getSchedulerType(pool.poolInfo.account.poolFees.baseFee.baseFeeInfo.data[8])}
                                         </span>
                                     </div>
                                 </div>

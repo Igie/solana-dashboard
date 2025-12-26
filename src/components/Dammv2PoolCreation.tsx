@@ -192,7 +192,7 @@ const Dammv2PoolCreation: React.FC<Dammv2PoolCreationProps> = ({
                 lockedTVL: poolPrice.mul(new Decimal(poolTokenAAmountLocked)).toNumber() * tokenBMetadata.price.toNumber() + poolTokenBAmountLocked * tokenBMetadata.price.toNumber(),
                 totalFeesUsd: poolTokenA.totalFeesUsd.add(poolTokenB.totalFeesUsd),
                 FeesLiquidityChange: { tokenAAmount: new Decimal(0), tokenBAmount: new Decimal(0) },
-                rateLimiter: x.account.poolFees.baseFee.baseFeeMode === BaseFeeMode.RateLimiter ?
+                rateLimiter: x.account.poolFees.baseFee.baseFeeInfo.data[8] === BaseFeeMode.RateLimiter ?
                     getRateLimiter(x, tokenBMetadata.decimals, currentTimeInActivation)
                     : null
             });

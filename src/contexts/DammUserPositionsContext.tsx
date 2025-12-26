@@ -290,7 +290,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
                 const [minFee, currentFee] = getMinAndCurrentFee(position.poolInfo, currentTimeInActivation);
                 position.poolMinFeeBPS = minFee;
                 position.poolCurrentFeeBPS = currentFee;
-                if (position.poolInfo.account.poolFees.baseFee.baseFeeMode === BaseFeeMode.RateLimiter) {
+                if (position.poolInfo.account.poolFees.baseFee.baseFeeInfo.data[8] === BaseFeeMode.RateLimiter) {
                     position.rateLimiter = getRateLimiter(position.poolInfo, tokenBMetadata.decimals, currentTimeInActivation);
                 }
                 positionsParsed.push(position)
@@ -513,7 +513,7 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
         const [minFee, currentFee] = getMinAndCurrentFee(position.poolInfo, currentTimeInActivation);
         position.poolMinFeeBPS = minFee;
         position.poolCurrentFeeBPS = currentFee;
-        if (position.poolInfo.account.poolFees.baseFee.baseFeeMode === BaseFeeMode.RateLimiter) {
+        if (position.poolInfo.account.poolFees.baseFee.baseFeeInfo.data[8] === BaseFeeMode.RateLimiter) {
             position.rateLimiter = getRateLimiter(position.poolInfo, tokenBMetadata.decimals, currentTimeInActivation);
         }
         sortPositionsByInternal(newPositions, sortedBy, sortedAscending);
@@ -615,12 +615,11 @@ export const DammUserPositionsProvider: React.FC<{ children: React.ReactNode }> 
 
             const currentTimeInActivation = position.poolInfo.account.activationType === 0 ? getSlot() :
                 position.poolInfo.account.activationType === 1 ? currentTime : 0;
-
-                position.poolInfo.account.poolFees.baseFee.cliffFeeNumerator
+                
             const [minFee, currentFee] = getMinAndCurrentFee(position.poolInfo, currentTimeInActivation);
             position.poolMinFeeBPS = minFee;
             position.poolCurrentFeeBPS = currentFee;
-            if (position.poolInfo.account.poolFees.baseFee.baseFeeMode === BaseFeeMode.RateLimiter) {
+            if (position.poolInfo.account.poolFees.baseFee.baseFeeInfo.data[8] === BaseFeeMode.RateLimiter) {
                 position.rateLimiter = getRateLimiter(position.poolInfo, tokenBMetadata.decimals, currentTimeInActivation);
             }
             sortPositionsByInternal(positions, sortedBy, sortedAscending);

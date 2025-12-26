@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import Decimal from "decimal.js"
 import { Keypair, PublicKey } from "@solana/web3.js"
-import { ActivationType, BaseFeeMode, CollectFeeMode, deriveCustomizablePoolAddress, getDynamicFeeParams, getFeeSchedulerParams, getRateLimiterParams, getSqrtPriceFromPrice, MAX_SQRT_PRICE, MIN_SQRT_PRICE } from "@meteora-ag/cp-amm-sdk"
+import { ActivationType, BaseFeeMode, CollectFeeMode, deriveCustomizablePoolAddress, getDynamicFeeParams, getFeeMarketCapSchedulerParams, getFeeTimeSchedulerParams, getRateLimiterParams, getSqrtPriceFromPrice, MAX_SQRT_PRICE, MIN_SQRT_PRICE } from "@meteora-ag/cp-amm-sdk"
 import { DecimalInput } from "../Simple/DecimalInput"
 import { NumberInput } from "../Simple/NumberInput"
 import { formatDurationNumber } from "../../constants"
@@ -43,13 +43,23 @@ interface Preset {
 
 const Presets: Preset[] = [
     {
+        name: "Endless 99%",
+        useDynamicFee: true,
+        baseFee: 0.01,
+        maxFee: 99,
+        totalSchedulerDuration: 2880000000,
+        schedulerReductionPeriod: 2880000000,
+        baseFeeMode: BaseFeeMode.FeeTimeSchedulerLinear,
+        collectFeeMode: CollectFeeMode.OnlyB,
+    },
+    {
         name: "Endless 50%",
         useDynamicFee: true,
         baseFee: 0.01,
         maxFee: 50,
         totalSchedulerDuration: 2880000000,
         schedulerReductionPeriod: 2880000000,
-        baseFeeMode: BaseFeeMode.FeeSchedulerLinear,
+        baseFeeMode: BaseFeeMode.FeeTimeSchedulerLinear,
         collectFeeMode: CollectFeeMode.OnlyB,
     },
     {
@@ -59,7 +69,7 @@ const Presets: Preset[] = [
         maxFee: 40,
         totalSchedulerDuration: 2880000000,
         schedulerReductionPeriod: 2880000000,
-        baseFeeMode: BaseFeeMode.FeeSchedulerLinear,
+        baseFeeMode: BaseFeeMode.FeeTimeSchedulerLinear,
         collectFeeMode: CollectFeeMode.OnlyB,
     },
 
@@ -70,7 +80,7 @@ const Presets: Preset[] = [
         maxFee: 30,
         totalSchedulerDuration: 2880000000,
         schedulerReductionPeriod: 2880000000,
-        baseFeeMode: BaseFeeMode.FeeSchedulerLinear,
+        baseFeeMode: BaseFeeMode.FeeTimeSchedulerLinear,
         collectFeeMode: CollectFeeMode.OnlyB,
     },
 ]
@@ -111,7 +121,7 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
 
     const [useDynamicFee, setUseDynamicFee] = useState(true)
 
-    const [maxFeePercentage, setMaxFeePercentage] = useState(new Decimal(50))
+    const [maxFeePercentage, setMaxFeePercentage] = useState(new Decimal(99))
 
     const [minFeePercentage, setMinFeePercentage] = useState(new Decimal(0.01))
 
@@ -122,7 +132,7 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
 
     const [schedulerReductionPeriod, setSchedulerReductionPeriod] = useState<number>(2880000000)
 
-    const [selectedBaseFeeMode, setSelectedBaseFeeMode] = useState<BaseFeeMode>(BaseFeeMode.FeeSchedulerLinear)
+    const [selectedBaseFeeMode, setSelectedBaseFeeMode] = useState<BaseFeeMode>(BaseFeeMode.FeeTimeSchedulerLinear)
     const [feeSchedulerDropdownOpen, setFeeSchedulerDropdownOpen] = useState(false)
 
     const [selectedFeeMode, setSelectedFeeMode] = useState<CollectFeeMode>(CollectFeeMode.OnlyB)
@@ -164,10 +174,24 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
             const totalDuration = new BN(totalSchedulerDuration);
             const reductionPeriod = new BN(schedulerReductionPeriod);
 
-            const baseFeeParams = selectedBaseFeeMode === BaseFeeMode.RateLimiter ?
-                getRateLimiterParams(minFee, maxFee, rateLimiterReferenceAmount, totalRateLimiterDuration, 5000, tokenBMetadata.decimals, ActivationType.Timestamp) :
-                getFeeSchedulerParams(maxFee, minFee, selectedBaseFeeMode,
-                    totalDuration.div(reductionPeriod).toNumber(), totalDuration.toNumber());
+            let baseFeeParams = null;
+
+            switch (selectedBaseFeeMode) {
+                case BaseFeeMode.RateLimiter:
+                    baseFeeParams = getRateLimiterParams(minFee, maxFee, rateLimiterReferenceAmount, totalRateLimiterDuration, 5000, tokenBMetadata.decimals, ActivationType.Timestamp);
+                    break;
+
+                case BaseFeeMode.FeeTimeSchedulerExponential:
+                case BaseFeeMode.FeeTimeSchedulerLinear:
+                    baseFeeParams = getFeeTimeSchedulerParams(maxFee, minFee, selectedBaseFeeMode,
+                        totalDuration.div(reductionPeriod).toNumber(), totalDuration.toNumber());
+                    break;
+
+                case BaseFeeMode.FeeMarketCapSchedulerExponential:
+                case BaseFeeMode.FeeMarketCapSchedulerLinear:
+                    baseFeeParams = getFeeMarketCapSchedulerParams(minFee, maxFee, selectedBaseFeeMode, totalDuration.div(reductionPeriod).toNumber(), 10, totalDuration.toNumber());
+                    break;
+            }
 
             const poolFees = {
                 baseFee: baseFeeParams,
@@ -478,7 +502,7 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
                             className="w-full bg-gray-800 border-t border-b border-r border-gray-700 rounded-md px-2 text-xs text-white placeholder-gray-500"
                             value={totalRateLimiterDuration.toString()}
                             onChange={() => { }}
-                            onBlur={(val) => 
+                            onBlur={(val) =>
                                 setTotalRateLimiterDuration(Math.min(43200, val.toNumber()))
                             }
                         />

@@ -1,4 +1,11 @@
-import { ActivationType, BaseFeeMode, CpAmm, feeNumeratorToBps, FeeRateLimiter, FeeScheduler, getAmountAFromLiquidityDelta, getAmountBFromLiquidityDelta, getBaseFeeNumerator, getBaseFeeNumeratorByPeriod, getPriceFromSqrtPrice, getUnClaimLpFee, parseFeeSchedulerSecondFactor, parseRateLimiterSecondFactor, Rounding, type PoolState, type PositionState } from "@meteora-ag/cp-amm-sdk";
+import {
+    ActivationType, BaseFeeMode, CpAmm, decodePodAlignedFeeMarketCapScheduler, decodePodAlignedFeeRateLimiter, decodePodAlignedFeeTimeScheduler, feeNumeratorToBps, getAmountAFromLiquidityDelta, getAmountBFromLiquidityDelta,
+    getFeeMarketCapBaseFeeNumerator,
+    getFeeMarketCapBaseFeeNumeratorByPeriod,
+    getFeeTimeBaseFeeNumerator,
+    getFeeTimeBaseFeeNumeratorByPeriod,
+    getPriceFromSqrtPrice, getUnClaimLpFee, Rounding, type PoolState, type PositionState
+} from "@meteora-ag/cp-amm-sdk";
 import { PublicKey } from "@solana/web3.js";
 
 import Decimal from 'decimal.js'
@@ -189,11 +196,11 @@ export const getDetailedPools = (p: PoolInfo[], tm: TokenMetadataMap, currentSlo
             activationTime = ((currentSlot - x.account.activationPoint.toNumber()) * 400 / 1000);
         } else {
             activationTime = currentTime - x.account.activationPoint.toNumber();
-        
+
         }
 
         const currentTimeInActivation = x.account.activationType === 0 ? currentSlot :
-                x.account.activationType === 1 ? currentTime : 0;
+            x.account.activationType === 1 ? currentTime : 0;
 
         const [minFee, currentFee] = getMinAndCurrentFee(x, currentTimeInActivation);
         newDetailedPools.push({
@@ -210,7 +217,7 @@ export const getDetailedPools = (p: PoolInfo[], tm: TokenMetadataMap, currentSlo
             lockedTVL: poolPrice.mul(new Decimal(poolTokenAAmountLocked)).toNumber() * tokenBMetadata.price.toNumber() + poolTokenBAmountLocked * tokenBMetadata.price.toNumber(),
             totalFeesUsd: poolTokenA.totalFeesUsd.add(poolTokenB.totalFeesUsd),
             FeesLiquidityChange: { tokenAAmount: new Decimal(0), tokenBAmount: new Decimal(0) },
-            rateLimiter: x.account.poolFees.baseFee.baseFeeMode === BaseFeeMode.RateLimiter ?
+            rateLimiter: x.account.poolFees.baseFee.baseFeeInfo.data[8] === BaseFeeMode.RateLimiter ?
                 getRateLimiter(x, tokenBMetadata.decimals, currentTimeInActivation)
                 : null
         });
@@ -415,7 +422,7 @@ export const getAllPoolPositions = async (cpAmm: CpAmm, pool: PoolDetailedInfo, 
             const [minFee, currentFee] = getMinAndCurrentFee(position.poolInfo, currentTimeInActivation);
             position.poolMinFeeBPS = minFee;
             position.poolCurrentFeeBPS = currentFee;
-            if (position.poolInfo.account.poolFees.baseFee.baseFeeMode === BaseFeeMode.RateLimiter) {
+            if (position.poolInfo.account.poolFees.baseFee.baseFeeInfo.data[8] === BaseFeeMode.RateLimiter) {
                 position.rateLimiter = getRateLimiter(position.poolInfo, tokenBMetadata.decimals, currentTimeInActivation);
             }
             positionsParsed.push(position)
@@ -435,31 +442,24 @@ export interface BaseFee {
     thirdFactor: BN;
 }
 
-export const getFeeScheduler = (baseFee: BaseFee) => {
-    if (baseFee.baseFeeMode === BaseFeeMode.RateLimiter)
-        throw new Error("Pool is using Rate Limiter fee mode, no Fee Scheduler available");
-    const feeScheduler = new FeeScheduler(
-        baseFee.cliffFeeNumerator,
-        baseFee.firstFactor,
-        new BN(
-            Buffer.from(baseFee.secondFactor.slice(0, 8)),
-            "le"
-        ),
-        baseFee.thirdFactor,
-        baseFee.baseFeeMode
-    );
+export const getFeeTimeScheduler = (data: number[]) => {
+    const feeTimeScheduler = decodePodAlignedFeeTimeScheduler(Buffer.from(data));
+    return feeTimeScheduler;
+}
 
-    return feeScheduler;
+export const getFeeMcapScheduler = (data: number[]) => {
+    const feeMcapSheduler = decodePodAlignedFeeMarketCapScheduler(Buffer.from(data));
+    return feeMcapSheduler;
 }
 
 export const getRateLimiter = (poolInfo: PoolInfo, decimals: number, currentTime: number) => {
-    const { maxLimiterDuration, maxFeeBps } = parseRateLimiterSecondFactor(poolInfo.account.poolFees.baseFee.secondFactor)
+    const rl = decodePodAlignedFeeRateLimiter(Buffer.from(poolInfo.account.poolFees.baseFee.baseFeeInfo.data))
     const rateLimiter = {
-        feeIncreaseBPS: poolInfo.account.poolFees.baseFee.firstFactor,
-        maxFeeBPS: maxFeeBps,
-        referenceAmount: new Decimal(poolInfo.account.poolFees.baseFee.thirdFactor.toString())
+        feeIncreaseBPS: rl.feeIncrementBps,
+        maxFeeBPS: rl.maxFeeBps,
+        referenceAmount: new Decimal(rl.referenceAmount.toString())
             .div(Decimal.pow(10, decimals)),
-        durationLeft: poolInfo.account.activationPoint.toNumber() + maxLimiterDuration - currentTime,
+        durationLeft: poolInfo.account.activationPoint.toNumber() + rl.maxLimiterDuration - currentTime,
     }
     if (poolInfo.account.activationType === ActivationType.Slot)
         rateLimiter.durationLeft = rateLimiter.durationLeft * 1000 / 400;
@@ -469,58 +469,85 @@ export const getRateLimiter = (poolInfo: PoolInfo, decimals: number, currentTime
 }
 
 export const getMinAndCurrentFee = (p: PoolInfo, currentPoint: number) => {
-    if (p.account.poolFees.baseFee.baseFeeMode === BaseFeeMode.RateLimiter) {
-
-        const maxLimiterDuration = Buffer.from(
-            p.account.poolFees.baseFee.secondFactor.slice(0, 4)
-        ).readUInt32LE(0);
-        const maxFeeBps = Buffer.from(p.account.poolFees.baseFee.secondFactor.slice(4, 8)).readUInt32LE(0);
-
-        const feeRateLimiter = new FeeRateLimiter(
-            p.account.poolFees.baseFee.cliffFeeNumerator,
-            p.account.poolFees.baseFee.firstFactor,
-            maxLimiterDuration,
-            maxFeeBps,
-            p.account.poolFees.baseFee.thirdFactor
-        );
-
-
-
-
+    const buffer = Buffer.from(p.account.poolFees.baseFee.baseFeeInfo.data);
+    if (p.account.poolFees.baseFee.baseFeeInfo.data[8] === BaseFeeMode.RateLimiter) {
+        const feeRateLimiter = decodePodAlignedFeeRateLimiter(buffer)
         return [feeNumeratorToBps(feeRateLimiter.cliffFeeNumerator), feeNumeratorToBps(feeRateLimiter.cliffFeeNumerator.addn(feeRateLimiter.feeIncrementBps))];
     }
 
-    const feeScheduler = new FeeScheduler(
-        p.account.poolFees.baseFee.cliffFeeNumerator,
-        p.account.poolFees.baseFee.firstFactor,
-        new BN(
-            Buffer.from(p.account.poolFees.baseFee.secondFactor.slice(0, 8)),
-            "le"
-        ),
-        p.account.poolFees.baseFee.thirdFactor,
-        p.account.poolFees.baseFee.baseFeeMode
-    );
+    if (p.account.poolFees.baseFee.baseFeeInfo.data[8] === BaseFeeMode.FeeTimeSchedulerExponential ||
+        p.account.poolFees.baseFee.baseFeeInfo.data[8] === BaseFeeMode.FeeTimeSchedulerLinear
+    ) {
+        const timeScheduler = getFeeTimeScheduler(p.account.poolFees.baseFee.baseFeeInfo.data);
+        // const feeScheduler = new FeeScheduler(
+        //     p.account.poolFees.baseFee.cliffFeeNumerator,
+        //     p.account.poolFees.baseFee.firstFactor,
+        //     new BN(
+        //         Buffer.from(p.account.poolFees.baseFee.secondFactor.slice(0, 8)),
+        //         "le"
+        //     ),
+        //     p.account.poolFees.baseFee.thirdFactor,
+        //     p.account.poolFees.baseFee.baseFeeMode
+        // );
 
-    const minFeeNumerator =
-        getBaseFeeNumeratorByPeriod(feeScheduler.cliffFeeNumerator,
-            feeScheduler.numberOfPeriod,
-            new BN(feeScheduler.numberOfPeriod),
-            feeScheduler.reductionFactor,
-            feeScheduler.feeSchedulerMode
+        const minFeeNumerator =
+            getFeeTimeBaseFeeNumeratorByPeriod(timeScheduler.cliffFeeNumerator,
+                timeScheduler.numberOfPeriod,
+                new BN(timeScheduler.numberOfPeriod),
+                timeScheduler.reductionFactor,
+                p.account.poolFees.baseFee.baseFeeInfo.data[8]
+            );
+
+        const currentFeeNumerator = getFeeTimeBaseFeeNumerator(
+            timeScheduler.cliffFeeNumerator,
+            timeScheduler.numberOfPeriod,
+            timeScheduler.periodFrequency,
+            timeScheduler.reductionFactor,
+            p.account.poolFees.baseFee.baseFeeInfo.data[8],
+            new BN(currentPoint),
+            p.account.activationPoint
         );
 
 
-    const currentFeeNumerator = getBaseFeeNumerator(
-        feeScheduler.cliffFeeNumerator,
-        p.account.poolFees.baseFee.firstFactor,
-        parseFeeSchedulerSecondFactor(p.account.poolFees.baseFee.secondFactor),
-        new BN(p.account.poolFees.baseFee.thirdFactor),
-        p.account.poolFees.baseFee.baseFeeMode,
-        new BN(currentPoint),
-        p.account.activationPoint
-    );
 
-    return [feeNumeratorToBps(minFeeNumerator), feeNumeratorToBps(currentFeeNumerator)];
+        return [feeNumeratorToBps(minFeeNumerator), feeNumeratorToBps(currentFeeNumerator)];
+    }
+
+    if (p.account.poolFees.baseFee.baseFeeInfo.data[8] === BaseFeeMode.FeeMarketCapSchedulerExponential ||
+        p.account.poolFees.baseFee.baseFeeInfo.data[8] === BaseFeeMode.FeeMarketCapSchedulerLinear
+    ) {
+        const feeMcapScheduler = getFeeMcapScheduler(p.account.poolFees.baseFee.baseFeeInfo.data);
+
+        const minFeeNumerator =
+            getFeeMarketCapBaseFeeNumeratorByPeriod(feeMcapScheduler.cliffFeeNumerator,
+                feeMcapScheduler.numberOfPeriod,
+                new BN(feeMcapScheduler.numberOfPeriod),
+                feeMcapScheduler.reductionFactor,
+                p.account.poolFees.baseFee.baseFeeInfo.data[8]
+            );
+
+        const currentFeeNumerator = getFeeMarketCapBaseFeeNumerator(
+            feeMcapScheduler.cliffFeeNumerator,
+            feeMcapScheduler.numberOfPeriod,
+            feeMcapScheduler.sqrtPriceStepBps,
+            feeMcapScheduler.schedulerExpirationDuration,
+            feeMcapScheduler.reductionFactor,
+            p.account.poolFees.baseFee.baseFeeInfo.data[8],
+            new BN(currentPoint),
+            p.account.activationPoint,
+            p.account.poolFees.initSqrtPrice,
+            p.account.sqrtPrice
+        );
+
+
+
+        return [feeNumeratorToBps(minFeeNumerator), feeNumeratorToBps(currentFeeNumerator)];
+    }
+
+    console.log("No fee mode found")
+    console.log(p.account.poolFees.baseFee.baseFeeInfo);
+
+    return [0, 0];
 }
 
 export const getPoolPositionFromPublicKeys = (poolPositions: PoolPositionInfo[], publicKeys: string[]) => {
@@ -593,10 +620,12 @@ export const sleep = async (delay: number) => {
 
 export const getSchedulerType = (mode: number) => {
     switch (mode) {
-        case BaseFeeMode.FeeSchedulerLinear: return 'Linear';
-        case BaseFeeMode.FeeSchedulerExponential: return 'Exponential';
+        case BaseFeeMode.FeeTimeSchedulerLinear: return 'Time LIN';
+        case BaseFeeMode.FeeTimeSchedulerExponential: return 'Time EXP';
+        case BaseFeeMode.FeeMarketCapSchedulerLinear: return 'MCap LIN';
+        case BaseFeeMode.FeeMarketCapSchedulerExponential: return 'MCap EXP';
         case BaseFeeMode.RateLimiter: return 'Rate Limiter';
-        default: return 'Unknown';
+        default: return 'Unknown ' + mode;
     }
 };
 
@@ -608,12 +637,12 @@ export const renderFeeTokenImages = (position: PoolPositionInfo) => {
                 {position.tokenA.image ? (
                     <img src={position.tokenA.image} alt="Token A" className="w-4 h-4 rounded-full border border-gray-600" />
                 ) : (
-                    <div className="w-4 h-4 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 border border-gray-600" />
+                    <div className="w-4 h-4 rounded-full bg-linear-to-br from-purple-500 to-pink-500 border border-gray-600" />
                 )}
                 {position.tokenB.image ? (
                     <img src={position.tokenB.image} alt="Token B" className="w-4 h-4 rounded-full border border-gray-600" />
                 ) : (
-                    <div className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 border border-gray-600" />
+                    <div className="w-4 h-4 rounded-full bg-linear-to-br from-blue-500 to-cyan-500 border border-gray-600" />
                 )}
             </div>
         );
@@ -624,7 +653,7 @@ export const renderFeeTokenImages = (position: PoolPositionInfo) => {
                 {position.tokenB.image ? (
                     <img src={position.tokenB.image} alt="Token B" className="w-4 h-4 rounded-full border border-gray-600" />
                 ) : (
-                    <div className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 border border-gray-600" />
+                    <div className="w-4 h-4 rounded-full bg-linear-to-br from-blue-500 to-cyan-500 border border-gray-600" />
                 )}
             </div>
         );

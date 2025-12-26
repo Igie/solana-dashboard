@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import Decimal from "decimal.js"
 import { Keypair, PublicKey } from "@solana/web3.js"
-import { ActivationType, BaseFeeMode, CollectFeeMode, derivePoolAddress, feeNumeratorToBps, getBaseFeeNumeratorByPeriod, getBaseFeeParams, getPriceFromSqrtPrice, getSqrtPriceFromPrice, MAX_SQRT_PRICE, MIN_SQRT_PRICE, type ConfigState } from "@meteora-ag/cp-amm-sdk"
+import { ActivationType, BaseFeeMode, CollectFeeMode, decodeFeeTimeSchedulerParams, decodePodAlignedFeeTimeScheduler, derivePoolAddress, feeNumeratorToBps, getBaseFeeParams, getFeeTimeBaseFeeNumeratorByPeriod, getPriceFromSqrtPrice, getSqrtPriceFromPrice, MAX_SQRT_PRICE, MIN_SQRT_PRICE, type ConfigState } from "@meteora-ag/cp-amm-sdk"
 import { DecimalInput } from "../Simple/DecimalInput"
 import { BN } from "@coral-xyz/anchor"
 import { useCpAmm } from "../../contexts/CpAmmContext"
@@ -13,7 +13,6 @@ import { toast } from "sonner"
 import { SYSTEM_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/native/system"
 import { useDammUserPositions } from "../../contexts/DammUserPositionsContext"
 import type { TokenMetadataMap } from "../../contexts/TokenMetadataContext"
-import { getFeeScheduler } from "../../constants"
 
 interface PoolConfig {
     publicKey: PublicKey;
@@ -54,7 +53,7 @@ const Presets: Preset[] = [
         useDynamicFee: true,
         baseFee: 6,
         useScheduler: true,
-        baseFeeMode: BaseFeeMode.FeeSchedulerLinear,
+        baseFeeMode: BaseFeeMode.FeeTimeSchedulerLinear,
         collectFeeMode: CollectFeeMode.OnlyB,
     },
     {
@@ -62,7 +61,7 @@ const Presets: Preset[] = [
         useDynamicFee: true,
         baseFee: 4,
         useScheduler: true,
-        baseFeeMode: BaseFeeMode.FeeSchedulerLinear,
+        baseFeeMode: BaseFeeMode.FeeTimeSchedulerLinear,
         collectFeeMode: CollectFeeMode.OnlyB,
     },
     {
@@ -70,7 +69,7 @@ const Presets: Preset[] = [
         useDynamicFee: true,
         baseFee: 2,
         useScheduler: true,
-        baseFeeMode: BaseFeeMode.FeeSchedulerLinear,
+        baseFeeMode: BaseFeeMode.FeeTimeSchedulerLinear,
         collectFeeMode: CollectFeeMode.OnlyB,
     }
 ]
@@ -107,7 +106,7 @@ const SimplePoolCreation: React.FC<SimplePoolCreationProps> = (
     const [minFeePercentage, setMinFeePercentage] = useState(new Decimal(6))
     const [minFeeDropdownOpen, setMinFeeDropdownOpen] = useState(false)
     const [useFeeScheduler, setUseFeeScheduler] = useState(true);
-    const [selectedBaseFeeMode, setSelectedBaseFeeMode] = useState<BaseFeeMode>(BaseFeeMode.FeeSchedulerLinear)
+    const [selectedBaseFeeMode, setSelectedBaseFeeMode] = useState<BaseFeeMode>(BaseFeeMode.FeeTimeSchedulerLinear)
     const [feeSchedulerDropdownOpen, setFeeSchedulerDropdownOpen] = useState(false)
 
     const [selectedFeeMode, setSelectedFeeMode] = useState<CollectFeeMode>(CollectFeeMode.OnlyB)
@@ -142,25 +141,25 @@ const SimplePoolCreation: React.FC<SimplePoolCreationProps> = (
     const getDetailedPoolConfig = (poolConfig: PoolConfig): DetailedPoolConfig => {
         const poolFees = poolConfig.account.poolFees;
 
-        const feeScheduler = getFeeScheduler(poolFees.baseFee);
+        const feeTimeScheduler = decodePodAlignedFeeTimeScheduler(Buffer.from(poolFees.baseFee.data));
 
         const minFeeNumerator = feeNumeratorToBps(
-            getBaseFeeNumeratorByPeriod(feeScheduler.cliffFeeNumerator,
-                feeScheduler.numberOfPeriod,
-                new BN(feeScheduler.numberOfPeriod),
-                feeScheduler.reductionFactor,
-                feeScheduler.feeSchedulerMode
+            getFeeTimeBaseFeeNumeratorByPeriod(feeTimeScheduler.cliffFeeNumerator,
+                feeTimeScheduler.numberOfPeriod,
+                new BN(feeTimeScheduler.numberOfPeriod),
+                feeTimeScheduler.reductionFactor,
+                feeTimeScheduler.baseFeeMode
             )
         )
 
-        const detailedPolConfig: DetailedPoolConfig = {
+        const detailedPoolConfig: DetailedPoolConfig = {
             poolConfig: poolConfig,
             configType: poolConfig.account.configType,
-            baseFeeMode: poolFees.baseFee.baseFeeMode,
-            schedulerDuration: feeScheduler.periodFrequency.muln(feeScheduler.numberOfPeriod).toNumber(),
-            schedulerPeriod: feeScheduler.numberOfPeriod,
+            baseFeeMode: feeTimeScheduler.baseFeeMode,
+            schedulerDuration: feeTimeScheduler.periodFrequency.muln(feeTimeScheduler.numberOfPeriod).toNumber(),
+            schedulerPeriod: feeTimeScheduler.numberOfPeriod,
             minFee: minFeeNumerator / 100,
-            maxFee: feeNumeratorToBps(poolFees.baseFee.cliffFeeNumerator) / 100,
+            maxFee: feeNumeratorToBps(feeTimeScheduler.cliffFeeNumerator) / 100,
             maxPrice: (poolConfig.account.sqrtMaxPrice.eq(MAX_SQRT_PRICE)) ?
                 new Decimal(0) :
                 getPriceFromSqrtPrice(poolConfig.account.sqrtMaxPrice, 9, 9),
@@ -171,7 +170,7 @@ const SimplePoolCreation: React.FC<SimplePoolCreationProps> = (
             dynamicFee: poolConfig.account.poolFees.dynamicFee.initialized == 1,
             feeCollectionToken: poolConfig.account.collectFeeMode
         }
-        return detailedPolConfig
+        return detailedPoolConfig
     }
 
     const handleCreatePool = async () => {
@@ -310,6 +309,12 @@ const SimplePoolCreation: React.FC<SimplePoolCreationProps> = (
             toast.error("Rate Limiter mode not supported in standard creation");
             return;
         };
+
+        if (selectedBaseFeeMode === BaseFeeMode.FeeMarketCapSchedulerExponential || selectedBaseFeeMode === BaseFeeMode.FeeMarketCapSchedulerLinear) {
+            toast.error("Marketcap mode not supported in standard creation");
+            return;
+        };
+
         const startingFeeBps = useFeeScheduler ? 5000 : minFeePercentage.mul(100).toNumber();
         const endingFeeBps = minFeePercentage.mul(100).toNumber();
 
@@ -317,30 +322,36 @@ const SimplePoolCreation: React.FC<SimplePoolCreationProps> = (
             startingFeeBps: useFeeScheduler ? 5000 : minFeePercentage.mul(100).toNumber(),
             endingFeeBps: minFeePercentage.mul(100).toNumber(),
             numberOfPeriod: useFeeScheduler ?
-                (selectedBaseFeeMode === BaseFeeMode.FeeSchedulerExponential ? 120 : 144)
+                (selectedBaseFeeMode === BaseFeeMode.FeeTimeSchedulerExponential ? 120 : 144)
                 : 0,
             totalDuration: useFeeScheduler ?
-                (selectedBaseFeeMode === BaseFeeMode.FeeSchedulerExponential ? 7200 : 86400)
+                (selectedBaseFeeMode === BaseFeeMode.FeeTimeSchedulerExponential ? 7200 : 86400)
                 : 0,
         };
+
+        console.log(feeSchedulerParams)
+
 
         const baseFeeParams = getBaseFeeParams(
             {
                 baseFeeMode: selectedBaseFeeMode,
                 rateLimiterParam: undefined,
-                feeSchedulerParam: feeSchedulerParams,
+                feeTimeSchedulerParam: feeSchedulerParams,
             },
             tokenMetadata[tokenBMint]?.decimals || 9,
             ActivationType.Timestamp,
         )
 
-        const feeScheduler = getFeeScheduler(baseFeeParams);
+        console.log(baseFeeParams.data)
+
+        const feeScheduler = decodeFeeTimeSchedulerParams(Buffer.from(baseFeeParams.data));
+        console.log(feeScheduler)
         const b = feeNumeratorToBps(
-            getBaseFeeNumeratorByPeriod(feeScheduler.cliffFeeNumerator,
+            getFeeTimeBaseFeeNumeratorByPeriod(feeScheduler.cliffFeeNumerator,
                 feeScheduler.numberOfPeriod,
                 new BN(feeScheduler.numberOfPeriod),
                 feeScheduler.reductionFactor,
-                feeScheduler.feeSchedulerMode
+                selectedBaseFeeMode
             )
         ) / 100;
 
@@ -373,7 +384,7 @@ const SimplePoolCreation: React.FC<SimplePoolCreationProps> = (
         // pools = poolConfigs.filter(x => {
         //     const confFeeScheduler = getFeeScheduler(x.poolConfig.account.poolFees.baseFee);
         //     //useFeeScheduler === (x.schedulerPeriod > 0) &&
-        //     //x.baseFeeMode === (useFeeScheduler ? selectedBaseFeeMode : BaseFeeMode.FeeSchedulerLinear) &&
+        //     //x.baseFeeMode === (useFeeScheduler ? selectedBaseFeeMode : BaseFeeMode.FeeTimeSchedulerLinear) &&
         //     //x.dynamicFee === useDynamicFee &&
         //     //(useDynamicFee ? x.poolConfig.account.poolFees.dynamicFee.maxVolatilityAccumulator === 14460000 : true) &&
         //     //confFeeScheduler.numberOfPeriod === feeScheduler.numberOfPeriod &&
