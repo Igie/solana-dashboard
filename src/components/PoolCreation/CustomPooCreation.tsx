@@ -178,7 +178,7 @@ const CustomPoolCreation: React.FC<CustomPoolCreationProps> = (
 
             switch (selectedBaseFeeMode) {
                 case BaseFeeMode.RateLimiter:
-                    baseFeeParams = getRateLimiterParams(minFee, maxFee, rateLimiterReferenceAmount, totalRateLimiterDuration, 5000, tokenBMetadata.decimals, ActivationType.Timestamp);
+                    baseFeeParams = getRateLimiterParams(minFee, maxFee, rateLimiterReferenceAmount, totalRateLimiterDuration, 9900, tokenBMetadata.decimals, ActivationType.Timestamp);
                     break;
 
                 case BaseFeeMode.FeeTimeSchedulerExponential:
