@@ -7,6 +7,7 @@ import { launchpads } from '../components/launchpads/Launchpads';
 import { BN } from '@coral-xyz/anchor';
 import { useGetSlot } from './GetSlotContext';
 import { useTokenMetadata, type TokenMetadataMap } from './TokenMetadataContext';
+import { BaseFeeMode } from '@meteora-ag/cp-amm-sdk';
 
 interface PoolSorting {
     type: PoolSortType,
@@ -357,10 +358,12 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                     const [_, currentFee] = getMinAndCurrentFee(x, x.account.activationType === 0 ? slotNow :
                         x.account.activationType === 1 ? startTime : 0)
 
-
+                        const baseFeeType = x.account.poolFees.baseFee.baseFeeInfo.data[8];
+                    const custom = baseFeeType !== BaseFeeMode.FeeTimeSchedulerExponential && 
+                                baseFeeType !== BaseFeeMode.FeeTimeSchedulerLinear;
 
                     if (mainPoolFilterRef.current === "Exclude")
-                        return currentFee > 1000;
+                        return currentFee > 1000 || custom;
                     if (mainPoolFilterRef.current === "Only")
                         return currentFee <= 1000;
                     return true;
@@ -427,12 +430,16 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                     continue;
                 const [_, currentFee] = getMinAndCurrentFee(x, x.account.activationType === 0 ? slotNow :
                     x.account.activationType === 1 ? startTime : 0)
+                    const baseFeeType = x.account.poolFees.baseFee.baseFeeInfo.data[8];
+                    const custom = baseFeeType !== BaseFeeMode.FeeTimeSchedulerExponential && 
+                                baseFeeType !== BaseFeeMode.FeeTimeSchedulerLinear;
 
                 if (currentFee <= 1000 && countMainPools < 40) {
                     simpleMainPoolsMap.current[x.publicKey.toBase58()] = x;
                     countMainPools++;
                 }
-                if (currentFee > 1000 && countNonMainPools < 40) {
+
+                if ((currentFee > 1000 || custom) && countNonMainPools < 40) {
                     simpleNonMainPoolsMap.current[x.publicKey.toBase58()] = x;
                     countNonMainPools++;
                 }
@@ -520,8 +527,11 @@ export const DammV2PoolProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             if (updateRef.current === true) {
                 const [_, currentFee] = getMinAndCurrentFee(accountInfo, decoded.activationType === 0 ? getSlot() :
                     decoded.activationType === 1 ? Date.now() / 1000 : 0);
+                const baseFeeType = accountInfo.account.poolFees.baseFee.baseFeeInfo.data[8];
+                const custom = baseFeeType !== BaseFeeMode.FeeTimeSchedulerExponential && 
+                                baseFeeType !== BaseFeeMode.FeeTimeSchedulerLinear;
 
-                if (currentFee > 1000)
+                if (currentFee > 1000 || custom)
                     simpleNonMainPoolsMap.current[e.accountId.toBase58()] = accountInfo;
                 else
                     simpleMainPoolsMap.current[e.accountId.toBase58()] = accountInfo;
