@@ -12,8 +12,6 @@ import { DammUserPositionsProvider } from './contexts/DammUserPositionsContext'
 import { CpAmmProvider } from './contexts/CpAmmContext'
 import { type Cluster } from '@solana/web3.js'
 import AppInner from './AppInner'
-import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare'
-import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom'
 import { SettingsProvider } from './contexts/SettingsContext'
 import { DammV2PoolProvider } from './contexts/Dammv2PoolContext'
 import { GetSlotProvider } from './contexts/GetSlotContext'
@@ -58,7 +56,7 @@ const App: React.FC = () => {
   return (
     <ConnectionProvider endpoint={endpoint} config={{ commitment: 'confirmed' }}>
       <UnifiedWalletProvider
-        wallets={[new PhantomWalletAdapter, new SolflareWalletAdapter]}
+        wallets={[]}
         config={{
           autoConnect: true,
           env: network,

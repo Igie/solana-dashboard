@@ -10,22 +10,25 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@coral-xyz/anchor": "^0.31.1",
+    "@jup-ag/wallet-adapter": "^0.2.6",
+    "@meteora-ag/cp-amm-sdk": "^1.2.8",
     "@solana/spl-token": "^0.4.14",
     "@solana/wallet-adapter-react-ui": "^0.9.39",
     "@solana/web3.js": "^1.98.4",
     "@tailwindcss/vite": "^4.1.18",
+    "@vercel/node": "^5.5.16",
     "decimal.js": "^10.6.0",
+    "js-cookie": "^3.0.5",
     "lucide-react": "^0.552.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
+    "reactjs-popup": "^2.0.6",
+    "sonner": "^2.0.7",
     "tailwindcss": "^4.1.18",
     "vite-plugin-node-polyfills": "^0.24.0",
-    "@coral-xyz/anchor": "^0.31.1",
-    "@jup-ag/wallet-adapter": "^0.2.6",
-    "@meteora-ag/cp-amm-sdk": "^1.2.8",
-    "js-cookie": "^3.0.5",
-    "reactjs-popup": "^2.0.6",
-    "sonner": "^2.0.7"
+    "vite": "^7.3.0"
+
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
@@ -39,8 +42,7 @@
     "globals": "^16.5.0",
     "knip": "^5.77.1",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.50.1",
-    "vite": "^7.3.0"
+    "typescript-eslint": "^8.50.1"
   },
   "trustedDependencies": [
     "@reown/appkit",
