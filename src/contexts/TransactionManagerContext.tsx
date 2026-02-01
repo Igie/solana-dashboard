@@ -3,6 +3,7 @@ import { AddressLookupTableAccount, ComputeBudgetProgram, Keypair, PublicKey, Tr
 import { txToast } from '../components/Simple/TxToast';
 import { useConnection, useWallet } from '@jup-ag/wallet-adapter';
 import { toast } from 'sonner';
+import { bs58 } from '@coral-xyz/anchor/dist/cjs/utils/bytes';
 
 export interface TxnSignersPair {
     ixs: TransactionInstruction[],
@@ -355,11 +356,13 @@ export const TransactionManagerProvider = ({ children }: { children: ReactNode }
 
             const versioned = new VersionedTransaction(messageV0);
 
+            console.log(bs58.encode(Buffer.from(versioned.serialize())))
             const sim = await connection.simulateTransaction(versioned);
             if (sim.value.err) {
                 console.log("Failed to simulate transaction")
                 console.error(sim);
                 txToast.error("Failed to simulate transaction!");
+                
                 return null;
             } else {
                 const finalIxs: TransactionInstruction[] = [];
@@ -385,6 +388,7 @@ export const TransactionManagerProvider = ({ children }: { children: ReactNode }
         })
         const messageV0 = transactionMesage.compileToV0Message(alt ? [alt] : []);
         const versioned = new VersionedTransaction(messageV0);
+
         console.log(`generated transaction with ${ixs.length} instructions: size ${versioned.serialize().length}`)
         return versioned;
     }

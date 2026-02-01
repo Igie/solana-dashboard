@@ -13,6 +13,7 @@ export interface TokenMetadata {
     image?: string
     launchpad?: string
     isVerified: boolean
+    mutableFees: boolean
     mintAuthority?: string
     freezeAuthority?: string
     createdAt?:Date
@@ -30,11 +31,15 @@ export interface JupTokenMetadata {
     usdPrice?: number
     launchpad?: string
     isVerified: boolean
+    mutableFees?: boolean
     mintAuthority?: string
     freezeAuthority?: string
 
     firstPool?: {
         createdAt?: Date
+    },
+    audit: {
+        mutableFees?: boolean
     }
 }
 
@@ -107,6 +112,7 @@ export const TokenMetadataProvider: React.FC<{ children: React.ReactNode }> = ({
                         image: tm.icon,
                         launchpad: tm.launchpad,
                         isVerified: tm.isVerified,
+                        mutableFees: tm.audit.mutableFees === true,
                         supply: tm.totalSupply,
                         mintAuthority: tm.mintAuthority,
                         freezeAuthority: tm.freezeAuthority,

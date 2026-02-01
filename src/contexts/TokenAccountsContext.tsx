@@ -12,7 +12,7 @@ import { getAssociatedTokenAddressSync, NATIVE_MINT, TOKEN_2022_PROGRAM_ID, TOKE
 import { GetTokenMetadataMap, useTokenMetadata, type TokenMetadata, type TokenMetadataMap } from './TokenMetadataContext'
 
 export interface TokenAccount {
-    pubkey?:string
+    pubkey?: string
     mint: string
     owner?: string
     tokenProgram: string
@@ -27,6 +27,7 @@ export interface TokenAccount {
     amount: Decimal
     lamports: number,
     isVerified: boolean
+    mutableFees: boolean
     mintAuthority?: string
     freezeAuthority?: string
     lastUpdated: number,
@@ -164,6 +165,7 @@ export const TokenAccountsProvider: React.FC<{ children: React.ReactNode }> = ({
             value: new Decimal(0),
             lamports: 0,
             isVerified: false,
+            mutableFees: false,
             supply: 0,
             lastUpdated: currentTime,
         })
@@ -188,6 +190,7 @@ export const TokenAccountsProvider: React.FC<{ children: React.ReactNode }> = ({
                     value: new Decimal(0),
                     lamports: account.account.lamports,
                     isVerified: false,
+                    mutableFees: false,
                     supply: 0,
                     mintAuthority: undefined,
                     freezeAuthority: undefined,
@@ -195,6 +198,8 @@ export const TokenAccountsProvider: React.FC<{ children: React.ReactNode }> = ({
                 })
             }
         }
+
+
 
         if (mintAddresses.length > 0) {
             const metadataMap = await fetchTokenMetadata([...new Set(mintAddresses)]);
@@ -216,9 +221,11 @@ export const TokenAccountsProvider: React.FC<{ children: React.ReactNode }> = ({
                     price,
                     value,
                     isVerified: metadataMap[account.mint]?.isVerified,
+                    mutableFees: metadataMap[account.mint]?.mutableFees,
                 }
             })
             const finalAccounts = updatedAccounts.filter(x => x !== undefined)
+
             return [metadataArray, finalAccounts];
         }
 
@@ -234,6 +241,9 @@ export const TokenAccountsProvider: React.FC<{ children: React.ReactNode }> = ({
             setAllTokenAccounts(sortedAccounts);
             setFullTokenAccounts(sortedAccounts.filter(x => x.amount.gt(0)));
             setEmptyTokenAccounts(sortedAccounts.filter(x => x.amount.eq(0)));
+
+            console.log(sortedAccounts.filter(x => x.amount.eq(0)).map(x => x.amount.toString()), "EMPTY ACCOUNTS");
+
             setTokenMetadata(tokenMetadata);
             setLoading(false);
             return { tokenAccounts, tokenMetadata }

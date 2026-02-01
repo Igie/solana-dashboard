@@ -1,13 +1,13 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
-const JUPITER_BASE_URL = "https://quote-api.jup.ag/v1";
+const JUPITER_BASE_URL = "https://api.jup.ag/swap/v1/quote";
 
 export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ) {
   try {
-    const url = new URL(`${JUPITER_BASE_URL}/quote`);
+    const url = new URL(`${JUPITER_BASE_URL}`);
 
     // Forward all query params from client to Jupiter
     for (const [key, value] of Object.entries(req.query)) {

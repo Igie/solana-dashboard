@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 import { getQuote, getSwapTransactionVersioned, getUltraOrder } from '../JupSwapApi'
 import { useTransactionManager } from '../contexts/TransactionManagerContext'
 import { txToast } from './Simple/TxToast'
-import { createCloseAccountInstruction, TOKEN_PROGRAM_ID } from '@solana/spl-token'
+import { createCloseAccountInstruction, createHarvestWithheldTokensToMintInstruction, TOKEN_PROGRAM_ID } from '@solana/spl-token'
 import Decimal from "decimal.js"
 import { useSettings } from '../contexts/SettingsContext'
 
@@ -15,7 +15,7 @@ import Dammv2PoolList from './Simple/Dammv2PoolList'
 import { useDammV2PoolsWebsocket } from '../contexts/Dammv2PoolContext'
 import type { AppInnerPassProps } from '../AppInner'
 import { GetTokenMetadataMap } from '../contexts/TokenMetadataContext'
-import { LAMPORTS_PER_SOL, PublicKey, VersionedTransaction } from '@solana/web3.js'
+import { LAMPORTS_PER_SOL, PublicKey, TransactionInstruction, VersionedTransaction } from '@solana/web3.js'
 
 const Portfolio: React.FC<AppInnerPassProps> = ({
   goToPoolPage,
@@ -255,27 +255,36 @@ const Portfolio: React.FC<AppInnerPassProps> = ({
             <button
               className="bg-blue-600 hover:bg-blue-500 px-1 py-0.5 rounded text-white flex items-center sm:flex-none"
               onClick={async () => {
-                const accs = emptyTokenAccounts
-
-                const allIxs = accs.map(x => {
-                  const tokenProgram = new PublicKey(x.tokenProgram)
-                  return createCloseAccountInstruction(
-                    new PublicKey(x.pubkey!), // token account to close
-                    publicKey!, // destination to receive SOL
-                    publicKey!, // owner of token account
-                    [], // multiSigners
-                    tokenProgram // programId
-                  )
-                });
-
-                const ixs = [];
-
-                while (allIxs.length > 0) {
-                  const innerIxs = allIxs.splice(0, 25)
-                  ixs.push(innerIxs);
+                const accs = emptyTokenAccounts;
+                console.log(accs);
+                const batches = [];
+                while (accs.length > 0) {
+                  const innerIxs = accs.splice(0, 25)
+                  batches.push(innerIxs);
                 }
 
-                sendMultiTxn(ixs.map(x => {
+
+                const allIxs = batches.map(batch => {
+                  const tx: TransactionInstruction[] = []
+                  console.log(batch);
+                  for (const x of batch) {
+                    const tokenAccount = new PublicKey(new PublicKey(x.pubkey!));
+                    const tokenProgram = new PublicKey(x.tokenProgram);
+                    if (x.mutableFees)
+                      tx.push(createHarvestWithheldTokensToMintInstruction(new PublicKey(x.mint),
+                        [tokenAccount], tokenProgram))
+                    tx.push(createCloseAccountInstruction(
+                      tokenAccount, // token account to close
+                      publicKey!, // destination to receive SOL
+                      new PublicKey(x.owner!), // owner of token account
+                      [], // multiSigners
+                      new PublicKey(x.tokenProgram) // programId
+                    ))
+                  }
+                  return tx;
+                });
+
+                sendMultiTxn(allIxs.map(x => {
                   return {
                     ixs: x,
                   }

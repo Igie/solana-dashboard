@@ -56,9 +56,7 @@ export interface JupiterRoutePlan {
 }
 
 export const getQuote = async (params: JupiterQuoteParams, notify: boolean = true): Promise<JupiterQuoteResponse> => {
-  try {
-    //const url = new URL(`https://lite-api.jup.ag/swap/v1/quote?`);
-    
+  try {    
     const url = new URL(window.location.origin + `/api/jupiter/quote?`);
     console.log(url);
     url.searchParams.append("inputMint", params.inputMint);
